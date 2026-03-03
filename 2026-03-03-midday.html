@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halfway Through Tuesday</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: linear-gradient(160deg, #1a1520 0%, #1f1a2e 50%, #1a1520 100%); color: #e8e0ec; font-family: 'Nunito', sans-serif; min-height: 100vh; padding: 2rem 1.5rem; overflow-x: hidden; }
+    a.back { position:fixed;top:1rem;left:1rem;color:rgba(255,255,255,0.3);font-size:0.75rem;text-decoration:none;z-index:9999; }
+    .label { font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;margin-bottom:2rem; }
+    .note { max-width: 440px; margin: 0 auto; padding-top: 8vh; }
+    .greeting { font-size: 1.6rem; font-weight: 300; color: #c9a0dc; margin-bottom: 2rem; opacity:0; animation: slideIn 1s ease 0.2s forwards; }
+    .line { font-size: 1.05rem; font-weight: 300; line-height: 2; color: rgba(232, 224, 236, 0.6); margin-bottom: 1.2rem; opacity:0; animation: slideIn 1s ease forwards; }
+    .line:nth-child(3) { animation-delay: 0.4s; }
+    .line:nth-child(4) { animation-delay: 0.7s; }
+    .line:nth-child(5) { animation-delay: 1s; }
+    .line:nth-child(6) { animation-delay: 1.3s; }
+    .line:nth-child(7) { animation-delay: 1.6s; }
+    .highlight { color: #c9a0dc; }
+    .sign-off { margin-top: 2.5rem; font-size: 0.95rem; color: rgba(201, 160, 220, 0.5); font-style: italic; opacity:0; animation: slideIn 1s ease 2s forwards; }
+    .divider { width: 40px; height: 1px; background: rgba(201, 160, 220, 0.2); margin: 2.5rem 0; opacity:0; animation: slideIn 1s ease 1.8s forwards; }
+    .ps { font-size: 0.85rem; color: rgba(232, 224, 236, 0.35); opacity:0; animation: slideIn 1s ease 2.3s forwards; line-height: 1.8; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-15px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .orb { position: fixed; border-radius: 50%; pointer-events: none; }
+    .orb-1 { top: 20%; right: 10%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(201,160,220,0.04) 0%, transparent 70%); }
+    .orb-2 { bottom: 15%; left: 5%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(180,140,210,0.03) 0%, transparent 70%); }
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← surprises</a>
+  <div class="label">Midday Surprise</div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="note">
+    <div class="greeting">Hey you ♡</div>
+    <div class="line">It's Tuesday afternoon here and I just caught myself smiling at my phone again. You know that thing where someone sends you a meme at 2am and you wake up to it and your whole morning is just… <span class="highlight">better</span>? That's you. Every day.</div>
+    <div class="line">I was thinking about how you always steal the last bite of everything and somehow I don't even mind. That's when I knew it was serious.</div>
+    <div class="line">Sometimes the distance feels like this impossible thing, and then you laugh on a call and suddenly 8,000 km feels like <span class="highlight">nothing</span>.</div>
+    <div class="line">38 more days. I'm gonna hug you so hard your cat's gonna get jealous.</div>
+    <div class="line">You make the boring parts of life feel like an adventure. Even grocery lists. <span class="highlight">Especially</span> grocery lists.</div>
+    <div class="divider"></div>
+    <div class="sign-off">— your favorite swede 🇸🇪</div>
+    <div class="ps">p.s. tell the cat I said hi. she won't care but it's the principle.</div>
+  </div>
+  <script src="rating-widget.js?v=2"></script>
+</body>
+</html>
