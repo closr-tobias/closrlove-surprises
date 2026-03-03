@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surprises from Tobias</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0a0a12; color:#d4c5d9; font-family:Georgia,serif; min-height:100vh; padding:2rem 1rem; }
+    h1 { text-align:center; font-size:1.8rem; color:#e8d5f0; margin-bottom:0.3rem; }
+    .sub { text-align:center; font-size:0.65rem; letter-spacing:0.25em; text-transform:uppercase; color:rgba(255,255,255,0.25); margin-bottom:2rem; }
+    #avg { text-align:center; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:1rem; margin:0 auto 2rem; max-width:500px; }
+    #avg .stars { font-size:1.5rem; color:#c4a35a; }
+    #avg .dim-star { color:rgba(255,255,255,0.1); }
+    #avg .num { font-size:0.8rem; color:rgba(255,255,255,0.35); margin-top:0.3rem; }
+    #list { max-width:500px; margin:0 auto; }
+    .item { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:10px; padding:1rem 1.2rem; margin-bottom:0.8rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; cursor:pointer; transition:background 0.2s; text-decoration:none; }
+    .item:hover { background:rgba(255,255,255,0.06); }
+    .item .name { font-style:italic; color:#d4c5d9; font-size:0.95rem; }
+    .item .date { font-size:0.7rem; color:rgba(255,255,255,0.25); margin-top:0.15rem; }
+    .item .stars { font-size:0.95rem; color:#c4a35a; white-space:nowrap; }
+    .item .dim-star { color:rgba(255,255,255,0.08); }
+    .item .comment { width:100%; font-size:0.75rem; color:rgba(255,255,255,0.3); font-style:italic; margin-top:0.4rem; }
+  </style>
+</head>
+<body>
+  <h1>Surprises</h1>
+  <div class="sub">FROM TOBIAS</div>
+  <div id="avg"></div>
+  <div id="list"></div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+    const app = initializeApp({
+      apiKey: "AIzaSyALIZpTXMPP4LtzfR-343X1XqjeOarLV9w",
+      authDomain: "closerapp-project.firebaseapp.com",
+      projectId: "closerapp-project",
+      storageBucket: "closerapp-project.firebasestorage.app",
+      messagingSenderId: "480600476692",
+      appId: "1:480600476692:web:47a220b944454519036b01"
+    });
+    const db = getFirestore(app);
+
+    var allPages = [
+          '2026-03-03-morning'
+        ];
+    var titleMap = {};
+    var dateMap = {};
+
+    try {
+      const snapshot = await getDocs(collection(db, "tobias-surprise-ratings"));
+      var data = {};
+      snapshot.forEach(d => { data[d.id] = d.data(); });
+
+      var ratings = {};
+      Object.values(data || {}).forEach(e => { ratings[e.page] = e; });
+
+      var ratedPages = Object.values(data || {}).filter(e => e.rating);
+      if (ratedPages.length) {
+        var sum = ratedPages.reduce((s, e) => s + e.rating, 0);
+        var avg = (sum / ratedPages.length).toFixed(1);
+        var avgFilled = Math.round(sum / ratedPages.length);
+        var avgStars = '★'.repeat(avgFilled) + '<span class="dim-star">' + '★'.repeat(5 - avgFilled) + '</span>';
+        document.getElementById('avg').innerHTML = '<div class="stars">' + avgStars + '</div><div class="num">' + avg + ' average from ' + ratedPages.length + ' rating' + (ratedPages.length !== 1 ? 's' : '') + '</div>';
+      } else {
+        document.getElementById('avg').style.display = 'none';
+      }
+
+      const list = document.getElementById('list');
+      allPages.forEach(page => {
+        var e = ratings[page] || { page: page };
+        const name = titleMap[page] || page.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        const datePart = page.match(/^(\d{4}-\d{2}-\d{2})/);
+        const dateStr = datePart ? datePart[1] : (typeof dateMap !== 'undefined' && dateMap[page] ? dateMap[page] : null);
+        const date = dateStr ? new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        const commentHtml = e.comment ? '<div class="comment">"' + e.comment.replace(/</g,'&lt;') + '"</div>' : '';
+        var starHtml = '';
+        for (var s = 1; s <= 5; s++) {
+          starHtml += s <= (e.rating || 0) ? '★' : '<span class="dim-star">★</span>';
+        }
+        const a = document.createElement('a');
+        a.className = 'item';
+        a.href = page + '.html';
+        a.innerHTML = '<div><div class="name">' + name + '</div><div class="date">' + date + '</div></div><div class="stars">' + starHtml + '</div>' + commentHtml;
+        list.appendChild(a);
+      });
+    } catch(err) { console.error(err); }
+  </script>
+</body>
+</html>
