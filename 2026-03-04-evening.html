@@ -581,11 +581,12 @@
       <div class="journey-stat-label">Days Left</div>
     </div>
     <div class="journey-stat">
-      <div class="journey-stat-value" id="momentsValue">10</div>
+      <div class="journey-stat-value" id="momentsValue">9</div>
       <div class="journey-stat-label">Moments</div>
     </div>
   </div>
 
+  <div style="text-align:center;font-size:0.75rem;color:rgba(255,255,255,0.5);margin-bottom:0.5rem;font-style:italic;">Click on the dots for memories</div>
   <div class="bar-container">
     <div class="bar-inner"><div class="bar-track">
       <div class="bar-fill" id="barFill"></div>
@@ -640,10 +641,8 @@
       desc: 'First time meeting you I will never forget seeing you on that bench, makes me tear up thinking about it <3 Youre so beautiful babe!' },
     { date: '2025-12-24', label: 'Dec 24', title: 'Christmas Eve in San Diego', emoji: '🎄', special: true,
       desc: "Back with you in my arms again, its a trip im so glad happened ❤️ And spending christmas and new years with you and your family was the best thing ever :)" },
-    { date: '2026-01-07', label: 'Jan 7', title: 'She Booked Her Flight to Sweden! 🇸🇪', emoji: '✈️', special: false,
-      desc: "you booked the flight to umeå and it made me tear up ❤️ cant wait to make you feel at home here in my apartment and for you to meet my family and the cat and dogs :)" },
-    { date: '2026-01-07', label: 'Jan 7', title: 'Kiru Moved His Bed 😂', emoji: '🐱', special: false,
-      desc: "Same day kiru dragged his bed closer to your desk and it was one of the funniest things ever XD" },
+    { date: '2026-01-07', label: 'Jan 7', title: 'Flight Booked + Kiru 😂', emoji: '✈️🐱', special: false,
+      desc: "you booked the flight to umeå and it made me tear up ❤️ cant wait to make you feel at home here in my apartment and for you to meet my family and the cat and dogs :)<br><br>Same day kiru dragged his bed closer to your desk and it was one of the funniest things ever XD" },
     { date: '2026-01-09', label: 'Jan 9', title: 'The No-Complain Challenge', emoji: '🏆', special: false,
       desc: "We tried the no complain challange but decided quickly we dont need that :) its nice to talk about how we feel with eachother even if its complaining about work everyday, I want to hear everything you have to say ❤️" },
     { date: '2026-03-03', label: 'Mar 3', title: 'Her Surprise for Me', emoji: '🥹', special: true,
@@ -666,7 +665,7 @@
     const evTime = new Date(ev.date).getTime();
     const pos = ((evTime - startDate) / totalSpan) * 100;
     // Offset duplicate dates slightly
-    let offset = 0; if (ev.title.includes('Kiru')) offset = -1.5; if (ev.title.includes('No-Complain')) offset = 2;
+    let offset = 0;
 
     const dot = document.createElement('div');
     dot.className = 'event-dot' + (ev.special ? ' special' : '');
