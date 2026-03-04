@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Same Sky, Different Windows</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0c1a1a; color: #d4e8e0; font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow-x: hidden; }
+    a.back { position:fixed;top:1rem;left:1rem;color:rgba(255,255,255,0.3);font-size:0.75rem;text-decoration:none;z-index:9999; }
+    .label { position:fixed;top:2rem;width:100%;font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center; }
+    .postcard {
+      max-width: 420px; width: 90vw;
+      background: linear-gradient(145deg, rgba(20,45,42,0.9) 0%, rgba(15,35,35,0.95) 100%);
+      border: 1px solid rgba(130,200,180,0.1); border-radius: 2px;
+      padding: 2.5rem 2rem; position: relative;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.4);
+    }
+    .postcard::before {
+      content: ''; position: absolute;
+      top: 8px; left: 8px; right: 8px; bottom: 8px;
+      border: 1px solid rgba(130,200,180,0.06); pointer-events: none;
+    }
+    .stamp {
+      position: absolute; top: 1.2rem; right: 1.5rem;
+      width: 44px; height: 52px; border: 2px dashed rgba(200,175,120,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; opacity: 0; animation: fadeIn 1s ease 0.3s forwards;
+    }
+    .to-line {
+      font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase;
+      color: rgba(130,200,180,0.3); margin-bottom: 0.3rem;
+      opacity: 0; animation: fadeIn 0.8s ease 0.5s forwards;
+    }
+    .recipient {
+      font-family: 'Cormorant Garamond', serif; font-size: 1.8rem;
+      font-weight: 300; font-style: italic; color: #7ecab3;
+      margin-bottom: 2rem; opacity: 0; animation: fadeIn 1s ease 0.8s forwards;
+    }
+    .body-text { font-weight: 300; font-size: 0.95rem; line-height: 2; color: rgba(212,232,224,0.55); }
+    .body-text .p { margin-bottom: 1.2rem; opacity: 0; animation: typeIn 1s ease forwards; }
+    .body-text .p:nth-child(1) { animation-delay: 1.2s; }
+    .body-text .p:nth-child(2) { animation-delay: 1.8s; }
+    .body-text .p:nth-child(3) { animation-delay: 2.4s; }
+    .body-text .p:nth-child(4) { animation-delay: 3.0s; }
+    .accent { color: #7ecab3; }
+    .gold { color: #c8af78; }
+    .rule { width: 30px; height: 1px; background: rgba(130,200,180,0.15); margin: 2rem 0 1.5rem; opacity: 0; animation: fadeIn 0.8s ease 3.5s forwards; }
+    .sign { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-style: italic; color: rgba(126,202,179,0.45); opacity: 0; animation: fadeIn 1s ease 3.8s forwards; }
+    .dateline { margin-top: 0.8rem; font-size: 0.6rem; letter-spacing: 0.15em; color: rgba(200,175,120,0.2); text-transform: uppercase; opacity: 0; animation: fadeIn 1s ease 4.2s forwards; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes typeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .bg-line { position: fixed; height: 1px; background: rgba(130,200,180,0.03); width: 100%; left: 0; }
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← surprises</a>
+  <div class="label">Midday Surprise</div>
+  <div class="bg-line" style="top:20%"></div>
+  <div class="bg-line" style="top:35%"></div>
+  <div class="bg-line" style="top:50%"></div>
+  <div class="bg-line" style="top:65%"></div>
+  <div class="bg-line" style="top:80%"></div>
+  <div class="postcard">
+    <div class="stamp">🌊</div>
+    <div class="to-line">To:</div>
+    <div class="recipient">Erica</div>
+    <div class="body-text">
+      <div class="p">It's Wednesday afternoon here. The snow outside is doing that thing where it looks blue in the shadows. I looked out my window and thought about you looking out yours — <span class="accent">different light, same sky</span>.</div>
+      <div class="p">You're probably still asleep right now and honestly that makes me happy. You in your pink chair with the cat on your lap, your phone face-down because you forgot to charge it again. I know you <span class="gold">so well</span> it's kind of ridiculous.</div>
+      <div class="p">I keep thinking about the first time we'll just be in the same timezone. No mental math, no "wait is it 3am for you?" Just... <span class="accent">existing in the same hour</span>. That's all I want. The extraordinary ordinary.</div>
+      <div class="p">Until then — I'm right here. <span class="gold">7,885 km away and still the closest person to you.</span></div>
+    </div>
+    <div class="rule"></div>
+    <div class="sign">Yours across the water,<br>Tobias</div>
+    <div class="dateline">Umeå, Sweden · March 4, 2026</div>
+  </div>
+  <script src="rating-widget.js?v=2"></script>
+</body>
+</html>
