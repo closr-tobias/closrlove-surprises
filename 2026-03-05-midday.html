@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halfway Home</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #1a1408; color: #f0e6d0; font-family: 'Inter', sans-serif; min-height: 100vh; overflow-x: hidden; }
+    a.back { position:fixed;top:1rem;left:1rem;color:rgba(255,255,255,0.3);font-size:0.75rem;text-decoration:none;z-index:9999; }
+    .label { font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;padding-top:2rem;margin-bottom:1rem; }
+    .container { max-width: 400px; margin: 0 auto; padding: 1rem 1.5rem 4rem; }
+    .header { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 400; color: #e8a84c; text-align: center; margin: 2rem 0 0.5rem; opacity: 0; animation: warmIn 1.2s ease 0.3s forwards; }
+    .time-note { text-align: center; font-size: 0.7rem; color: rgba(232,168,76,0.35); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 3rem; opacity: 0; animation: warmIn 1s ease 0.6s forwards; }
+    .thread { position: relative; padding-left: 1.8rem; }
+    .thread::before { content: ''; position: absolute; left: 3px; top: 0; bottom: 0; width: 1px; background: linear-gradient(to bottom, rgba(232,168,76,0.3), rgba(232,168,76,0.05)); }
+    .moment { position: relative; margin-bottom: 2.2rem; opacity: 0; transform: translateY(10px); }
+    .moment.visible { animation: fadeUp 0.7s ease forwards; }
+    .moment::before { content: ''; position: absolute; left: -1.8rem; top: 0.5rem; width: 7px; height: 7px; border-radius: 50%; border: 1px solid rgba(232,168,76,0.4); background: #1a1408; }
+    .moment:nth-child(odd)::before { background: rgba(232,168,76,0.2); }
+    .moment-label { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(232,168,76,0.4); margin-bottom: 0.4rem; }
+    .moment-text { font-size: 1rem; font-weight: 300; line-height: 1.8; color: rgba(240,230,208,0.65); }
+    .moment-text em { font-style: normal; color: #e8a84c; font-weight: 400; }
+    .closing { text-align: center; margin-top: 3rem; opacity: 0; }
+    .closing.visible { animation: warmIn 1s ease forwards; }
+    .closing-text { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.15rem; color: rgba(232,168,76,0.6); line-height: 1.8; }
+    .sign { margin-top: 1.5rem; font-size: 0.7rem; color: rgba(255,255,255,0.15); letter-spacing: 0.1em; }
+    .glow { position: fixed; top: -20%; right: -20%; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(232,168,76,0.03) 0%, transparent 65%); pointer-events: none; }
+    .glow-2 { position: fixed; bottom: -10%; left: -15%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(200,140,50,0.02) 0%, transparent 60%); pointer-events: none; }
+    @keyframes warmIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← surprises</a>
+  <div class="label">Midday Surprise</div>
+  <div class="glow"></div>
+  <div class="glow-2"></div>
+  <div class="container">
+    <div class="header">Halfway Home</div>
+    <div class="time-note">Thursday — the week's turning point</div>
+    <div class="thread">
+      <div class="moment">
+        <div class="moment-label">This morning</div>
+        <div class="moment-text">Woke up and my first thought was you. Not poetic, just <em>true</em>. It's become muscle memory at this point — eyes open, think of Erica.</div>
+      </div>
+      <div class="moment">
+        <div class="moment-label">At work</div>
+        <div class="moment-text">Welding today and caught myself smiling behind the mask for no reason. Just remembered the way you <em>scrunch your nose</em> when you laugh. Coworkers probably think I've lost it.</div>
+      </div>
+      <div class="moment">
+        <div class="moment-label">Right now</div>
+        <div class="moment-text">It's evening here, afternoon there. Same sun, just <em>taking its time</em> getting to you. I like that — like it's carrying something from me on the way over.</div>
+      </div>
+      <div class="moment">
+        <div class="moment-label">What I know</div>
+        <div class="moment-text">The distance is temporary. <em>We</em> are not. Every day is one day closer, and honestly? I'd wait twice as long if I had to. But I'm glad I don't have to.</div>
+      </div>
+      <div class="moment">
+        <div class="moment-label">Tonight</div>
+        <div class="moment-text">Give your cat a scritch from me. Settle into that <em>pink chair</em>. And know that somewhere in Sweden, someone is counting the hours until he hears your voice again.</div>
+      </div>
+    </div>
+    <div class="closing">
+      <div class="closing-text">You make the ordinary feel<br>like something worth remembering.</div>
+      <div class="sign">— T ♡</div>
+    </div>
+  </div>
+  <script>
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('.moment, .closing').forEach(el => obs.observe(el));
+  </script>
+  <script src="rating-widget.js?v=2"></script>
+</body>
+</html>
