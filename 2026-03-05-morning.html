@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Constellation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0d0b1a; color: #e8e4f0; font-family: 'Quicksand', sans-serif; min-height: 100vh; overflow-x: hidden; }
+    a.back { position:fixed;top:1rem;left:1rem;color:rgba(255,255,255,0.3);font-size:0.75rem;text-decoration:none;z-index:9999; }
+    .label { font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;padding-top:2rem;margin-bottom:1rem; }
+    canvas#stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+    .content { position: relative; z-index: 1; max-width: 440px; margin: 0 auto; padding: 1rem 1.5rem 4rem; text-align: center; }
+    .title { font-size: 1.6rem; font-weight: 300; letter-spacing: 0.05em; color: #c4b5f7; margin: 2rem 0 1rem; opacity: 0; animation: fadeIn 1.5s ease 0.3s forwards; }
+    .subtitle { font-size: 0.8rem; color: rgba(196, 181, 247, 0.4); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 3rem; opacity: 0; animation: fadeIn 1.5s ease 0.6s forwards; }
+    .star-item { margin-bottom: 2.5rem; opacity: 0; transform: translateY(15px); }
+    .star-item.visible { animation: fadeUp 0.8s ease forwards; }
+    .star-icon { width: 8px; height: 8px; background: #c4b5f7; border-radius: 50%; margin: 0 auto 0.8rem; box-shadow: 0 0 12px rgba(196,181,247,0.6), 0 0 30px rgba(196,181,247,0.2); animation: pulse 3s ease-in-out infinite; }
+    .star-item:nth-child(2) .star-icon { background: #f7b5d5; box-shadow: 0 0 12px rgba(247,181,213,0.6), 0 0 30px rgba(247,181,213,0.2); animation-delay: 0.5s; }
+    .star-item:nth-child(3) .star-icon { background: #b5d4f7; box-shadow: 0 0 12px rgba(181,212,247,0.6), 0 0 30px rgba(181,212,247,0.2); animation-delay: 1s; }
+    .star-item:nth-child(4) .star-icon { background: #f7e5b5; box-shadow: 0 0 12px rgba(247,229,181,0.6), 0 0 30px rgba(247,229,181,0.2); animation-delay: 1.5s; }
+    .star-item:nth-child(5) .star-icon { background: #b5f7d4; box-shadow: 0 0 12px rgba(181,247,212,0.6), 0 0 30px rgba(181,247,212,0.2); animation-delay: 2s; }
+    .star-text { font-size: 1.05rem; font-weight: 300; line-height: 1.7; color: rgba(232,228,240,0.7); }
+    .star-text em { color: #c4b5f7; font-style: normal; font-weight: 500; }
+    .line { width: 1px; height: 40px; background: linear-gradient(to bottom, rgba(196,181,247,0.3), transparent); margin: 0 auto 2.5rem; }
+    .closer { margin-top: 2rem; font-size: 1.15rem; font-weight: 400; color: rgba(196,181,247,0.8); line-height: 1.8; opacity: 0; }
+    .closer.visible { animation: fadeIn 1.2s ease forwards; }
+    .sign-off { margin-top: 3rem; font-size: 0.75rem; color: rgba(255,255,255,0.15); letter-spacing: 0.1em; opacity: 0; }
+    .sign-off.visible { animation: fadeIn 1.2s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 100% { opacity: 0.7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.3); } }
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← surprises</a>
+  <canvas id="stars"></canvas>
+  <div class="content">
+    <div class="label">Morning Surprise</div>
+    <div class="title">Our Constellation</div>
+    <div class="subtitle">5 stars I see when I think of you</div>
+    <div class="star-item" data-reveal>
+      <div class="star-icon"></div>
+      <div class="star-text">The way you say <em>"hiiii"</em> when you answer my call — like you've been waiting all day and it's the best thing that happened. It gets me every single time.</div>
+    </div>
+    <div class="line"></div>
+    <div class="star-item" data-reveal>
+      <div class="star-icon"></div>
+      <div class="star-text">How you talk to your cat like she's a <em>whole person</em> with opinions and a social calendar. Honestly? She probably does have opinions about me.</div>
+    </div>
+    <div class="line"></div>
+    <div class="star-item" data-reveal>
+      <div class="star-icon"></div>
+      <div class="star-text">Your laugh when something catches you off guard — the <em>real</em> one, not the polite one. That sound could fix a bad day in under a second.</div>
+    </div>
+    <div class="line"></div>
+    <div class="star-item" data-reveal>
+      <div class="star-icon"></div>
+      <div class="star-text">The fact that you're <em>6,000 miles away</em> and still the closest person to me. Distance hasn't made us weaker. It made us stubborn.</div>
+    </div>
+    <div class="line"></div>
+    <div class="star-item" data-reveal>
+      <div class="star-icon"></div>
+      <div class="star-text">That in <em>35 days</em> I get to stand next to you and not say goodbye at the end of the night. That's the star I'm navigating toward.</div>
+    </div>
+    <div class="closer" data-reveal>
+      You're my favorite constellation, Erica.<br>
+      And I don't even need a telescope. 🔭
+    </div>
+    <div class="sign-off" data-reveal>with love from the other side of the planet ✦</div>
+  </div>
+  <script>
+    const c = document.getElementById('stars');
+    const ctx = c.getContext('2d');
+    let stars = [];
+    function resize() {
+      c.width = window.innerWidth;
+      c.height = window.innerHeight;
+      stars = Array.from({length: 80}, () => ({
+        x: Math.random() * c.width, y: Math.random() * c.height,
+        r: Math.random() * 1.2 + 0.3, a: Math.random(), s: Math.random() * 0.005 + 0.002
+      }));
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    function draw() {
+      ctx.clearRect(0, 0, c.width, c.height);
+      stars.forEach(s => {
+        s.a += s.s;
+        const alpha = 0.2 + Math.abs(Math.sin(s.a)) * 0.5;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200, 190, 240, ${alpha})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('[data-reveal]').forEach(el => obs.observe(el));
+  </script>
+  <script src="rating-widget.js?v=2"></script>
+</body>
+</html>
