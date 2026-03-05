@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Still Thinking of You</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a1215; color: #d8ede6; font-family: 'Outfit', sans-serif; min-height: 100vh; padding: 2rem 1.5rem 4rem; overflow-x: hidden; }
+    a.back { position:fixed;top:1rem;left:1rem;color:rgba(255,255,255,0.3);font-size:0.75rem;text-decoration:none;z-index:9999; }
+    .label { font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;padding-top:2rem;margin-bottom:1rem; }
+    .container { max-width: 420px; margin: 0 auto; }
+    .heading { font-family: 'DM Serif Display', serif; font-size: 1.7rem; color: #6ec4b8; text-align: center; margin: 1.5rem 0 0.5rem; opacity: 0; animation: rise 1.2s ease 0.2s forwards; }
+    .subline { text-align: center; font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(110,196,184,0.3); margin-bottom: 3rem; opacity: 0; animation: rise 1s ease 0.5s forwards; }
+    .card { background: rgba(110,196,184,0.04); border: 1px solid rgba(110,196,184,0.08); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.2rem; opacity: 0; transform: translateY(16px); }
+    .card:nth-child(1) { animation: rise 0.8s ease 0.7s forwards; }
+    .card:nth-child(2) { animation: rise 0.8s ease 1.0s forwards; }
+    .card:nth-child(3) { animation: rise 0.8s ease 1.3s forwards; }
+    .card:nth-child(4) { animation: rise 0.8s ease 1.6s forwards; }
+    .card-emoji { font-size: 1.3rem; margin-bottom: 0.6rem; }
+    .card-text { font-size: 0.95rem; font-weight: 200; line-height: 1.8; color: rgba(216,237,230,0.65); }
+    .card-text em { font-style: normal; color: #6ec4b8; font-weight: 400; }
+    .countdown-box { text-align: center; margin: 2.5rem 0; opacity: 0; animation: rise 1s ease 1.9s forwards; }
+    .countdown-num { font-family: 'DM Serif Display', serif; font-size: 3rem; color: #6ec4b8; line-height: 1; }
+    .countdown-label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(110,196,184,0.35); margin-top: 0.4rem; }
+    .closer { text-align: center; font-size: 1.05rem; font-weight: 200; color: rgba(110,196,184,0.5); line-height: 1.8; margin-top: 2rem; opacity: 0; animation: rise 1s ease 2.2s forwards; }
+    .sign { text-align: center; margin-top: 2rem; font-size: 0.7rem; color: rgba(255,255,255,0.12); letter-spacing: 0.1em; opacity: 0; animation: rise 1s ease 2.5s forwards; }
+    .glow { position: fixed; top: -25%; left: 50%; transform: translateX(-50%); width: 70vw; height: 70vw; background: radial-gradient(circle, rgba(110,196,184,0.04) 0%, transparent 60%); pointer-events: none; }
+    @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← surprises</a>
+  <div class="label">Afternoon Surprise</div>
+  <div class="glow"></div>
+  <div class="container">
+    <h1 class="heading">Still Thinking of You</h1>
+    <div class="subline">10 PM here · 1 PM there</div>
+    <div class="card">
+      <div class="card-emoji">🧊</div>
+      <div class="card-text">It's freezing in Umeå right now and I'm sitting here in the dark wondering how someone in <em>San Diego sunshine</em> managed to become the warmest part of my day.</div>
+    </div>
+    <div class="card">
+      <div class="card-emoji">🎮</div>
+      <div class="card-text">You know what I keep thinking about? How we'll eventually argue over who gets the TV. You'll want it for Roblox, I'll want it for Elden Ring, and we'll <em>both</em> pretend we don't love just sitting next to each other.</div>
+    </div>
+    <div class="card">
+      <div class="card-emoji">🐱</div>
+      <div class="card-text">Tell your cat I said hi. Also tell her she better be ready to share the pink chair because <em>I've been eyeing it.</em></div>
+    </div>
+    <div class="card">
+      <div class="card-emoji">🌊</div>
+      <div class="card-text">Every day the distance gets a little smaller. Not because the map changed, but because <em>we keep choosing each other</em> anyway. That's the whole thing.</div>
+    </div>
+    <div class="countdown-box">
+      <div class="countdown-num">35</div>
+      <div class="countdown-label">days until everything changes</div>
+    </div>
+    <div class="closer">Go enjoy your Thursday afternoon.<br>I'll be here when you get back. ♡</div>
+    <div class="sign">— T</div>
+  </div>
+  <script src="rating-widget.js?v=2"></script>
+</body>
+</html>
