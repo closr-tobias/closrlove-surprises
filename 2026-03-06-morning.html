@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>34 Days</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #12080e; color: #f2e4ea; font-family: 'Cormorant Garamond', serif; min-height: 100vh; overflow-x: hidden; }
+    a.back { position:fixed;top:1rem;left:1rem;color:rgba(255,255,255,0.3);font-size:0.75rem;text-decoration:none;z-index:9999;font-family:sans-serif; }
+    .label { font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;padding-top:2rem;margin-bottom:1rem;font-family:sans-serif; }
+    .hero { text-align: center; padding: 3rem 1.5rem 2rem; position: relative; }
+    .number { font-size: 7rem; font-weight: 300; line-height: 1; color: #d4829a; opacity: 0; animation: breathe 4s ease-in-out infinite, fadeIn 1.5s ease 0.3s forwards; }
+    .number-label { font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(212,130,154,0.4); margin-top: 0.5rem; font-family: sans-serif; opacity: 0; animation: fadeIn 1.2s ease 0.8s forwards; }
+    .subtitle { font-size: 1.4rem; font-weight: 300; font-style: italic; color: rgba(212,130,154,0.6); margin-top: 2rem; opacity: 0; animation: fadeIn 1.2s ease 1.2s forwards; }
+    .container { max-width: 400px; margin: 0 auto; padding: 1rem 1.5rem 4rem; }
+    .letter { margin-top: 2rem; opacity: 0; animation: fadeIn 1.2s ease 1.6s forwards; }
+    .letter p { font-size: 1.15rem; font-weight: 300; line-height: 2; color: rgba(242,228,234,0.6); margin-bottom: 1.5rem; }
+    .letter p em { font-style: italic; color: #d4829a; font-weight: 400; }
+    .divider { width: 40px; height: 1px; background: rgba(212,130,154,0.2); margin: 2rem auto; }
+    .promise { text-align: center; margin-top: 1rem; opacity: 0; animation: fadeIn 1.2s ease 2.5s forwards; }
+    .promise-text { font-size: 1.3rem; font-weight: 300; font-style: italic; color: rgba(212,130,154,0.5); line-height: 1.8; }
+    .sign { text-align: center; margin-top: 2.5rem; font-size: 0.7rem; color: rgba(255,255,255,0.12); letter-spacing: 0.1em; font-family: sans-serif; opacity: 0; animation: fadeIn 1s ease 3s forwards; }
+    .orb { position: fixed; border-radius: 50%; pointer-events: none; }
+    .orb-1 { top: -15%; right: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(212,130,154,0.06) 0%, transparent 65%); }
+    .orb-2 { bottom: -10%; left: -15%; width: 45vw; height: 45vw; background: radial-gradient(circle, rgba(180,120,160,0.04) 0%, transparent 60%); }
+    .orb-3 { top: 40%; left: 60%; width: 30vw; height: 30vw; background: radial-gradient(circle, rgba(212,160,170,0.03) 0%, transparent 55%); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← surprises</a>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="label">Morning Surprise</div>
+  <div class="hero">
+    <div class="number">34</div>
+    <div class="number-label">days until I'm home</div>
+    <div class="subtitle">and counting every single one</div>
+  </div>
+  <div class="container">
+    <div class="letter">
+      <p>Hey you.</p>
+      <p>It's Friday morning here and I woke up doing what I always do — <em>reaching for my phone to see if you texted</em>. You did. You always do. And somehow that still makes me smile like an idiot.</p>
+      <p>34 days. That's less than 5 weeks. I've already survived months of this — what's 34 more days when I know what's waiting at the end?</p>
+      <p><em>You</em> are what's waiting. In San Diego. Probably in that pink Secretlab chair with Kiru judging me through the screen.</p>
+      <p>I keep thinking about the moment I actually get to hug you. Not a video call wave, not a goodnight text — an actual, real, <em>you're-right-here</em> hug. I might not let go for a while. Fair warning.</p>
+      <p>Every day that passes is one day closer. And every day with you — even from 6,000 miles away — is still better than any day before you.</p>
+    </div>
+    <div class="divider"></div>
+    <div class="promise">
+      <p class="promise-text">34 mornings.<br>Then I wake up next to you.</p>
+    </div>
+    <div class="sign">forever yours — T</div>
+  </div>
+  <script src="rating-widget.js?v=2"></script>
+</body>
+</html>
