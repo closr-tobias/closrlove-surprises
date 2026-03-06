@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Friday Night, Thinking Out Loud</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Nunito+Sans:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0c1a; color: #e0ddf0; font-family: 'Nunito Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+    a.back { position:fixed;top:1rem;left:1rem;color:rgba(255,255,255,0.3);font-size:0.75rem;text-decoration:none;z-index:9999; }
+    .label { font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;padding-top:2rem;margin-bottom:1rem; }
+    .container { max-width: 400px; margin: 0 auto; padding: 1rem 1.5rem 4rem; }
+    .title { font-family: 'Lora', serif; font-size: 1.6rem; font-weight: 400; text-align: center; color: #b8a9d4; margin: 2rem 0 0.5rem; opacity: 0; animation: drift 1.2s ease 0.3s forwards; }
+    .subtitle { text-align: center; font-size: 0.7rem; color: rgba(184,169,212,0.3); letter-spacing: 0.12em; margin-bottom: 3rem; opacity: 0; animation: drift 1s ease 0.6s forwards; }
+    .reasons { list-style: none; padding: 0; }
+    .reasons li { position: relative; padding: 1.2rem 0 1.2rem 2.2rem; border-bottom: 1px solid rgba(184,169,212,0.06); font-weight: 300; font-size: 0.95rem; line-height: 1.7; color: rgba(224,221,240,0.55); opacity: 0; transform: translateX(-10px); }
+    .reasons li.visible { animation: slideIn 0.6s ease forwards; }
+    .reasons li::before { content: '✦'; position: absolute; left: 0; top: 1.3rem; font-size: 0.6rem; color: rgba(184,169,212,0.3); }
+    .reasons li em { font-style: normal; color: #b8a9d4; font-weight: 400; }
+    .reasons li:nth-child(1) { animation-delay: 0.9s; }
+    .reasons li:nth-child(2) { animation-delay: 1.2s; }
+    .reasons li:nth-child(3) { animation-delay: 1.5s; }
+    .reasons li:nth-child(4) { animation-delay: 1.8s; }
+    .reasons li:nth-child(5) { animation-delay: 2.1s; }
+    .reasons li:nth-child(6) { animation-delay: 2.4s; }
+    .reasons li:nth-child(7) { animation-delay: 2.7s; }
+    .note { margin-top: 2.5rem; text-align: center; opacity: 0; animation: drift 1s ease 3.2s forwards; }
+    .note p { font-family: 'Lora', serif; font-style: italic; font-size: 1.1rem; color: rgba(184,169,212,0.5); line-height: 1.8; }
+    .sign { text-align: center; margin-top: 2rem; font-size: 0.65rem; color: rgba(255,255,255,0.12); letter-spacing: 0.1em; opacity: 0; animation: drift 1s ease 3.8s forwards; }
+    .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+    .star { position: absolute; width: 2px; height: 2px; background: rgba(184,169,212,0.15); border-radius: 50%; animation: twinkle 3s ease-in-out infinite; }
+    @keyframes drift { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.5; } }
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← surprises</a>
+  <div class="label">Midday Surprise</div>
+  <div class="stars">
+    <div class="star" style="top:8%;left:15%;animation-delay:0s;"></div>
+    <div class="star" style="top:22%;left:78%;animation-delay:1.2s;"></div>
+    <div class="star" style="top:45%;left:92%;animation-delay:0.5s;"></div>
+    <div class="star" style="top:67%;left:8%;animation-delay:2.1s;"></div>
+    <div class="star" style="top:33%;left:55%;animation-delay:1.8s;"></div>
+    <div class="star" style="top:78%;left:65%;animation-delay:0.9s;"></div>
+    <div class="star" style="top:12%;left:42%;animation-delay:2.5s;"></div>
+    <div class="star" style="top:88%;left:30%;animation-delay:1.4s;"></div>
+    <div class="star" style="top:55%;left:20%;animation-delay:0.3s;"></div>
+  </div>
+  <div class="container">
+    <div class="title">Things I Never Get Tired Of</div>
+    <div class="subtitle">a running list — updated constantly</div>
+    <ul class="reasons">
+      <li>The way you say <em>"babe"</em> when you're half asleep and it comes out all soft. That one word could end wars.</li>
+      <li>How Kiru stares at me through the camera like she's <em>evaluating my worthiness</em>. Jury's still out, I think.</li>
+      <li>Your laugh when something genuinely catches you off guard — not the polite one, the <em>real</em> one where you can't breathe.</li>
+      <li>That you built a whole gaming setup in <em>pink</em> and it looks better than anything I've ever owned. Queen behavior.</li>
+      <li>How you check on me even when you're the one having a hard day. Like your heart just <em>defaults to caring</em>.</li>
+      <li>The fact that we're 6,000 miles apart and I still feel closer to you than anyone I've ever stood next to.</li>
+      <li>That in <em>33 days</em> I get to see all of this in person and I'm already nervous about it. The good kind of nervous.</li>
+    </ul>
+    <div class="note">
+      <p>It's Friday evening here.<br>Your afternoon is just starting.<br>And you're the best part of both our timezones.</p>
+    </div>
+    <div class="sign">— T ✦</div>
+  </div>
+  <script>
+    const items = document.querySelectorAll('.reasons li');
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.2 });
+    items.forEach(li => obs.observe(li));
+  </script>
+  <script src="rating-widget.js?v=2"></script>
+</body>
+</html>
