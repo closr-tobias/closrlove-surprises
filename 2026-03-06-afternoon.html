@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Same Moon, Different Clocks</title>
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #070d14; color: #d4dce8; font-family: 'Raleway', sans-serif; font-weight: 300; min-height: 100vh; padding: 2rem 1.5rem 4rem; overflow-x: hidden; }
+    a.back { position:fixed;top:1rem;left:1rem;color:rgba(255,255,255,0.3);font-size:0.75rem;text-decoration:none;z-index:9999; }
+    .label { font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;margin-bottom:2rem; }
+    .clocks { display: flex; justify-content: center; gap: 3rem; margin: 2rem 0 2.5rem; opacity: 0; animation: emerge 1.4s ease 0.3s forwards; }
+    .clock { text-align: center; }
+    .clock-time { font-family: 'Crimson Pro', serif; font-size: 2.4rem; font-weight: 300; color: #c4956a; letter-spacing: 0.05em; }
+    .clock-city { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(196,149,106,0.4); margin-top: 0.3rem; }
+    .clock-divider { align-self: center; width: 1px; height: 50px; background: linear-gradient(to bottom, transparent, rgba(196,149,106,0.2), transparent); }
+    .prose { max-width: 380px; margin: 0 auto; }
+    .prose p { font-family: 'Crimson Pro', serif; font-size: 1.1rem; line-height: 1.9; color: rgba(212,220,232,0.7); margin-bottom: 1.5rem; opacity: 0; transform: translateY(12px); }
+    .prose p:nth-child(1) { animation: rise 1s ease 0.6s forwards; }
+    .prose p:nth-child(2) { animation: rise 1s ease 1.0s forwards; }
+    .prose p:nth-child(3) { animation: rise 1s ease 1.4s forwards; }
+    .prose p:nth-child(4) { animation: rise 1s ease 1.8s forwards; }
+    .prose p:nth-child(5) { animation: rise 1s ease 2.2s forwards; }
+    .highlight { color: #c4956a; font-style: italic; }
+    .wave { display: block; margin: 2.5rem auto; width: 120px; height: 1px; background: linear-gradient(to right, transparent, rgba(196,149,106,0.25), transparent); }
+    .sign { text-align: center; font-size: 0.65rem; letter-spacing: 0.15em; color: rgba(255,255,255,0.12); margin-top: 2rem; opacity: 0; animation: emerge 1s ease 2.8s forwards; }
+    .orb { position: fixed; border-radius: 50%; pointer-events: none; }
+    .orb-1 { top: -20%; left: 50%; transform: translateX(-50%); width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(70,110,160,0.06) 0%, transparent 65%); }
+    .orb-2 { bottom: -15%; right: -10%; width: 40vw; height: 40vw; background: radial-gradient(circle, rgba(196,149,106,0.04) 0%, transparent 60%); }
+    @keyframes emerge { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← surprises</a>
+  <div class="label">Afternoon Surprise</div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="clocks">
+    <div class="clock">
+      <div class="clock-time">10 PM</div>
+      <div class="clock-city">Umeå</div>
+    </div>
+    <div class="clock-divider"></div>
+    <div class="clock">
+      <div class="clock-time">1 PM</div>
+      <div class="clock-city">San Diego</div>
+    </div>
+  </div>
+  <div class="prose">
+    <p>It's Friday night here. Dark outside, snow probably doing its thing. But I know you're right in the middle of your afternoon — maybe on the couch, maybe with the cat being dramatic about something.</p>
+    <p>I keep thinking about how weird and <span class="highlight">kind of beautiful</span> it is that we live in different times. Like right now, your Friday still has hours left. Mine's winding down. But we're both just... here. Thinking about each other.</p>
+    <p>34 days. That's it. <span class="highlight">34 days</span> until I'm standing in front of you and none of these clocks matter anymore. No more mental math about time zones. Just us, same room, same moment.</p>
+    <p>You know what I'm most excited about? The boring stuff. Sitting next to you doing absolutely nothing. Making you laugh about something dumb. Watching you pretend you're not falling asleep during a movie.</p>
+    <p>Anyway. Enjoy your Friday afternoon, love. I'll be here in the future, <span class="highlight">waiting for you to catch up.</span> 💛</p>
+  </div>
+  <span class="wave"></span>
+  <div class="sign">— T</div>
+  <script src="rating-widget.js?v=2"></script>
+</body>
+</html>
