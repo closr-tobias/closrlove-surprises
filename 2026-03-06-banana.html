@@ -64,7 +64,8 @@
     z-index: 8;
     animation: floatQuote 2.5s ease-out forwards;
     white-space: nowrap;
-    font-size: clamp(0.7rem, 2vw, 1rem);
+    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    font-weight: 700;
   }
 
   @keyframes floatQuote {
@@ -251,7 +252,7 @@
 
     interval = setInterval(() => {
       if (!holding) return;
-      progress = Math.min(progress + 0.4, 100);
+      progress = Math.min(progress + 0.25, 100);
 
       // Grow: height 0 → 420px, width 70 → 110px
       const h = (progress / 100) * 420;
@@ -278,7 +279,7 @@
       }
 
       // Floating quotes
-      if (Math.random() < 0.07 && currentQuote >= 0) {
+      if (Math.random() < 0.03 && currentQuote >= 0) {
         const fq = document.createElement('div');
         fq.className = 'floating-quote';
         fq.textContent = quotes[Math.floor(Math.random()*(currentQuote+1))];
@@ -354,7 +355,7 @@
       }
       const txt = document.createElement('div');
       txt.className = 'explosion-text';
-      txt.innerHTML = '❤️❤️❤️<br>I LOVE YOU BABE<br>❤️❤️❤️';
+      txt.innerHTML = '❤️❤️❤️<br>I Love You My<br>Banana Wife<br>❤️❤️❤️';
       document.body.appendChild(txt);
     }, 900);
 
