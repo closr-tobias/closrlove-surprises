@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Closr — Surprise Building Blocks</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     background: #0a0a0f;
@@ -27,14 +27,15 @@
     margin-bottom: 10px;
   }
   .header p { color: #888; font-size: 0.9rem; }
+  .header .sub { color: #555; font-size: 0.75rem; margin-top: 6px; font-style: italic; }
   .count { color: #ff69b4; font-weight: 600; }
   .blocks-grid {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 28px;
   }
   .block-card {
     background: #141420;
@@ -49,7 +50,7 @@
   }
   .block-preview {
     width: 100%;
-    height: 300px;
+    height: 360px;
     position: relative;
     overflow: hidden;
     background: #0a0a12;
@@ -65,45 +66,83 @@
     margin-bottom: 6px;
   }
   .block-info p { font-size: 0.8rem; color: #888; line-height: 1.5; }
-  .block-info .date { font-size: 0.7rem; color: #555; margin-top: 8px; }
+  .block-info .tier { display: inline-block; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; margin-top: 8px; }
+  .tier-spark { background: #2a2a3a; color: #aaa; }
+  .tier-glow { background: #2a1a30; color: #c77dff; }
+  .tier-grand { background: #2a1020; color: #ff69b4; }
+  .block-info .categories { font-size: 0.7rem; color: #555; margin-top: 6px; }
+  .block-info .slots { font-size: 0.7rem; color: #7aafcc; margin-top: 4px; }
+  .block-info .date { font-size: 0.65rem; color: #444; margin-top: 8px; }
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Surprise Building Blocks</h1>
-  <p>Interactive components for Closr surprises — <span class="count" id="count">0</span> blocks and counting</p>
+  <p>Template components for Closr surprises — <span class="count" id="count">0</span> blocks and counting</p>
+  <p class="sub">Each block has content slots the AI fills with couple-specific data. These are the actual surprise delivery components.</p>
 </div>
 
 <div class="blocks-grid" id="blocks">
 <!-- BLOCKS_START -->
+
 <!-- BLOCK: Heartbeat Sync -->
 <div class="block-card">
-  <div class="block-preview" id="heartbeat-sync">
-    <canvas id="hb-canvas" style="width:100%;height:100%;display:block;"></canvas>
+  <div class="block-preview" id="heartbeat-sync-preview">
     <style>
-      #heartbeat-sync { cursor: pointer; user-select: none; }
-      #heartbeat-sync .hb-label {
-        position: absolute; bottom: 14px; left: 0; right: 0;
-        text-align: center; font-size: 0.75rem; color: #ff69b488;
-        pointer-events: none; font-family: Inter, sans-serif;
+      #heartbeat-sync-preview { cursor: pointer; user-select: none; -webkit-user-select: none; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      #heartbeat-sync-preview canvas { width: 100%; height: 220px; }
+      #heartbeat-sync-preview .hb-message {
+        font-family: 'Playfair Display', serif;
+        font-size: 1rem;
+        color: #ff69b4;
+        text-align: center;
+        padding: 0 20px;
+        opacity: 0.9;
+        font-style: italic;
+        margin-bottom: 8px;
+      }
+      #heartbeat-sync-preview .hb-names {
+        font-size: 0.75rem;
+        color: #ff69b466;
+        text-align: center;
+        margin-bottom: 12px;
+      }
+      #heartbeat-sync-preview .hb-hint {
+        font-size: 0.65rem;
+        color: #ffffff33;
+        text-align: center;
+        position: absolute;
+        bottom: 10px;
+        left: 0; right: 0;
       }
     </style>
-    <div class="hb-label">tap to sync your heartbeat</div>
+    <div class="hb-names"><!-- SLOT: partner_names --> Tobias & Erica <!-- /SLOT --></div>
+    <div class="hb-message"><!-- SLOT: ai_love_message --> Every heartbeat is a love letter my body writes for you <!-- /SLOT --></div>
+    <canvas id="hb-canvas"></canvas>
+    <div class="hb-hint">tap to set your heartbeat</div>
   </div>
   <div class="block-info">
     <h3>💓 Heartbeat Sync</h3>
-    <p>Tap rhythmically to set your heartbeat. A glowing heart pulses to your rhythm with a live EKG trace. Two lovers, one pulse.</p>
+    <p>User taps to set their heartbeat rhythm. A glowing heart pulses to their tempo with a live EKG trace. The AI writes a love message based on the couple's relationship data. Works at any data level — low data gets a sweet generic message, deep data references their specific moments.</p>
+    <span class="tier tier-glow">Glow</span>
+    <div class="categories">Categories: Love Letter, Comfort, Appreciation</div>
+    <div class="slots">AI Slots: partner_names, ai_love_message</div>
     <div class="date">March 7, 2026</div>
   </div>
 </div>
 <script>
 (function(){
-  var wrap = document.getElementById('heartbeat-sync');
+  var wrap = document.getElementById('heartbeat-sync-preview');
   var c = document.getElementById('hb-canvas');
   var ctx = c.getContext('2d');
   var W, H, taps = [], bpm = 72, phase = 0, traceX = 0;
-  function resize() { var r = wrap.getBoundingClientRect(); W = c.width = Math.round(r.width * 2); H = c.height = Math.round(r.height * 2); traceX = 0; }
+  function resize() {
+    var r = c.getBoundingClientRect();
+    W = c.width = Math.round(r.width * 2);
+    H = c.height = Math.round(r.height * 2);
+    traceX = 0;
+  }
   resize(); window.addEventListener('resize', resize);
   wrap.addEventListener('click', function() {
     var now = Date.now(); taps.push(now);
@@ -141,28 +180,28 @@
   function frame(ts) {
     var dt = (ts - last) / 1000; last = ts;
     phase += dt * (bpm / 60);
-    ctx.fillStyle = 'rgba(10,10,18,0.15)'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(10,10,18,0.18)'; ctx.fillRect(0, 0, W, H);
     var beat = phase % 1;
-    var pulse = beat < 0.15 ? 1 + 0.3 * Math.sin(beat / 0.15 * Math.PI) : 1;
-    var heartAlpha = beat < 0.15 ? 0.9 : 0.45;
-    drawHeart(W/2, H*0.38, 50 * pulse, heartAlpha);
-    ctx.font = '600 22px Inter, sans-serif'; ctx.fillStyle = '#ff69b466'; ctx.textAlign = 'center';
-    ctx.shadowBlur = 0; ctx.fillText(Math.round(bpm) + ' BPM', W/2, H*0.12);
-    var speed = W * 0.4;
+    var pulse = beat < 0.15 ? 1 + 0.35 * Math.sin(beat / 0.15 * Math.PI) : 1;
+    var heartAlpha = beat < 0.15 ? 0.9 : 0.4;
+    drawHeart(W/2, H*0.35, 55 * pulse, heartAlpha);
+    ctx.font = '500 20px Inter, sans-serif'; ctx.fillStyle = '#ff69b444'; ctx.textAlign = 'center';
+    ctx.shadowBlur = 0; ctx.fillText(Math.round(bpm) + ' BPM', W/2, H*0.08 + 20);
+    var speed = W * 0.35;
     traceX += dt * speed;
     if (traceX > W) traceX = 0;
-    var baseY = H * 0.75, amp = H * 0.12;
+    var baseY = H * 0.78, amp = H * 0.14;
     var ekg = ekgY(phase % 1);
     var x = traceX, y = baseY - ekg * amp;
-    ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI*2);
-    ctx.fillStyle = '#ff69b4'; ctx.shadowColor = '#ff69b4'; ctx.shadowBlur = 8; ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2);
+    ctx.fillStyle = '#ff69b4'; ctx.shadowColor = '#ff69b4'; ctx.shadowBlur = 10; ctx.fill();
     ctx.fillStyle = '#0a0a12'; ctx.shadowBlur = 0;
-    ctx.fillRect(x + 4, H*0.6, 40, H*0.3);
+    ctx.fillRect(x + 6, baseY - amp - 10, 50, amp * 2 + 20);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 })();
-<\/script>
+</script>
 
 <!-- BLOCKS_END -->
 </div>
