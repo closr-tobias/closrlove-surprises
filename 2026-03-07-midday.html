@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Postcard From the Other Side</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Work+Sans:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0b1214; color: #d4e8e4; font-family: 'Work Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+    a.back { position:fixed;top:1rem;left:1rem;color:rgba(255,255,255,0.3);font-size:0.75rem;text-decoration:none;z-index:9999; }
+    .label { font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;padding-top:2rem;margin-bottom:1.5rem; }
+    .container { max-width: 400px; margin: 0 auto; padding: 1rem 1.5rem 4rem; }
+    .stamp { text-align: right; margin-bottom: 2rem; opacity: 0; animation: appear 1s ease 0.3s forwards; }
+    .stamp-box { display: inline-block; border: 1px solid rgba(100,190,174,0.2); padding: 0.6rem 1rem; font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(100,190,174,0.4); transform: rotate(2deg); }
+    .postcard { border: 1px solid rgba(100,190,174,0.08); border-radius: 3px; padding: 2rem 1.5rem; margin-bottom: 2rem; position: relative; opacity: 0; animation: appear 1.2s ease 0.6s forwards; }
+    .postcard::before { content: ''; position: absolute; top: 50%; left: 1.5rem; right: 1.5rem; height: 1px; background: linear-gradient(to right, transparent, rgba(100,190,174,0.08), transparent); }
+    .to-line { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(100,190,174,0.35); margin-bottom: 0.3rem; }
+    .to-name { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 400; color: #64beae; margin-bottom: 1.5rem; }
+    .message { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; line-height: 2; color: rgba(212,232,228,0.6); padding-top: 1.8rem; }
+    .message p { margin-bottom: 1.2rem; }
+    .message .accent { color: #64beae; font-style: normal; font-weight: 500; }
+    .coordinates { display: flex; justify-content: space-between; align-items: center; margin: 2rem 0; padding: 1rem 0; border-top: 1px dashed rgba(100,190,174,0.1); border-bottom: 1px dashed rgba(100,190,174,0.1); opacity: 0; animation: appear 1s ease 1.8s forwards; }
+    .coord { text-align: center; }
+    .coord-city { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(100,190,174,0.3); margin-bottom: 0.3rem; }
+    .coord-val { font-family: 'Cormorant Garamond', serif; font-size: 1rem; color: rgba(100,190,174,0.5); }
+    .coord-arrow { font-size: 1.2rem; color: rgba(100,190,174,0.15); letter-spacing: 0.3em; }
+    .closing-section { text-align: center; margin-top: 2.5rem; opacity: 0; animation: appear 1s ease 2.3s forwards; }
+    .closing-text { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; color: rgba(100,190,174,0.55); line-height: 1.8; margin-bottom: 1rem; }
+    .sign-off { font-size: 0.65rem; color: rgba(255,255,255,0.12); letter-spacing: 0.1em; }
+    .ocean-line { position: fixed; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(to right, transparent 10%, rgba(100,190,174,0.15) 50%, transparent 90%); }
+    .glow { position: fixed; bottom: -20%; left: 50%; transform: translateX(-50%); width: 80vw; height: 40vw; background: radial-gradient(ellipse, rgba(100,190,174,0.04) 0%, transparent 70%); pointer-events: none; }
+    @keyframes appear { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← surprises</a>
+  <div class="label">Midday Surprise</div>
+  <div class="container">
+    <div class="stamp">
+      <div class="stamp-box">Umeå → San Diego<br>7 March 2026</div>
+    </div>
+    <div class="postcard">
+      <div class="to-line">To:</div>
+      <div class="to-name">Erica ♡</div>
+      <div class="message">
+        <p>Saturday night here, and I keep catching myself smiling at nothing — which really means I'm smiling at <span class="accent">everything about you</span>.</p>
+        <p>You know what I was just thinking? How your laugh sounds different when you're really tired vs. when something genuinely surprises you. I know both by heart now.</p>
+        <p>One day I won't have to write postcards across 8,000 km. I'll just be able to <span class="accent">tap your shoulder</span> and tell you in person that you're the best part of my whole day.</p>
+        <p>Until then — you, your pink chair, and that fluffy little cloud of a cat are what I'm working toward. <span class="accent">Every single shift.</span></p>
+      </div>
+    </div>
+    <div class="coordinates">
+      <div class="coord">
+        <div class="coord-city">Umeå</div>
+        <div class="coord-val">63.8°N</div>
+      </div>
+      <div class="coord-arrow">· · · ♡ · · ·</div>
+      <div class="coord">
+        <div class="coord-city">San Diego</div>
+        <div class="coord-val">32.7°N</div>
+      </div>
+    </div>
+    <div class="closing-section">
+      <div class="closing-text">Distance is temporary.<br>We're not.</div>
+      <div class="sign-off">— your guy in Sweden 🇸🇪</div>
+    </div>
+  </div>
+  <div class="ocean-line"></div>
+  <div class="glow"></div>
+  <script src="rating-widget.js?v=2"></script>
+</body>
+</html>
