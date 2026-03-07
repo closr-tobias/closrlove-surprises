@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>33 Sunsets</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0c1117; color: #f0e6d3; font-family: 'DM Serif Display', serif; min-height: 100vh; overflow-x: hidden; position: relative; }
+    a.back { position:fixed;top:1rem;left:1rem;color:rgba(255,255,255,0.3);font-size:0.75rem;text-decoration:none;z-index:9999;font-family:'Inter',sans-serif; }
+    .label { font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;padding-top:2rem;margin-bottom:1.5rem;font-family:'Inter',sans-serif; }
+    .horizon { position: fixed; bottom: 0; left: 0; right: 0; height: 45vh; background: linear-gradient(to top, rgba(217,119,60,0.08) 0%, rgba(217,160,90,0.03) 40%, transparent 100%); pointer-events: none; }
+    .glow { position: fixed; bottom: -5vh; left: 50%; transform: translateX(-50%); width: 80vw; height: 30vw; border-radius: 50%; background: radial-gradient(ellipse, rgba(235,150,60,0.07) 0%, transparent 70%); pointer-events: none; }
+    .content { position: relative; z-index: 2; padding: 0 1.5rem 4rem; max-width: 420px; margin: 0 auto; }
+    .big-number { text-align: center; font-size: 6rem; font-weight: 400; background: linear-gradient(135deg, #e8a44a, #d97f3c, #c45e2a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1; margin: 1rem 0 0.3rem; opacity: 0; animation: rise 1.5s ease 0.3s forwards; }
+    .big-label { text-align: center; font-family: 'Inter', sans-serif; font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(232,164,74,0.4); margin-bottom: 2.5rem; opacity: 0; animation: rise 1.2s ease 0.8s forwards; }
+    .divider { width: 50px; height: 1px; margin: 0 auto 2.5rem; background: linear-gradient(to right, transparent, rgba(232,164,74,0.25), transparent); opacity: 0; animation: rise 1s ease 1.2s forwards; }
+    .letter { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 1.15rem; line-height: 1.9; color: rgba(240,230,211,0.85); text-align: center; opacity: 0; animation: rise 1.2s ease 1.5s forwards; }
+    .letter p { margin-bottom: 1.5rem; }
+    .letter .highlight { color: #e8a44a; font-style: normal; font-size: 1.25rem; }
+    .wave-line { text-align: center; margin: 2rem 0; font-size: 1.2rem; color: rgba(232,164,74,0.15); letter-spacing: 0.5em; opacity: 0; animation: rise 1s ease 2s forwards; }
+    .footer-note { text-align: center; margin-top: 2.5rem; font-family: 'Inter', sans-serif; font-size: 0.65rem; color: rgba(255,255,255,0.12); letter-spacing: 0.1em; opacity: 0; animation: rise 1s ease 2.5s forwards; }
+    .sun-dots { display: flex; justify-content: center; gap: 6px; margin: 2rem 0; opacity: 0; animation: rise 1s ease 1s forwards; }
+    .sun-dot { width: 4px; height: 4px; border-radius: 50%; background: #e8a44a; opacity: 0.3; }
+    .sun-dot:nth-child(2) { opacity: 0.5; width: 5px; height: 5px; }
+    .sun-dot:nth-child(3) { opacity: 0.8; width: 6px; height: 6px; box-shadow: 0 0 8px rgba(232,164,74,0.4); }
+    .sun-dot:nth-child(4) { opacity: 0.5; width: 5px; height: 5px; }
+    .sun-dot:nth-child(5) { opacity: 0.3; }
+    @keyframes rise { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← surprises</a>
+  <div class="label">Morning Surprise</div>
+  <div class="horizon"></div>
+  <div class="glow"></div>
+  <div class="content">
+    <div class="big-number">33</div>
+    <div class="big-label">sunsets to go</div>
+    <div class="sun-dots">
+      <div class="sun-dot"></div><div class="sun-dot"></div><div class="sun-dot"></div><div class="sun-dot"></div><div class="sun-dot"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="letter">
+      <p>Every sunset here is one closer to watching one with you.</p>
+      <p>I keep thinking about San Diego light — how it'll look on your face when I'm finally there, not behind a screen.</p>
+      <p class="highlight">33 more of these, baby. That's it.</p>
+      <p>Then I get to hold you for real, mess up your hair, annoy your cat, and steal your Secretlab chair.</p>
+      <p>Saturday morning here. Saturday morning there. Same sky, same us — just a few time zones being dramatic about it.</p>
+    </div>
+    <div class="wave-line">~ ~ ~ ~ ~</div>
+    <div class="letter" style="animation-delay: 2.3s;">
+      <p>See you soon, Lovestar. ♡</p>
+    </div>
+    <div class="footer-note">— T</div>
+  </div>
+  <script src="rating-widget.js?v=2"></script>
+</body>
+</html>
