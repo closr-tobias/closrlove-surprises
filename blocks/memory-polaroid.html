@@ -176,22 +176,32 @@
     var top = getTopCard();
 
     if (!hasMoved && Math.abs(deltaX) < 10) {
-      // TAP — send to back
+      // TAP — shuffle to back with same animation as swipe
       animating = true;
-      stack.insertBefore(top, stack.firstChild);
-      top.style.zIndex = 0;
       top.style.pointerEvents = 'none';
-      getCards().forEach(function(c, i) {
-        if (c !== top) c.style.zIndex = i;
-      });
-      var tapDepth = getCards().length - 1;
-      requestAnimationFrame(function(){
-        top.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
-        top.style.transform = backTransform(tapDepth);
-        layoutStack(top);
-        updateCounter();
-        setTimeout(function(){ animating = false; }, 820);
-      });
+
+      // Step 1: Kick it to the side (like a mini swipe)
+      top.style.transition = 'transform 0.25s ease-out';
+      top.style.transform = 'translateX(100px) rotate(8deg)';
+
+      setTimeout(function(){
+        // Step 2: Drop behind everything
+        stack.insertBefore(top, stack.firstChild);
+        top.style.zIndex = 0;
+        getCards().forEach(function(c, i) {
+          if (c !== top) c.style.zIndex = i;
+        });
+
+        // Step 3: Slow arc to back position
+        var tapDepth = getCards().length - 1;
+        requestAnimationFrame(function(){
+          top.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
+          top.style.transform = backTransform(tapDepth);
+          layoutStack(top);
+          updateCounter();
+          setTimeout(function(){ animating = false; }, 820);
+        });
+      }, 250);
       return;
     }
 
