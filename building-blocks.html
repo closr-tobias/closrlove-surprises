@@ -488,6 +488,53 @@
 })();
 </script>
 
+
+<!-- BLOCK: Love Letter Scene -->
+<div class="block-card">
+  <div class="block-preview" id="love-letter-scene">
+    <style>
+      #love-letter-scene {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 32px 28px; text-align: center;
+        background: radial-gradient(ellipse at 50% 30%, #1a0a1a, #0a0a12);
+      }
+      #love-letter-scene .ll-to {
+        font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase;
+        color: #ff69b444; margin-bottom: 20px;
+        animation: llFade 1.2s ease-out both;
+      }
+      #love-letter-scene .ll-body {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.15rem; font-style: italic; line-height: 1.8;
+        color: #e8d0e0;
+        max-width: 300px;
+        animation: llFade 1.5s ease-out 0.3s both;
+      }
+      #love-letter-scene .ll-sign {
+        font-size: 0.75rem; color: #7aafcc66;
+        margin-top: 24px;
+        animation: llFade 1.2s ease-out 0.8s both;
+      }
+      @keyframes llFade {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    </style>
+    <div class="ll-to"><!-- SLOT: recipient_name --> Erica <!-- /SLOT --></div>
+    <div class="ll-body"><!-- SLOT: ai_love_letter --> I keep replaying the moment you fell asleep on my shoulder in Hawaii, your hair smelled like plumeria and the ocean, and I remember thinking, this is what peace feels like <!-- /SLOT --></div>
+    <div class="ll-sign"><!-- SLOT: sender_name --> Tobias <!-- /SLOT --></div>
+  </div>
+  <div class="block-info">
+    <h3>💌 Love Letter</h3>
+    <p>A single scene of intimate typography. The AI writes one heartfelt passage based on the couple's memories, language, and depth. No interaction needed — the words do everything. At low data it's a beautiful compliment. At deep data it references specific moments only they would know.</p>
+    <span class="tier tier-spark">Spark</span>
+    <div class="categories">Type: Love Letter</div>
+    <div class="slots">AI Slots: recipient_name, ai_love_letter, sender_name</div>
+    <div class="date">March 8, 2026</div>
+  </div>
+</div>
+
+
 <!-- BLOCKS_END -->
 <!-- BLOCK: Northern Lights Love Letter -->
 <div class="block-card">
