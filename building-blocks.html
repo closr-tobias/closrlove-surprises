@@ -300,6 +300,194 @@
 })();
 </script>
 
+
+<!-- BLOCK: Scratch to Reveal -->
+<div class="block-card">
+  <div class="block-preview" id="scratch-preview">
+    <style>
+      #scratch-preview {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        user-select: none; -webkit-user-select: none; touch-action: none;
+        font-family: 'Inter', sans-serif;
+      }
+      #scratch-preview .scratch-container {
+        position: relative; width: 280px; height: 200px; border-radius: 16px; overflow: hidden;
+        box-shadow: 0 0 30px rgba(255,105,180,0.15);
+      }
+      #scratch-preview .scratch-reveal {
+        position: absolute; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 24px;
+        background: radial-gradient(ellipse at center, #1a0a20, #0a0a12);
+      }
+      #scratch-preview .scratch-reveal .reveal-to {
+        font-size: 0.65rem; color: #ff69b455; margin-bottom: 8px; letter-spacing: 2px; text-transform: uppercase;
+      }
+      #scratch-preview .scratch-reveal .reveal-msg {
+        font-family: 'Playfair Display', serif; font-size: 1.05rem; color: #ff69b4;
+        text-align: center; line-height: 1.6; font-style: italic;
+      }
+      #scratch-preview .scratch-reveal .reveal-from {
+        font-size: 0.7rem; color: #7aafcc88; margin-top: 12px;
+      }
+      #scratch-preview canvas.scratch-surface {
+        position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; border-radius: 16px;
+      }
+      #scratch-preview .scratch-hint {
+        font-size: 0.7rem; color: #ffffff30; margin-top: 14px; text-align: center;
+        transition: opacity 0.5s;
+      }
+      #scratch-preview .scratch-pct {
+        font-size: 0.6rem; color: #c9a84c55; margin-top: 6px; transition: opacity 0.5s;
+      }
+      #scratch-preview .sparkle {
+        position: absolute; width: 4px; height: 4px; background: #c9a84c; border-radius: 50%;
+        pointer-events: none; animation: scratchSparkle 0.6s ease-out forwards;
+      }
+      @keyframes scratchSparkle {
+        0% { opacity: 1; transform: scale(1) translate(0,0); }
+        100% { opacity: 0; transform: scale(0) translate(var(--sx), var(--sy)); }
+      }
+    </style>
+    <div class="scratch-container" id="scratch-cont">
+      <div class="scratch-reveal">
+        <div class="reveal-to"><!-- SLOT: recipient_label --> for you, my love <!-- /SLOT --></div>
+        <div class="reveal-msg"><!-- SLOT: ai_reveal_message --> The way you laugh when you think nobody's watching is my favorite sound in any universe <!-- /SLOT --></div>
+        <div class="reveal-from"><!-- SLOT: sender_signature --> — with all my heart <!-- /SLOT --></div>
+      </div>
+      <canvas class="scratch-surface" id="scratch-canvas"></canvas>
+    </div>
+    <div class="scratch-hint" id="scratch-hint">scratch to reveal your surprise ✨</div>
+    <div class="scratch-pct" id="scratch-pct"></div>
+  </div>
+  <div class="block-info">
+    <h3>✨ Scratch to Reveal</h3>
+    <p>Drag to scratch off a golden surface and uncover a personalized AI message. Sparkle particles fly as you scratch. Once enough is revealed, the surface fades away. Works at any data level — low data gets a sweet compliment, deep data references specific memories and inside jokes.</p>
+    <span class="tier tier-glow">Glow</span>
+    <div class="categories">Categories: Love Letter, Inside Joke, Hype Up, Celebration, Challenge, Comfort</div>
+    <div class="slots">AI Slots: recipient_label, ai_reveal_message, sender_signature</div>
+    <div class="date">March 8, 2026</div>
+  </div>
+</div>
+<script>
+(function(){
+  var canvas = document.getElementById('scratch-canvas');
+  var cont = document.getElementById('scratch-cont');
+  var hint = document.getElementById('scratch-hint');
+  var pctEl = document.getElementById('scratch-pct');
+  var ctx = canvas.getContext('2d');
+  var revealed = false;
+  var rect = cont.getBoundingClientRect();
+  canvas.width = rect.width * 2;
+  canvas.height = rect.height * 2;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(2,2);
+
+  // Draw golden scratch surface
+  var grd = ctx.createLinearGradient(0,0,rect.width,rect.height);
+  grd.addColorStop(0,'#c9a84c');
+  grd.addColorStop(0.3,'#e8d48b');
+  grd.addColorStop(0.5,'#c9a84c');
+  grd.addColorStop(0.7,'#a8893a');
+  grd.addColorStop(1,'#e8d48b');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0,0,rect.width,rect.height);
+
+  // Subtle pattern
+  ctx.globalAlpha = 0.08;
+  for(var i=0;i<200;i++){
+    var x=Math.random()*rect.width, y=Math.random()*rect.height;
+    ctx.beginPath();ctx.arc(x,y,Math.random()*3+0.5,0,Math.PI*2);
+    ctx.fillStyle='#fff';ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // Center text
+  ctx.fillStyle='#8a7030';
+  ctx.font='600 14px Inter, sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('🎁',rect.width/2,rect.height/2-8);
+  ctx.font='500 11px Inter, sans-serif';
+  ctx.fillText('scratch me',rect.width/2,rect.height/2+12);
+
+  ctx.globalCompositeOperation='destination-out';
+  var scratching=false;
+  var lastX,lastY;
+
+  function getPos(e){
+    var r=canvas.getBoundingClientRect();
+    var t=e.touches?e.touches[0]:e;
+    return{x:t.clientX-r.left,y:t.clientY-r.top};
+  }
+
+  function sparkle(x,y){
+    for(var i=0;i<3;i++){
+      var s=document.createElement('div');
+      s.className='sparkle';
+      s.style.left=(x+cont.offsetLeft-2)+'px';
+      s.style.top=(y+cont.offsetTop-2)+'px';
+      s.style.setProperty('--sx',(Math.random()*30-15)+'px');
+      s.style.setProperty('--sy',(Math.random()*30-15)+'px');
+      s.style.background=Math.random()>0.5?'#c9a84c':'#e8d48b';
+      var parent=document.getElementById('scratch-preview');
+      parent.appendChild(s);
+      setTimeout(function(el){el.remove()},600,s);
+    }
+  }
+
+  function scratch(e){
+    e.preventDefault();
+    if(!scratching)return;
+    var p=getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(lastX,lastY);
+    ctx.lineTo(p.x,p.y);
+    ctx.lineWidth=28;
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    ctx.stroke();
+    lastX=p.x;lastY=p.y;
+    sparkle(p.x,p.y);
+    checkReveal();
+  }
+
+  function startScratch(e){
+    e.preventDefault();
+    scratching=true;
+    var p=getPos(e);
+    lastX=p.x;lastY=p.y;
+    hint.style.opacity='0';
+  }
+
+  function stopScratch(){scratching=false;}
+
+  function checkReveal(){
+    if(revealed)return;
+    var w=canvas.width,h=canvas.height;
+    var data=ctx.getImageData(0,0,w,h).data;
+    var total=w*h,clear=0;
+    for(var i=3;i<data.length;i+=16){if(data[i]===0)clear++;}
+    var pct=Math.round(clear/(total/4)*100);
+    pctEl.textContent=pct+'% revealed';
+    if(pct>55){
+      revealed=true;
+      canvas.style.transition='opacity 0.8s';
+      canvas.style.opacity='0';
+      pctEl.style.opacity='0';
+      setTimeout(function(){canvas.style.display='none';},800);
+    }
+  }
+
+  canvas.addEventListener('mousedown',startScratch);
+  canvas.addEventListener('mousemove',scratch);
+  canvas.addEventListener('mouseup',stopScratch);
+  canvas.addEventListener('mouseleave',stopScratch);
+  canvas.addEventListener('touchstart',startScratch,{passive:false});
+  canvas.addEventListener('touchmove',scratch,{passive:false});
+  canvas.addEventListener('touchend',stopScratch);
+})();
+</script>
+
 <!-- BLOCKS_END -->
 <!-- BLOCK: Northern Lights Love Letter -->
 <div class="block-card">
