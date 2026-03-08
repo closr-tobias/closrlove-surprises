@@ -79,596 +79,84 @@
 
 <div class="header">
   <h1>Surprise Building Blocks</h1>
-  <p>Template components for Closr surprises — <span class="count" id="count">0</span> blocks and counting</p>
-  <p class="sub">Each block has content slots the AI fills with couple-specific data. These are the actual surprise delivery components.</p>
+  <p>Scene components for Closr surprises — <span class="count" id="count">0</span> blocks and counting</p>
+  <p class="sub">Each block is one scene in a surprise. A surprise is a short film. A block is one scene in that film.</p>
 </div>
 
 <div class="blocks-grid" id="blocks">
 <!-- BLOCKS_START -->
 
-<!-- BLOCK: Heartbeat Sync -->
+<!-- BLOCK: Memory Polaroid -->
 <div class="block-card">
-  <div class="block-preview" id="heartbeat-sync-preview">
+  <div class="block-preview" id="memory-polaroid">
     <style>
-      #heartbeat-sync-preview { cursor: pointer; user-select: none; -webkit-user-select: none; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-      #heartbeat-sync-preview canvas { width: 100%; height: 220px; }
-      #heartbeat-sync-preview .hb-message {
+      #memory-polaroid {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 24px;
+        background: #0a0a12;
+      }
+      #memory-polaroid .polaroid {
+        background: #f5f0e8;
+        padding: 12px 12px 40px 12px;
+        border-radius: 2px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 60px rgba(255,105,180,0.06);
+        transform: rotate(-2deg);
+        max-width: 240px;
+        animation: polaroidDrop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      }
+      #memory-polaroid .polaroid-img {
+        width: 100%; aspect-ratio: 1; object-fit: cover;
+        background: #ddd;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 3rem;
+        border-radius: 1px;
+      }
+      #memory-polaroid .polaroid-caption {
         font-family: 'Playfair Display', serif;
-        font-size: 1rem;
-        color: #ff69b4;
-        text-align: center;
-        padding: 0 20px;
-        opacity: 0.9;
         font-style: italic;
-        margin-bottom: 8px;
-      }
-      #heartbeat-sync-preview .hb-names {
-        font-size: 0.75rem;
-        color: #ff69b466;
+        font-size: 0.8rem;
+        color: #3a3028;
         text-align: center;
-        margin-bottom: 12px;
+        margin-top: 10px;
+        line-height: 1.5;
       }
-      #heartbeat-sync-preview .hb-hint {
-        font-size: 0.65rem;
-        color: #ffffff33;
-        text-align: center;
-        position: absolute;
-        bottom: 10px;
-        left: 0; right: 0;
-      }
-    </style>
-    <div class="hb-names"><!-- SLOT: partner_names --> Tobias & Erica <!-- /SLOT --></div>
-    <div class="hb-message"><!-- SLOT: ai_love_message --> Every heartbeat is a love letter my body writes for you <!-- /SLOT --></div>
-    <canvas id="hb-canvas"></canvas>
-    <div class="hb-hint">tap to set your heartbeat</div>
-  </div>
-  <div class="block-info">
-    <h3>💓 Heartbeat Sync</h3>
-    <p>User taps to set their heartbeat rhythm. A glowing heart pulses to their tempo with a live EKG trace. The AI writes a love message based on the couple's relationship data. Works at any data level — low data gets a sweet generic message, deep data references their specific moments.</p>
-    <span class="tier tier-glow">Glow</span>
-    <div class="categories">Categories: Love Letter, Comfort, Appreciation</div>
-    <div class="slots">AI Slots: partner_names, ai_love_message</div>
-    <div class="date">March 7, 2026</div>
-  </div>
-</div>
-<script>
-(function(){
-  var wrap = document.getElementById('heartbeat-sync-preview');
-  var c = document.getElementById('hb-canvas');
-  var ctx = c.getContext('2d');
-  var W, H, taps = [], bpm = 72, phase = 0, traceX = 0;
-  function resize() {
-    var r = c.getBoundingClientRect();
-    W = c.width = Math.round(r.width * 2);
-    H = c.height = Math.round(r.height * 2);
-    traceX = 0;
-  }
-  resize(); window.addEventListener('resize', resize);
-  wrap.addEventListener('click', function() {
-    var now = Date.now(); taps.push(now);
-    if (taps.length > 8) taps.shift();
-    if (taps.length >= 3) {
-      var intervals = [];
-      for (var i = 1; i < taps.length; i++) intervals.push(taps[i] - taps[i-1]);
-      var avg = intervals.reduce(function(a,b){return a+b},0) / intervals.length;
-      bpm = Math.min(180, Math.max(40, 60000 / avg));
-    }
-  });
-  function ekgY(t) {
-    t = t % 1;
-    if (t < 0.1) return 0;
-    if (t < 0.15) return Math.sin((t-0.1)*Math.PI/0.05) * 0.15;
-    if (t < 0.2) return 0;
-    if (t < 0.25) return -0.12;
-    if (t < 0.3) return 0.85;
-    if (t < 0.35) return -0.25;
-    if (t < 0.4) return 0;
-    if (t < 0.5) return Math.sin((t-0.4)*Math.PI/0.1) * 0.08;
-    return 0;
-  }
-  function drawHeart(cx, cy, size, alpha) {
-    ctx.save(); ctx.translate(cx, cy); ctx.scale(size, size);
-    ctx.beginPath(); ctx.moveTo(0, -0.3);
-    ctx.bezierCurveTo(-0.5, -0.8, -1, -0.2, 0, 0.6);
-    ctx.moveTo(0, -0.3);
-    ctx.bezierCurveTo(0.5, -0.8, 1, -0.2, 0, 0.6);
-    ctx.fillStyle = 'rgba(255,105,180,' + alpha + ')';
-    ctx.shadowColor = '#ff69b4'; ctx.shadowBlur = size * 0.6;
-    ctx.fill(); ctx.restore();
-  }
-  var last = performance.now();
-  function frame(ts) {
-    var dt = (ts - last) / 1000; last = ts;
-    phase += dt * (bpm / 60);
-    ctx.fillStyle = 'rgba(10,10,18,0.18)'; ctx.fillRect(0, 0, W, H);
-    var beat = phase % 1;
-    var pulse = beat < 0.15 ? 1 + 0.35 * Math.sin(beat / 0.15 * Math.PI) : 1;
-    var heartAlpha = beat < 0.15 ? 0.9 : 0.4;
-    drawHeart(W/2, H*0.35, 55 * pulse, heartAlpha);
-    ctx.font = '500 20px Inter, sans-serif'; ctx.fillStyle = '#ff69b444'; ctx.textAlign = 'center';
-    ctx.shadowBlur = 0; ctx.fillText(Math.round(bpm) + ' BPM', W/2, H*0.08 + 20);
-    var speed = W * 0.35;
-    traceX += dt * speed;
-    if (traceX > W) traceX = 0;
-    var baseY = H * 0.78, amp = H * 0.14;
-    var ekg = ekgY(phase % 1);
-    var x = traceX, y = baseY - ekg * amp;
-    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2);
-    ctx.fillStyle = '#ff69b4'; ctx.shadowColor = '#ff69b4'; ctx.shadowBlur = 10; ctx.fill();
-    ctx.fillStyle = '#0a0a12'; ctx.shadowBlur = 0;
-    ctx.fillRect(x + 6, baseY - amp - 10, 50, amp * 2 + 20);
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-})();
-</script>
-
-<!-- BLOCK: The Distance Between Us -->
-<div class="block-card">
-  <div class="block-preview" id="distance-preview">
-    <style>
-      #distance-preview { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: default; user-select: none; -webkit-user-select: none; }
-      #distance-preview canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-      #distance-preview .dp-overlay { position: relative; z-index: 2; text-align: center; padding: 16px 20px; width: 100%; }
-      #distance-preview .dp-cities { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-      #distance-preview .dp-city { font-family: 'Inter', sans-serif; font-size: 0.6rem; color: rgba(122,175,204,0.7); letter-spacing: 2px; text-transform: uppercase; }
-      #distance-preview .dp-city .dp-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ff69b4; margin-bottom: -1px; box-shadow: 0 0 8px #ff69b4; }
-      #distance-preview .dp-city:last-child .dp-dot { background: #7aafcc; box-shadow: 0 0 8px #7aafcc; }
-      #distance-preview .dp-distance { font-family: 'Playfair Display', serif; font-size: 2rem; background: linear-gradient(135deg, #ff69b4, #7aafcc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 8px 0 2px; font-weight: 700; }
-      #distance-preview .dp-unit { font-family: 'Inter', sans-serif; font-size: 0.6rem; color: #ffffff33; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px; }
-      #distance-preview .dp-message { font-family: 'Playfair Display', serif; font-size: 0.85rem; color: rgba(255,255,255,0.85); font-style: italic; line-height: 1.6; max-width: 280px; margin: 0 auto 8px; }
-      #distance-preview .dp-closing { font-family: 'Inter', sans-serif; font-size: 0.65rem; color: rgba(255,105,180,0.5); margin-top: 6px; }
-      #distance-preview .dp-countdown { font-family: 'Inter', sans-serif; font-size: 0.55rem; color: rgba(122,175,204,0.4); margin-top: 10px; letter-spacing: 1px; }
-    </style>
-    <canvas id="distance-canvas"></canvas>
-    <div class="dp-overlay">
-      <div class="dp-cities">
-        <div class="dp-city"><span class="dp-dot"></span> <!-- SLOT: city_1 -->Umea, Sweden<!-- /SLOT --></div>
-        <div class="dp-city"><!-- SLOT: city_2 -->San Diego, CA<!-- /SLOT --> <span class="dp-dot"></span></div>
-      </div>
-      <div class="dp-distance"><!-- SLOT: distance_value -->8,421<!-- /SLOT --></div>
-      <div class="dp-unit">kilometers apart</div>
-      <div class="dp-message"><!-- SLOT: ai_distance_message -->Eight thousand kilometers of ocean and sky, and not a single one of them can make me forget the way you say my name when you are half asleep<!-- /SLOT --></div>
-      <div class="dp-closing"><!-- SLOT: sender_closing -->— T, counting every mile<!-- /SLOT --></div>
-      <div class="dp-countdown"><!-- SLOT: countdown_text -->47 days until I hold you again<!-- /SLOT --></div>
-    </div>
-  </div>
-  <div class="block-info">
-    <h3>🌍 The Distance Between Us</h3>
-    <p>Two glowing points pulse on opposite sides connected by flowing particles that drift like longing across the void. The distance number anchors the emotion while the AI writes a message that transforms miles into meaning. Low data: poetic distance metaphors. Deep data: references the specific ache of their separation — the timezone math, the missed dinners, the pillow that smells like them.</p>
-    <span class="tier tier-glow">Glow</span>
-    <div class="categories">Categories: Love Letter, Comfort, Countdown, Future Vision</div>
-    <div class="slots">AI Slots: city_1, city_2, distance_value, ai_distance_message, sender_closing, countdown_text</div>
-    <div class="date">March 7, 2026</div>
-  </div>
-</div>
-<script>
-(function(){
-  var c = document.getElementById('distance-canvas');
-  var ctx = c.getContext('2d');
-  var W, H;
-  function resize(){
-    var r = c.parentElement.getBoundingClientRect();
-    W = c.width = Math.round(r.width * 2);
-    H = c.height = Math.round(r.height * 2);
-  }
-  resize(); window.addEventListener('resize', resize);
-  var particles = [];
-  for(var i = 0; i < 60; i++){
-    particles.push({ t: Math.random(), speed: 0.002 + Math.random() * 0.004, offset: (Math.random() - 0.5) * 0.15, size: Math.random() * 2 + 0.5, hue: Math.random() > 0.5 ? 330 : 200, alpha: 0.3 + Math.random() * 0.5 });
-  }
-  var stars = [];
-  for(var i = 0; i < 50; i++) stars.push({x:Math.random(),y:Math.random(),s:Math.random()*1.2+0.3,b:Math.random()*Math.PI*2});
-  var time = 0;
-  var p1 = {x: 0.08, y: 0.18}, p2 = {x: 0.92, y: 0.18};
-  function frame(){
-    time += 0.01;
-    ctx.fillStyle = '#0a0a12'; ctx.fillRect(0,0,W,H);
-    for(var i=0;i<stars.length;i++){
-      var s=stars[i], tw = 0.3 + 0.5 * Math.abs(Math.sin(time*1.2 + s.b));
-      ctx.beginPath(); ctx.arc(s.x*W, s.y*H, s.s, 0, Math.PI*2);
-      ctx.fillStyle = 'rgba(255,255,255,' + tw * 0.4 + ')'; ctx.fill();
-    }
-    for(var g = 0; g < 2; g++){
-      var p = g === 0 ? p1 : p2;
-      var pulse = 1 + 0.2 * Math.sin(time * 2 + g * Math.PI);
-      var gx = p.x * W, gy = p.y * H;
-      var grad = ctx.createRadialGradient(gx, gy, 0, gx, gy, 30 * pulse);
-      grad.addColorStop(0, g === 0 ? 'rgba(255,105,180,0.6)' : 'rgba(122,175,204,0.6)');
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.beginPath(); ctx.arc(gx, gy, 30 * pulse, 0, Math.PI*2); ctx.fillStyle = grad; ctx.fill();
-      ctx.beginPath(); ctx.arc(gx, gy, 4, 0, Math.PI*2);
-      ctx.fillStyle = g === 0 ? '#ff69b4' : '#7aafcc';
-      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 15; ctx.fill(); ctx.shadowBlur = 0;
-    }
-    ctx.beginPath(); ctx.moveTo(p1.x*W, p1.y*H);
-    var cpY = p1.y * H + H * 0.08;
-    ctx.quadraticCurveTo(W*0.5, cpY, p2.x*W, p2.y*H);
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1; ctx.stroke();
-    for(var i = 0; i < particles.length; i++){
-      var pt = particles[i]; pt.t += pt.speed; if(pt.t > 1) pt.t -= 1;
-      var t2 = pt.t, mt = 1-t2;
-      var px = mt*mt*(p1.x*W) + 2*mt*t2*(W*0.5) + t2*t2*(p2.x*W);
-      var py = mt*mt*(p1.y*H) + 2*mt*t2*cpY + t2*t2*(p2.y*H) + Math.sin(time*3+i)*pt.offset*H;
-      var fade = Math.min(t2, 1-t2)*5;
-      ctx.beginPath(); ctx.arc(px, py, pt.size, 0, Math.PI*2);
-      ctx.fillStyle = 'hsla('+pt.hue+',80%,70%,'+pt.alpha*Math.min(fade,1)+')'; ctx.fill();
-    }
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-})();
-</script>
-
-
-<!-- BLOCK: Scratch to Reveal -->
-<div class="block-card">
-  <div class="block-preview" id="scratch-preview">
-    <style>
-      #scratch-preview {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        user-select: none; -webkit-user-select: none; touch-action: none;
+      #memory-polaroid .polaroid-date {
         font-family: 'Inter', sans-serif;
+        font-size: 0.55rem;
+        color: #a09888;
+        text-align: center;
+        margin-top: 6px;
       }
-      #scratch-preview .scratch-container {
-        position: relative; width: 280px; height: 200px; border-radius: 16px; overflow: hidden;
-        box-shadow: 0 0 30px rgba(255,105,180,0.15);
+      #memory-polaroid .scene-context {
+        font-size: 0.7rem;
+        color: #ffffff20;
+        margin-top: 16px;
+        text-align: center;
+        font-style: italic;
       }
-      #scratch-preview .scratch-reveal {
-        position: absolute; inset: 0; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; padding: 24px;
-        background: radial-gradient(ellipse at center, #1a0a20, #0a0a12);
-      }
-      #scratch-preview .scratch-reveal .reveal-to {
-        font-size: 0.65rem; color: #ff69b455; margin-bottom: 8px; letter-spacing: 2px; text-transform: uppercase;
-      }
-      #scratch-preview .scratch-reveal .reveal-msg {
-        font-family: 'Playfair Display', serif; font-size: 1.05rem; color: #ff69b4;
-        text-align: center; line-height: 1.6; font-style: italic;
-      }
-      #scratch-preview .scratch-reveal .reveal-from {
-        font-size: 0.7rem; color: #7aafcc88; margin-top: 12px;
-      }
-      #scratch-preview canvas.scratch-surface {
-        position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; border-radius: 16px;
-      }
-      #scratch-preview .scratch-hint {
-        font-size: 0.7rem; color: #ffffff30; margin-top: 14px; text-align: center;
-        transition: opacity 0.5s;
-      }
-      #scratch-preview .scratch-pct {
-        font-size: 0.6rem; color: #c9a84c55; margin-top: 6px; transition: opacity 0.5s;
-      }
-      #scratch-preview .sparkle {
-        position: absolute; width: 4px; height: 4px; background: #c9a84c; border-radius: 50%;
-        pointer-events: none; animation: scratchSparkle 0.6s ease-out forwards;
-      }
-      @keyframes scratchSparkle {
-        0% { opacity: 1; transform: scale(1) translate(0,0); }
-        100% { opacity: 0; transform: scale(0) translate(var(--sx), var(--sy)); }
+      @keyframes polaroidDrop {
+        from { opacity: 0; transform: rotate(-6deg) translateY(-30px) scale(0.9); }
+        to { opacity: 1; transform: rotate(-2deg) translateY(0) scale(1); }
       }
     </style>
-    <div class="scratch-container" id="scratch-cont">
-      <div class="scratch-reveal">
-        <div class="reveal-to"><!-- SLOT: recipient_label --> for you, my love <!-- /SLOT --></div>
-        <div class="reveal-msg"><!-- SLOT: ai_reveal_message --> The way you laugh when you think nobody's watching is my favorite sound in any universe <!-- /SLOT --></div>
-        <div class="reveal-from"><!-- SLOT: sender_signature --> — with all my heart <!-- /SLOT --></div>
-      </div>
-      <canvas class="scratch-surface" id="scratch-canvas"></canvas>
+    <div class="polaroid">
+      <div class="polaroid-img"><!-- SLOT: couple_photo --> 🌅 <!-- /SLOT --></div>
+      <div class="polaroid-caption"><!-- SLOT: ai_memory_caption --> The sunset in Hawaii when you said "I could do this forever" and meant it <!-- /SLOT --></div>
+      <div class="polaroid-date"><!-- SLOT: memory_date --> January 2026 <!-- /SLOT --></div>
     </div>
-    <div class="scratch-hint" id="scratch-hint">scratch to reveal your surprise ✨</div>
-    <div class="scratch-pct" id="scratch-pct"></div>
+    <div class="scene-context"><!-- SLOT: ai_scene_transition --> that was the night everything changed <!-- /SLOT --></div>
   </div>
   <div class="block-info">
-    <h3>✨ Scratch to Reveal</h3>
-    <p>Drag to scratch off a golden surface and uncover a personalized AI message. Sparkle particles fly as you scratch. Once enough is revealed, the surface fades away. Works at any data level — low data gets a sweet compliment, deep data references specific memories and inside jokes.</p>
-    <span class="tier tier-glow">Glow</span>
-    <div class="categories">Categories: Love Letter, Inside Joke, Hype Up, Celebration, Challenge, Comfort</div>
-    <div class="slots">AI Slots: recipient_label, ai_reveal_message, sender_signature</div>
-    <div class="date">March 8, 2026</div>
-  </div>
-</div>
-<script>
-(function(){
-  var canvas = document.getElementById('scratch-canvas');
-  var cont = document.getElementById('scratch-cont');
-  var hint = document.getElementById('scratch-hint');
-  var pctEl = document.getElementById('scratch-pct');
-  var ctx = canvas.getContext('2d');
-  var revealed = false;
-  var rect = cont.getBoundingClientRect();
-  canvas.width = rect.width * 2;
-  canvas.height = rect.height * 2;
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = rect.height + 'px';
-  ctx.scale(2,2);
-
-  // Draw golden scratch surface
-  var grd = ctx.createLinearGradient(0,0,rect.width,rect.height);
-  grd.addColorStop(0,'#c9a84c');
-  grd.addColorStop(0.3,'#e8d48b');
-  grd.addColorStop(0.5,'#c9a84c');
-  grd.addColorStop(0.7,'#a8893a');
-  grd.addColorStop(1,'#e8d48b');
-  ctx.fillStyle = grd;
-  ctx.fillRect(0,0,rect.width,rect.height);
-
-  // Subtle pattern
-  ctx.globalAlpha = 0.08;
-  for(var i=0;i<200;i++){
-    var x=Math.random()*rect.width, y=Math.random()*rect.height;
-    ctx.beginPath();ctx.arc(x,y,Math.random()*3+0.5,0,Math.PI*2);
-    ctx.fillStyle='#fff';ctx.fill();
-  }
-  ctx.globalAlpha=1;
-
-  // Center text
-  ctx.fillStyle='#8a7030';
-  ctx.font='600 14px Inter, sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText('🎁',rect.width/2,rect.height/2-8);
-  ctx.font='500 11px Inter, sans-serif';
-  ctx.fillText('scratch me',rect.width/2,rect.height/2+12);
-
-  ctx.globalCompositeOperation='destination-out';
-  var scratching=false;
-  var lastX,lastY;
-
-  function getPos(e){
-    var r=canvas.getBoundingClientRect();
-    var t=e.touches?e.touches[0]:e;
-    return{x:t.clientX-r.left,y:t.clientY-r.top};
-  }
-
-  function sparkle(x,y){
-    for(var i=0;i<3;i++){
-      var s=document.createElement('div');
-      s.className='sparkle';
-      s.style.left=(x+cont.offsetLeft-2)+'px';
-      s.style.top=(y+cont.offsetTop-2)+'px';
-      s.style.setProperty('--sx',(Math.random()*30-15)+'px');
-      s.style.setProperty('--sy',(Math.random()*30-15)+'px');
-      s.style.background=Math.random()>0.5?'#c9a84c':'#e8d48b';
-      var parent=document.getElementById('scratch-preview');
-      parent.appendChild(s);
-      setTimeout(function(el){el.remove()},600,s);
-    }
-  }
-
-  function scratch(e){
-    e.preventDefault();
-    if(!scratching)return;
-    var p=getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(lastX,lastY);
-    ctx.lineTo(p.x,p.y);
-    ctx.lineWidth=28;
-    ctx.lineCap='round';
-    ctx.lineJoin='round';
-    ctx.stroke();
-    lastX=p.x;lastY=p.y;
-    sparkle(p.x,p.y);
-    checkReveal();
-  }
-
-  function startScratch(e){
-    e.preventDefault();
-    scratching=true;
-    var p=getPos(e);
-    lastX=p.x;lastY=p.y;
-    hint.style.opacity='0';
-  }
-
-  function stopScratch(){scratching=false;}
-
-  function checkReveal(){
-    if(revealed)return;
-    var w=canvas.width,h=canvas.height;
-    var data=ctx.getImageData(0,0,w,h).data;
-    var total=w*h,clear=0;
-    for(var i=3;i<data.length;i+=16){if(data[i]===0)clear++;}
-    var pct=Math.round(clear/(total/4)*100);
-    pctEl.textContent=pct+'% revealed';
-    if(pct>55){
-      revealed=true;
-      canvas.style.transition='opacity 0.8s';
-      canvas.style.opacity='0';
-      pctEl.style.opacity='0';
-      setTimeout(function(){canvas.style.display='none';},800);
-    }
-  }
-
-  canvas.addEventListener('mousedown',startScratch);
-  canvas.addEventListener('mousemove',scratch);
-  canvas.addEventListener('mouseup',stopScratch);
-  canvas.addEventListener('mouseleave',stopScratch);
-  canvas.addEventListener('touchstart',startScratch,{passive:false});
-  canvas.addEventListener('touchmove',scratch,{passive:false});
-  canvas.addEventListener('touchend',stopScratch);
-})();
-</script>
-
-
-<!-- BLOCK: Love Letter Scene -->
-<div class="block-card">
-  <div class="block-preview" id="love-letter-scene">
-    <style>
-      #love-letter-scene {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        padding: 32px 28px; text-align: center;
-        background: radial-gradient(ellipse at 50% 30%, #1a0a1a, #0a0a12);
-      }
-      #love-letter-scene .ll-to {
-        font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase;
-        color: #ff69b444; margin-bottom: 20px;
-        animation: llFade 1.2s ease-out both;
-      }
-      #love-letter-scene .ll-body {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.15rem; font-style: italic; line-height: 1.8;
-        color: #e8d0e0;
-        max-width: 300px;
-        animation: llFade 1.5s ease-out 0.3s both;
-      }
-      #love-letter-scene .ll-sign {
-        font-size: 0.75rem; color: #7aafcc66;
-        margin-top: 24px;
-        animation: llFade 1.2s ease-out 0.8s both;
-      }
-      @keyframes llFade {
-        from { opacity: 0; transform: translateY(12px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-    </style>
-    <div class="ll-to"><!-- SLOT: recipient_name --> Erica <!-- /SLOT --></div>
-    <div class="ll-body"><!-- SLOT: ai_love_letter --> I keep replaying the moment you fell asleep on my shoulder in Hawaii, your hair smelled like plumeria and the ocean, and I remember thinking, this is what peace feels like <!-- /SLOT --></div>
-    <div class="ll-sign"><!-- SLOT: sender_name --> Tobias <!-- /SLOT --></div>
-  </div>
-  <div class="block-info">
-    <h3>💌 Love Letter</h3>
-    <p>A single scene of intimate typography. The AI writes one heartfelt passage based on the couple's memories, language, and depth. No interaction needed — the words do everything. At low data it's a beautiful compliment. At deep data it references specific moments only they would know.</p>
+    <h3>📸 Memory Polaroid</h3>
+    <p>One photo, one memory, rendered as a slightly tilted polaroid that drops into frame. The AI writes the caption from the couple's shared memory and adds a soft transition line leading into the next scene. The photo slot accepts the couple's actual uploaded photo.</p>
     <span class="tier tier-spark">Spark</span>
-    <div class="categories">Type: Love Letter</div>
-    <div class="slots">AI Slots: recipient_name, ai_love_letter, sender_name</div>
+    <div class="categories">Type: Memory Replay</div>
+    <div class="slots">AI Slots: couple_photo, ai_memory_caption, memory_date, ai_scene_transition</div>
     <div class="date">March 8, 2026</div>
   </div>
 </div>
-
 
 <!-- BLOCKS_END -->
-<!-- BLOCK: Northern Lights Love Letter -->
-<div class="block-card">
-  <div class="block-preview" id="aurora-letter-preview">
-    <style>
-      #aurora-letter-preview { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-      #aurora-letter-preview canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-      #aurora-letter-preview .al-content { position: relative; z-index: 2; text-align: center; padding: 20px 24px; width: 100%; }
-      #aurora-letter-preview .al-to {
-        font-family: 'Inter', sans-serif; font-size: 0.65rem;
-        color: rgba(122,175,204,0.6); letter-spacing: 3px;
-        text-transform: uppercase; margin-bottom: 12px;
-      }
-      #aurora-letter-preview .al-line {
-        font-family: 'Playfair Display', serif; font-size: 0.95rem;
-        color: rgba(255,255,255,0); line-height: 1.8;
-        transition: color 1.5s ease; font-style: italic;
-      }
-      #aurora-letter-preview .al-line.visible { color: rgba(255,255,255,0.88); }
-      #aurora-letter-preview .al-from {
-        font-family: 'Inter', sans-serif; font-size: 0.7rem;
-        color: rgba(255,105,180,0); margin-top: 16px;
-        transition: color 2s ease 0.5s;
-      }
-      #aurora-letter-preview .al-from.visible { color: rgba(255,105,180,0.7); }
-      #aurora-letter-preview .al-hint {
-        position: absolute; bottom: 8px; left: 0; right: 0;
-        text-align: center; font-size: 0.6rem; color: #ffffff22; z-index: 3;
-      }
-    </style>
-    <canvas id="aurora-canvas"></canvas>
-    <div class="al-content">
-      <div class="al-to"><!-- SLOT: recipient_label -->A letter for Erica<!-- /SLOT --></div>
-      <div class="al-line" data-delay="800"><!-- SLOT: letter_line_1 -->I still think about that night in the hotel lobby<!-- /SLOT --></div>
-      <div class="al-line" data-delay="2400"><!-- SLOT: letter_line_2 -->when you laughed so hard you knocked over your coffee<!-- /SLOT --></div>
-      <div class="al-line" data-delay="4000"><!-- SLOT: letter_line_3 -->and I knew right then — this is the laugh I want to hear forever<!-- /SLOT --></div>
-      <div class="al-line" data-delay="5600"><!-- SLOT: letter_line_4 -->You make the ordinary feel like a miracle<!-- /SLOT --></div>
-      <div class="al-line" data-delay="7200"><!-- SLOT: letter_line_5 -->and I will spend every day earning that smile<!-- /SLOT --></div>
-      <div class="al-from" data-delay="8800"><!-- SLOT: sender_sign_off -->Forever yours, Tobias<!-- /SLOT --></div>
-    </div>
-    <div class="al-hint">watch the sky</div>
-  </div>
-  <div class="block-info">
-    <h3>🌌 Northern Lights Love Letter</h3>
-    <p>A shimmering aurora borealis dances across the sky while a love letter fades in line by line. Each line timed to let the reader absorb it before the next appears. The AI crafts deeply personal lines referencing real memories. Low data: poetic and universal. Deep data: gut-punch specific moments only they would know.</p>
-    <span class="tier tier-grand">Grand Gesture</span>
-    <div class="categories">Categories: Love Letter, Comfort, Bedtime Story, Memory Replay</div>
-    <div class="slots">AI Slots: recipient_label, letter_line_1–5, sender_sign_off</div>
-    <div class="date">March 7, 2026</div>
-  </div>
-</div>
-<script>
-(function(){
-  var c = document.getElementById('aurora-canvas');
-  var ctx = c.getContext('2d');
-  var W, H;
-  function resize(){
-    var r = c.parentElement.getBoundingClientRect();
-    W = c.width = Math.round(r.width * 2);
-    H = c.height = Math.round(r.height * 2);
-  }
-  resize(); window.addEventListener('resize', resize);
-
-  var stars = [];
-  for(var i = 0; i < 80; i++) stars.push({x:Math.random(),y:Math.random(),s:Math.random()*1.5+0.5,b:Math.random()*Math.PI*2});
-
-  var bands = [
-    {hue:160, speed:0.3, amp:0.12, yBase:0.25, width:0.18},
-    {hue:280, speed:0.2, amp:0.08, yBase:0.35, width:0.14},
-    {hue:120, speed:0.25, amp:0.10, yBase:0.20, width:0.12},
-    {hue:200, speed:0.15, amp:0.06, yBase:0.30, width:0.10}
-  ];
-
-  var t = 0;
-  function frame(){
-    t += 0.008;
-    ctx.fillStyle = '#0a0a12';
-    ctx.fillRect(0,0,W,H);
-
-    for(var i=0;i<stars.length;i++){
-      var s=stars[i];
-      var twinkle = 0.4 + 0.6 * Math.abs(Math.sin(t*1.5 + s.b));
-      ctx.beginPath();
-      ctx.arc(s.x*W, s.y*H, s.s, 0, Math.PI*2);
-      ctx.fillStyle = 'rgba(255,255,255,' + twinkle * 0.7 + ')';
-      ctx.fill();
-    }
-
-    for(var b=0;b<bands.length;b++){
-      var band = bands[b];
-      ctx.beginPath();
-      for(var x=0; x<=W; x+=4){
-        var nx = x/W;
-        var wave = Math.sin(nx*4 + t*band.speed*3) * band.amp
-                 + Math.sin(nx*7 - t*band.speed*2) * band.amp * 0.5
-                 + Math.sin(nx*2 + t*band.speed*5) * band.amp * 0.3;
-        var y = (band.yBase + wave) * H;
-        if(x===0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.lineTo(W, H*0.7);
-      ctx.lineTo(0, H*0.7);
-      ctx.closePath();
-
-      var grad = ctx.createLinearGradient(0, band.yBase*H - band.width*H, 0, band.yBase*H + band.width*H*2);
-      var alpha = 0.06 + 0.03 * Math.sin(t * band.speed * 2);
-      grad.addColorStop(0, 'hsla(' + band.hue + ',80%,60%,0)');
-      grad.addColorStop(0.3, 'hsla(' + band.hue + ',80%,55%,' + alpha + ')');
-      grad.addColorStop(0.6, 'hsla(' + band.hue + ',70%,50%,' + alpha * 0.7 + ')');
-      grad.addColorStop(1, 'hsla(' + band.hue + ',80%,60%,0)');
-      ctx.fillStyle = grad;
-      ctx.fill();
-    }
-
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-
-  var wrap = document.getElementById('aurora-letter-preview');
-  var lines = wrap.querySelectorAll('.al-line, .al-from');
-  var observer = new IntersectionObserver(function(entries){
-    if(entries[0].isIntersecting){
-      lines.forEach(function(el){
-        var delay = parseInt(el.getAttribute('data-delay')) || 0;
-        setTimeout(function(){ el.classList.add('visible'); }, delay);
-      });
-      observer.disconnect();
-    }
-  }, {threshold: 0.3});
-  observer.observe(wrap);
-})();
-</script>
-
-
 </div>
 
 <script>
