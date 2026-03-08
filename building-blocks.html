@@ -34,7 +34,7 @@
     margin: 0 auto;
     padding: 20px;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: 28px;
   }
   .block-card {
@@ -43,16 +43,21 @@
     border-radius: 16px;
     overflow: hidden;
     transition: transform 0.2s, border-color 0.2s;
+    text-decoration: none;
+    color: inherit;
+    display: block;
   }
   .block-card:hover {
     transform: translateY(-4px);
     border-color: #ff69b4;
   }
-  .block-preview {
+  .block-thumb {
     width: 100%;
-    height: 360px;
-    position: relative;
-    overflow: hidden;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
     background: #0a0a12;
   }
   .block-info {
@@ -70,91 +75,36 @@
   .tier-spark { background: #2a2a3a; color: #aaa; }
   .tier-glow { background: #2a1a30; color: #c77dff; }
   .tier-grand { background: #2a1020; color: #ff69b4; }
-  .block-info .categories { font-size: 0.7rem; color: #555; margin-top: 6px; }
-  .block-info .slots { font-size: 0.7rem; color: #7aafcc; margin-top: 4px; }
+  .block-info .meta { font-size: 0.7rem; color: #555; margin-top: 6px; }
   .block-info .date { font-size: 0.65rem; color: #444; margin-top: 8px; }
+  .try-label {
+    font-size: 0.6rem; color: #ff69b466; letter-spacing: 2px; text-transform: uppercase;
+    margin-top: 8px;
+  }
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Surprise Building Blocks</h1>
-  <p>Scene components for Closr surprises — <span class="count" id="count">0</span> blocks and counting</p>
-  <p class="sub">Each block is one scene in a surprise. A surprise is a short film. A block is one scene in that film.</p>
+  <p>Scene components for Closr surprises — <span class="count" id="count">0</span> blocks</p>
+  <p class="sub">Each block is one scene in a surprise. Tap to try it.</p>
 </div>
 
 <div class="blocks-grid" id="blocks">
 <!-- BLOCKS_START -->
 
-<!-- BLOCK: Memory Polaroid -->
-<div class="block-card">
-  <div class="block-preview" id="memory-polaroid">
-    <style>
-      #memory-polaroid {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        padding: 24px;
-        background: #0a0a12;
-      }
-      #memory-polaroid .polaroid {
-        background: #f5f0e8;
-        padding: 12px 12px 40px 12px;
-        border-radius: 2px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 60px rgba(255,105,180,0.06);
-        transform: rotate(-2deg);
-        max-width: 240px;
-        animation: polaroidDrop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-      }
-      #memory-polaroid .polaroid-img {
-        width: 100%; aspect-ratio: 1; object-fit: cover;
-        background: #ddd;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 3rem;
-        border-radius: 1px;
-      }
-      #memory-polaroid .polaroid-caption {
-        font-family: 'Playfair Display', serif;
-        font-style: italic;
-        font-size: 0.8rem;
-        color: #3a3028;
-        text-align: center;
-        margin-top: 10px;
-        line-height: 1.5;
-      }
-      #memory-polaroid .polaroid-date {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.55rem;
-        color: #a09888;
-        text-align: center;
-        margin-top: 6px;
-      }
-      #memory-polaroid .scene-context {
-        font-size: 0.7rem;
-        color: #ffffff20;
-        margin-top: 16px;
-        text-align: center;
-        font-style: italic;
-      }
-      @keyframes polaroidDrop {
-        from { opacity: 0; transform: rotate(-6deg) translateY(-30px) scale(0.9); }
-        to { opacity: 1; transform: rotate(-2deg) translateY(0) scale(1); }
-      }
-    </style>
-    <div class="polaroid">
-      <div class="polaroid-img"><!-- SLOT: couple_photo --> 🌅 <!-- /SLOT --></div>
-      <div class="polaroid-caption"><!-- SLOT: ai_memory_caption --> The sunset in Hawaii when you said "I could do this forever" and meant it <!-- /SLOT --></div>
-      <div class="polaroid-date"><!-- SLOT: memory_date --> January 2026 <!-- /SLOT --></div>
-    </div>
-    <div class="scene-context"><!-- SLOT: ai_scene_transition --> that was the night everything changed <!-- /SLOT --></div>
-  </div>
+<a class="block-card" href="blocks/memory-polaroid.html">
+  <div class="block-thumb">📸</div>
   <div class="block-info">
-    <h3>📸 Memory Polaroid</h3>
-    <p>One photo, one memory, rendered as a slightly tilted polaroid that drops into frame. The AI writes the caption from the couple's shared memory and adds a soft transition line leading into the next scene. The photo slot accepts the couple's actual uploaded photo.</p>
+    <h3>Memory Polaroid</h3>
+    <p>A photo drops into frame as a tilted polaroid. AI writes the memory caption. Tilt it with your finger.</p>
     <span class="tier tier-spark">Spark</span>
-    <div class="categories">Type: Memory Replay</div>
-    <div class="slots">AI Slots: couple_photo, ai_memory_caption, memory_date, ai_scene_transition</div>
+    <div class="meta">Type: Memory Replay · 4 AI slots</div>
+    <div class="try-label">tap to try →</div>
     <div class="date">March 8, 2026</div>
   </div>
-</div>
+</a>
 
 <!-- BLOCKS_END -->
 </div>
