@@ -32,18 +32,10 @@
     border-radius: 3px;
     box-shadow: 0 6px 30px rgba(0,0,0,0.5);
     display: flex; flex-direction: column;
-    transform-origin: center center;
     will-change: transform;
     cursor: grab;
   }
   .polaroid:active { cursor: grabbing; }
-  .polaroid.gone {
-    transition: transform 0.4s ease-in, opacity 0.4s ease-in;
-    pointer-events: none;
-  }
-  .polaroid.back {
-    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
-  }
 
   .polaroid-img {
     flex: 1;
@@ -88,21 +80,6 @@
     pointer-events: none;
   }
 
-  .scene-transition {
-    position: fixed;
-    top: 40px;
-    left: 0; right: 0;
-    text-align: center;
-    font-size: 0.75rem;
-    color: #ffffff12;
-    font-style: italic;
-    padding: 0 30px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.5s;
-  }
-  .scene-transition.show { opacity: 1; }
-
   .back-link {
     position: fixed; top: 14px; left: 14px;
     font-size: 0.65rem; color: #ffffff15;
@@ -121,118 +98,121 @@
 <div class="block-label">closr · memory polaroid</div>
 
 <div class="stack" id="stack">
-
-  <!-- Card 4 (bottom of stack, shown last) -->
-  <div class="polaroid" data-index="3" style="z-index:1; transform: rotate(1deg) scale(0.94) translateY(9px);">
-    <div class="polaroid-img">🐱</div>
-    <div class="polaroid-caption"><!-- SLOT: ai_caption_4 --> Kiru approved of me. That's when I knew I was in <!-- /SLOT --></div>
-  </div>
-
-  <!-- Card 3 -->
-  <div class="polaroid" data-index="2" style="z-index:2; transform: rotate(-1.5deg) scale(0.96) translateY(6px);">
-    <div class="polaroid-img">✈️</div>
-    <div class="polaroid-caption"><!-- SLOT: ai_caption_3 --> Airport goodbye. You held on so tight I almost missed the flight <!-- /SLOT --></div>
-  </div>
-
-  <!-- Card 2 -->
-  <div class="polaroid" data-index="1" style="z-index:3; transform: rotate(0.8deg) scale(0.98) translateY(3px);">
-    <div class="polaroid-img">😂</div>
-    <div class="polaroid-caption"><!-- SLOT: ai_caption_2 --> When you tried to surf and lasted exactly four seconds <!-- /SLOT --></div>
-  </div>
-
-  <!-- Card 1 (top of stack, shown first) -->
-  <div class="polaroid" data-index="0" style="z-index:4; transform: rotate(-2deg);">
-    <div class="polaroid-img">🌅</div>
-    <div class="polaroid-caption"><!-- SLOT: ai_caption_1 --> The sunset in Hawaii when you said "I could do this forever" <!-- /SLOT --></div>
-  </div>
-
+  <div class="polaroid"><div class="polaroid-img">🐱</div><div class="polaroid-caption">Kiru approved of me. That's when I knew I was in</div></div>
+  <div class="polaroid"><div class="polaroid-img">✈️</div><div class="polaroid-caption">Airport goodbye. You held on so tight I almost missed the flight</div></div>
+  <div class="polaroid"><div class="polaroid-img">😂</div><div class="polaroid-caption">When you tried to surf and lasted exactly four seconds</div></div>
+  <div class="polaroid"><div class="polaroid-img">🌅</div><div class="polaroid-caption">The sunset in Hawaii when you said "I could do this forever"</div></div>
 </div>
 
 <div class="counter" id="counter">1 / 4</div>
-<div class="hint">swipe to see more</div>
-<div class="scene-transition" id="end-msg"><!-- SLOT: ai_scene_transition --> every photo is a promise that we'll make more <!-- /SLOT --></div>
+<div class="hint">swipe to flip through</div>
 
 <script>
 (function(){
   var stack = document.getElementById('stack');
-  var cards = Array.from(document.querySelectorAll('.polaroid'));
   var counter = document.getElementById('counter');
-  var endMsg = document.getElementById('end-msg');
+  var cards = Array.from(stack.children);
   var total = cards.length;
-  var current = 0; // index into the ordered stack (0 = top card)
-  var topCard = cards[cards.length - 1]; // last in DOM = top visually
+  var topIndex = 0; // which card in our order is on top
 
-  var startX = 0, startY = 0, deltaX = 0, deltaY = 0, isDragging = false;
-  var threshold = 80;
+  // Order array — tracks the visual stack order
+  var order = cards.map(function(_, i){ return i; });
+
+  var startX = 0, deltaX = 0, deltaY = 0, isDragging = false;
+  var threshold = 70;
+  var animating = false;
+
+  function layout() {
+    for (var i = 0; i < total; i++) {
+      var pos = (i - topIndex + total) % total; // 0 = top, total-1 = bottom
+      var depth = total - 1 - pos; // z-index: top gets highest
+      var card = cards[order[i]];
+      if (card._swiping) continue;
+      card.style.zIndex = depth;
+      card.style.transition = 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s';
+      if (pos === 0) {
+        // Top card
+        card.style.transform = 'rotate(-2deg) scale(1)';
+        card.style.opacity = '1';
+        card.style.pointerEvents = 'auto';
+      } else {
+        // Stack cards behind with slight offset
+        var s = 1 - pos * 0.02;
+        var y = pos * 3;
+        var rot = pos % 2 === 0 ? 1 : -1;
+        card.style.transform = 'rotate(' + rot + 'deg) scale(' + s + ') translateY(' + y + 'px)';
+        card.style.opacity = pos < 3 ? (1 - pos * 0.15) : 0;
+        card.style.pointerEvents = 'none';
+      }
+    }
+    var showing = (topIndex % total) + 1;
+    counter.textContent = showing + ' / ' + total;
+  }
 
   function getTopCard() {
-    // The visible top card is the last .polaroid that isn't .gone
-    for (var i = cards.length - 1; i >= 0; i--) {
-      if (!cards[i].classList.contains('gone')) return cards[i];
-    }
-    return null;
+    return cards[order[topIndex % total]];
   }
 
-  function updateCounter() {
-    var gone = document.querySelectorAll('.polaroid.gone').length;
-    if (gone >= total) {
-      counter.textContent = '✓';
-      endMsg.classList.add('show');
-    } else {
-      counter.textContent = (gone + 1) + ' / ' + total;
-    }
-  }
-
-  function onStart(cx, cy) {
-    topCard = getTopCard();
-    if (!topCard) return;
+  function onStart(cx) {
+    if (animating) return;
     isDragging = true;
     startX = cx;
-    startY = cy;
     deltaX = 0;
-    topCard.style.transition = 'none';
+    var top = getTopCard();
+    top.style.transition = 'none';
   }
 
   function onMove(cx, cy) {
-    if (!isDragging || !topCard) return;
+    if (!isDragging) return;
     deltaX = cx - startX;
-    deltaY = cy - startY;
-    var rot = deltaX * 0.08;
-    topCard.style.transform = 'translateX(' + deltaX + 'px) translateY(' + (deltaY * 0.3) + 'px) rotate(' + rot + 'deg)';
-    topCard.style.opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 400);
+    var top = getTopCard();
+    var rot = -2 + deltaX * 0.08;
+    top.style.transform = 'translateX(' + deltaX + 'px) rotate(' + rot + 'deg)';
   }
 
   function onEnd() {
-    if (!isDragging || !topCard) return;
+    if (!isDragging) return;
     isDragging = false;
+    var top = getTopCard();
+
     if (Math.abs(deltaX) > threshold) {
-      // Swipe away
+      // Swipe away, then send to back
+      animating = true;
       var dir = deltaX > 0 ? 1 : -1;
-      topCard.classList.add('gone');
-      topCard.style.transform = 'translateX(' + (dir * 600) + 'px) rotate(' + (dir * 30) + 'deg)';
-      topCard.style.opacity = '0';
-      updateCounter();
+      top._swiping = true;
+      top.style.transition = 'transform 0.35s ease-in, opacity 0.35s ease-in';
+      top.style.transform = 'translateX(' + (dir * 500) + 'px) rotate(' + (dir * 25) + 'deg)';
+      top.style.opacity = '0';
+
+      setTimeout(function(){
+        top._swiping = false;
+        // Move to next
+        topIndex = (topIndex + 1) % total;
+        // Reset swiped card instantly (no transition) so it appears at back
+        top.style.transition = 'none';
+        top.style.transform = 'rotate(1deg) scale(0.92) translateY(12px)';
+        top.style.opacity = '0';
+        // Force reflow
+        top.offsetHeight;
+        // Now animate into back position
+        layout();
+        animating = false;
+      }, 350);
     } else {
       // Snap back
-      topCard.classList.add('back');
-      topCard.style.opacity = '1';
-      // Restore subtle offset based on position
-      topCard.style.transform = 'rotate(-2deg)';
-      setTimeout(function(){ if(topCard) topCard.classList.remove('back'); }, 400);
+      top.style.transition = 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+      top.style.transform = 'rotate(-2deg) scale(1)';
     }
   }
 
-  // Mouse events
-  stack.addEventListener('mousedown', function(e) { e.preventDefault(); onStart(e.clientX, e.clientY); });
-  window.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
-  window.addEventListener('mouseup', function() { onEnd(); });
+  stack.addEventListener('mousedown', function(e){ e.preventDefault(); onStart(e.clientX); });
+  window.addEventListener('mousemove', function(e){ onMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', function(){ onEnd(); });
+  stack.addEventListener('touchstart', function(e){ e.preventDefault(); onStart(e.touches[0].clientX); }, {passive:false});
+  window.addEventListener('touchmove', function(e){ if(isDragging){ onMove(e.touches[0].clientX, e.touches[0].clientY); }}, {passive:false});
+  window.addEventListener('touchend', function(){ onEnd(); });
 
-  // Touch events
-  stack.addEventListener('touchstart', function(e) { e.preventDefault(); var t = e.touches[0]; onStart(t.clientX, t.clientY); }, {passive:false});
-  window.addEventListener('touchmove', function(e) { if(isDragging) { var t = e.touches[0]; onMove(t.clientX, t.clientY); }}, {passive:false});
-  window.addEventListener('touchend', function() { onEnd(); });
-
-  updateCounter();
+  layout();
 })();
 </script>
 
