@@ -16,6 +16,7 @@
     min-height: 100dvh;
     touch-action: none;
     user-select: none; -webkit-user-select: none;
+    overflow: hidden;
   }
   .stack { position: relative; width: min(72vw, 280px); height: min(92vw, 380px); }
   .polaroid {
@@ -68,21 +69,13 @@
   var counter = document.getElementById('counter');
   var total = stack.children.length;
   var startX = 0, deltaX = 0, isDragging = false, animating = false, hasMoved = false;
-  var threshold = 70;
+  var threshold = 60;
 
   function getCards() { return Array.from(stack.children); }
   getCards().forEach(function(c, i){ c.dataset.origIndex = i; });
 
   function backPos(depth) {
-    return {
-      s: 1 - depth * 0.025,
-      y: depth * 4,
-      rot: depth % 2 === 0 ? 1.5 : -1
-    };
-  }
-  function backTf(depth) {
-    var p = backPos(depth);
-    return 'rotate('+p.rot+'deg) scale('+p.s+') translateX(0px) translateY('+p.y+'px)';
+    return { s: 1 - depth * 0.025, y: depth * 4, rot: depth % 2 === 0 ? 1.5 : -1 };
   }
 
   function layoutRest(skipCard) {
@@ -91,9 +84,12 @@
       if (c === skipCard) return;
       var depth = cards.length - 1 - i;
       c.style.zIndex = i;
-      c.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+      c.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
       c.style.pointerEvents = (depth === 0) ? 'auto' : 'none';
-      c.style.transform = depth === 0 ? 'rotate(-2deg) scale(1) translateX(0px) translateY(0px)' : backTf(depth);
+      var p = backPos(depth);
+      c.style.transform = depth === 0
+        ? 'rotate(-2deg) scale(1) translateX(0px) translateY(0px)'
+        : 'rotate('+p.rot+'deg) scale('+p.s+') translateX(0px) translateY('+p.y+'px)';
     });
   }
 
@@ -104,106 +100,88 @@
 
   function getTopCard() { return getCards().slice(-1)[0]; }
 
-  // Use JS animation (requestAnimationFrame) for the card going to back
-  // so we have full control and no CSS transition jumps
   function animateToBack(card, dir) {
     animating = true;
     card.style.pointerEvents = 'none';
     card.style.transition = 'none';
 
-    // Read current position
-    var rect = card.getBoundingClientRect();
-    var stackRect = stack.getBoundingClientRect();
-    var startXPos = rect.left - stackRect.left;
-    var startYPos = rect.top - stackRect.top;
-
-    // Get current transform values from computed style
+    // Parse current transform
     var cs = getComputedStyle(card);
-    var matrix = new DOMMatrix(cs.transform);
+    var m = new DOMMatrix(cs.transform);
+    var curX = m.e || 0;
+    var curY = m.f || 0;
+    var curRot = Math.atan2(m.b, m.a) * (180 / Math.PI);
+    var curScale = Math.sqrt(m.a * m.a + m.b * m.b);
 
-    // Move DOM to back immediately
-    stack.insertBefore(card, stack.firstChild);
-    card.style.zIndex = 0;
-
-    // Recalculate: now it's index 0, other cards shift
-    getCards().forEach(function(c, i) {
-      if (c !== card) c.style.zIndex = i;
-    });
-
-    // Animation keyframes using JS
-    // Path: current position → out to the side → arc down → back of stack
-    var targetDepth = getCards().length - 1;
+    // Target: back of stack
+    var targetDepth = total - 1;
     var tp = backPos(targetDepth);
 
-    // Waypoints (normalized 0-1)
-    // Phase 1 (0-0.3): fly out to the side
-    // Phase 2 (0.3-1.0): arc around and settle into back
-    var flyOutX = dir * 160;
-    var flyOutY = -20;
-    var flyOutRot = dir * 15;
-    var flyOutScale = 0.95;
+    // Waypoint: fully off to the side (clear of the stack)
+    var offX = dir * (window.innerWidth * 0.45);
+    var offY = -10;
+    var offRot = dir * 18;
+    var offScale = 0.9;
 
-    var targetX = 0;
-    var targetY = tp.y;
-    var targetRot = tp.rot;
-    var targetScale = tp.s;
+    // Three phases:
+    // Phase 1 (0 → 0.30): current position → fully off screen to the side
+    // Phase 2 (0.30 → 0.35): pause briefly off-screen while z-index swaps
+    // Phase 3 (0.35 → 1.0): arc from off-screen down into back of stack
 
-    // Start values from current drag position
-    var curX = matrix.e || 0;
-    var curY = matrix.f || 0;
-    // Approximate current rotation from matrix
-    var curRot = Math.atan2(matrix.b, matrix.a) * (180 / Math.PI);
-    var curScale = Math.sqrt(matrix.a * matrix.a + matrix.b * matrix.b);
-
-    var duration = 900; // ms total
-    var phase1End = 0.35;
+    var duration = 1100;
+    var p1End = 0.30;
+    var p2End = 0.35;
     var startTime = null;
+    var zSwapped = false;
 
-    function ease(t) {
-      // Custom ease: slow start, smooth middle, gentle end
-      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    }
-
+    function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+    function easeInOut(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
     function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function setTf(x, y, rot, scale) {
+      card.style.transform = 'translateX('+x+'px) translateY('+y+'px) rotate('+rot+'deg) scale('+scale+')';
+    }
 
     function frame(ts) {
       if (!startTime) startTime = ts;
-      var elapsed = ts - startTime;
-      var t = Math.min(elapsed / duration, 1);
-      var et = ease(t);
-
+      var t = Math.min((ts - startTime) / duration, 1);
       var x, y, rot, scale;
 
-      if (t <= phase1End) {
-        // Phase 1: current → fly out
-        var p1 = ease(t / phase1End);
-        x = lerp(curX, flyOutX, p1);
-        y = lerp(curY, flyOutY, p1);
-        rot = lerp(curRot, flyOutRot, p1);
-        scale = lerp(curScale, flyOutScale, p1);
+      if (t <= p1End) {
+        // Phase 1: fly out to the side
+        var p = easeOut(t / p1End);
+        x = lerp(curX, offX, p);
+        y = lerp(curY, offY, p);
+        rot = lerp(curRot, offRot, p);
+        scale = lerp(curScale, offScale, p);
+      } else if (t <= p2End) {
+        // Phase 2: hold off-screen, swap z
+        x = offX; y = offY; rot = offRot; scale = offScale;
+        if (!zSwapped) {
+          zSwapped = true;
+          stack.insertBefore(card, stack.firstChild);
+          card.style.zIndex = 0;
+          getCards().forEach(function(c, i) { if (c !== card) c.style.zIndex = i; });
+          layoutRest(card);
+          updateCounter();
+        }
       } else {
-        // Phase 2: fly out → back of stack
-        var p2 = ease((t - phase1End) / (1 - phase1End));
-        x = lerp(flyOutX, targetX, p2);
-        y = lerp(flyOutY, targetY, p2);
-        rot = lerp(flyOutRot, targetRot, p2);
-        scale = lerp(flyOutScale, targetScale, p2);
+        // Phase 3: arc from off-screen into back of stack
+        var p = easeInOut((t - p2End) / (1 - p2End));
+        x = lerp(offX, 0, p);
+        y = lerp(offY, tp.y, p);
+        rot = lerp(offRot, tp.rot, p);
+        scale = lerp(offScale, tp.s, p);
       }
 
-      card.style.transform = 'translateX('+x+'px) translateY('+y+'px) rotate('+rot+'deg) scale('+scale+')';
+      setTf(x, y, rot, scale);
 
       if (t < 1) {
         requestAnimationFrame(frame);
       } else {
-        // Final: clean up with CSS value
-        card.style.transform = backTf(targetDepth);
         animating = false;
       }
     }
-
-    // Layout other cards (they shift up)
-    layoutRest(card);
-    updateCounter();
 
     requestAnimationFrame(frame);
   }
@@ -232,17 +210,12 @@
     var top = getTopCard();
 
     if (!hasMoved && Math.abs(deltaX) < 10) {
-      // Tap
       animateToBack(top, 1);
       return;
     }
-
     if (Math.abs(deltaX) > threshold) {
-      // Swipe
-      var dir = deltaX > 0 ? 1 : -1;
-      animateToBack(top, dir);
+      animateToBack(top, deltaX > 0 ? 1 : -1);
     } else {
-      // Snap back
       top.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1)';
       top.style.transform = 'rotate(-2deg) scale(1) translateX(0px) translateY(0px)';
     }
