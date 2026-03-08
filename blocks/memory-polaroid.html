@@ -17,130 +17,84 @@
     touch-action: none;
     user-select: none; -webkit-user-select: none;
   }
-
-  .stack {
-    position: relative;
-    width: min(72vw, 280px);
-    height: min(92vw, 380px);
-  }
-
+  .stack { position: relative; width: min(72vw, 280px); height: min(92vw, 380px); }
   .polaroid {
-    position: absolute;
-    inset: 0;
-    background: #f5f0e8;
-    padding: 12px 12px 44px 12px;
-    border-radius: 3px;
-    box-shadow: 0 6px 30px rgba(0,0,0,0.5);
+    position: absolute; inset: 0;
+    background: #f5f0e8; padding: 12px 12px 44px 12px;
+    border-radius: 3px; box-shadow: 0 6px 30px rgba(0,0,0,0.5);
     display: flex; flex-direction: column;
-    will-change: transform;
-    cursor: grab;
+    will-change: transform; cursor: grab;
   }
   .polaroid:active { cursor: grabbing; }
-
   .polaroid-img {
-    flex: 1;
-    background: linear-gradient(135deg, #c8b8a0, #e8d8c4);
-    border-radius: 1px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 3.5rem;
-    overflow: hidden;
+    flex: 1; background: linear-gradient(135deg, #c8b8a0, #e8d8c4);
+    border-radius: 1px; display: flex; align-items: center; justify-content: center;
+    font-size: 3.5rem; overflow: hidden;
   }
-
   .polaroid-caption {
-    font-family: 'Playfair Display', serif;
-    font-style: italic;
-    font-size: 0.8rem;
-    color: #3a3028;
-    text-align: center;
-    margin-top: 10px;
-    line-height: 1.5;
+    font-family: 'Playfair Display', serif; font-style: italic;
+    font-size: 0.8rem; color: #3a3028; text-align: center;
+    margin-top: 10px; line-height: 1.5;
   }
-
   .counter {
-    position: fixed;
-    bottom: 50px;
-    left: 0; right: 0;
-    text-align: center;
-    font-size: 0.65rem;
-    color: #ffffff20;
-    letter-spacing: 3px;
-    pointer-events: none;
+    position: fixed; bottom: 50px; left: 0; right: 0;
+    text-align: center; font-size: 0.65rem; color: #ffffff20;
+    letter-spacing: 3px; pointer-events: none;
   }
-
   .hint {
-    position: fixed;
-    bottom: 28px;
-    left: 0; right: 0;
-    text-align: center;
-    font-size: 0.55rem;
-    color: #ffffff12;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    pointer-events: none;
+    position: fixed; bottom: 28px; left: 0; right: 0;
+    text-align: center; font-size: 0.55rem; color: #ffffff12;
+    letter-spacing: 2px; text-transform: uppercase; pointer-events: none;
   }
-
-  .back-link {
-    position: fixed; top: 14px; left: 14px;
-    font-size: 0.65rem; color: #ffffff15;
-    text-decoration: none; z-index: 200;
-  }
-  .block-label {
-    position: fixed; top: 14px; right: 14px;
-    font-size: 0.55rem; color: #ffffff10;
-    letter-spacing: 1px; z-index: 200;
-  }
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff15; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.55rem; color: #ffffff10; letter-spacing: 1px; z-index: 200; }
 </style>
 </head>
 <body>
-
 <a href="../building-blocks.html" class="back-link">← blocks</a>
 <div class="block-label">closr · memory polaroid</div>
-
 <div class="stack" id="stack">
   <div class="polaroid"><div class="polaroid-img">🐱</div><div class="polaroid-caption">Kiru approved of me. That's when I knew I was in</div></div>
   <div class="polaroid"><div class="polaroid-img">✈️</div><div class="polaroid-caption">Airport goodbye. You held on so tight I almost missed the flight</div></div>
   <div class="polaroid"><div class="polaroid-img">😂</div><div class="polaroid-caption">When you tried to surf and lasted exactly four seconds</div></div>
   <div class="polaroid"><div class="polaroid-img">🌅</div><div class="polaroid-caption">The sunset in Hawaii when you said "I could do this forever"</div></div>
 </div>
-
 <div class="counter" id="counter">1 / 4</div>
-<div class="hint">swipe to flip through</div>
+<div class="hint">swipe or tap to flip through</div>
 
 <script>
 (function(){
   var stack = document.getElementById('stack');
   var counter = document.getElementById('counter');
   var total = stack.children.length;
-  var startX = 0, deltaX = 0, isDragging = false, animating = false;
+  var startX = 0, deltaX = 0, isDragging = false, animating = false, hasMoved = false;
   var threshold = 70;
 
+  function getCards() { return Array.from(stack.children); }
   getCards().forEach(function(c, i){ c.dataset.origIndex = i; });
 
-  function getCards() { return Array.from(stack.children); }
-
-  function backTransform(depth) {
-    var s = 1 - depth * 0.025;
-    var y = depth * 4;
-    var rot = depth % 2 === 0 ? 1.5 : -1;
-    return 'rotate(' + rot + 'deg) scale(' + s + ') translateY(' + y + 'px)';
+  function backPos(depth) {
+    return {
+      s: 1 - depth * 0.025,
+      y: depth * 4,
+      rot: depth % 2 === 0 ? 1.5 : -1
+    };
+  }
+  function backTf(depth) {
+    var p = backPos(depth);
+    return 'rotate('+p.rot+'deg) scale('+p.s+') translateX(0px) translateY('+p.y+'px)';
   }
 
-  function layoutStack(skipCard) {
+  function layoutRest(skipCard) {
     var cards = getCards();
-    for (var i = 0; i < cards.length; i++) {
-      var card = cards[i];
-      if (card === skipCard) continue;
+    cards.forEach(function(c, i) {
+      if (c === skipCard) return;
       var depth = cards.length - 1 - i;
-      card.style.zIndex = i;
-      card.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
-      card.style.pointerEvents = (i === cards.length - 1) ? 'auto' : 'none';
-      card.style.opacity = '1';
-      if (depth === 0) {
-        card.style.transform = 'rotate(-2deg) scale(1)';
-      } else {
-        card.style.transform = backTransform(depth);
-      }
-    }
+      c.style.zIndex = i;
+      c.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+      c.style.pointerEvents = (depth === 0) ? 'auto' : 'none';
+      c.style.transform = depth === 0 ? 'rotate(-2deg) scale(1) translateX(0px) translateY(0px)' : backTf(depth);
+    });
   }
 
   function updateCounter() {
@@ -150,7 +104,109 @@
 
   function getTopCard() { return getCards().slice(-1)[0]; }
 
-  var hasMoved = false;
+  // Use JS animation (requestAnimationFrame) for the card going to back
+  // so we have full control and no CSS transition jumps
+  function animateToBack(card, dir) {
+    animating = true;
+    card.style.pointerEvents = 'none';
+    card.style.transition = 'none';
+
+    // Read current position
+    var rect = card.getBoundingClientRect();
+    var stackRect = stack.getBoundingClientRect();
+    var startXPos = rect.left - stackRect.left;
+    var startYPos = rect.top - stackRect.top;
+
+    // Get current transform values from computed style
+    var cs = getComputedStyle(card);
+    var matrix = new DOMMatrix(cs.transform);
+
+    // Move DOM to back immediately
+    stack.insertBefore(card, stack.firstChild);
+    card.style.zIndex = 0;
+
+    // Recalculate: now it's index 0, other cards shift
+    getCards().forEach(function(c, i) {
+      if (c !== card) c.style.zIndex = i;
+    });
+
+    // Animation keyframes using JS
+    // Path: current position → out to the side → arc down → back of stack
+    var targetDepth = getCards().length - 1;
+    var tp = backPos(targetDepth);
+
+    // Waypoints (normalized 0-1)
+    // Phase 1 (0-0.3): fly out to the side
+    // Phase 2 (0.3-1.0): arc around and settle into back
+    var flyOutX = dir * 160;
+    var flyOutY = -20;
+    var flyOutRot = dir * 15;
+    var flyOutScale = 0.95;
+
+    var targetX = 0;
+    var targetY = tp.y;
+    var targetRot = tp.rot;
+    var targetScale = tp.s;
+
+    // Start values from current drag position
+    var curX = matrix.e || 0;
+    var curY = matrix.f || 0;
+    // Approximate current rotation from matrix
+    var curRot = Math.atan2(matrix.b, matrix.a) * (180 / Math.PI);
+    var curScale = Math.sqrt(matrix.a * matrix.a + matrix.b * matrix.b);
+
+    var duration = 900; // ms total
+    var phase1End = 0.35;
+    var startTime = null;
+
+    function ease(t) {
+      // Custom ease: slow start, smooth middle, gentle end
+      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    }
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function frame(ts) {
+      if (!startTime) startTime = ts;
+      var elapsed = ts - startTime;
+      var t = Math.min(elapsed / duration, 1);
+      var et = ease(t);
+
+      var x, y, rot, scale;
+
+      if (t <= phase1End) {
+        // Phase 1: current → fly out
+        var p1 = ease(t / phase1End);
+        x = lerp(curX, flyOutX, p1);
+        y = lerp(curY, flyOutY, p1);
+        rot = lerp(curRot, flyOutRot, p1);
+        scale = lerp(curScale, flyOutScale, p1);
+      } else {
+        // Phase 2: fly out → back of stack
+        var p2 = ease((t - phase1End) / (1 - phase1End));
+        x = lerp(flyOutX, targetX, p2);
+        y = lerp(flyOutY, targetY, p2);
+        rot = lerp(flyOutRot, targetRot, p2);
+        scale = lerp(flyOutScale, targetScale, p2);
+      }
+
+      card.style.transform = 'translateX('+x+'px) translateY('+y+'px) rotate('+rot+'deg) scale('+scale+')';
+
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        // Final: clean up with CSS value
+        card.style.transform = backTf(targetDepth);
+        animating = false;
+      }
+    }
+
+    // Layout other cards (they shift up)
+    layoutRest(card);
+    updateCounter();
+
+    requestAnimationFrame(frame);
+  }
 
   function onStart(cx) {
     if (animating) return;
@@ -167,7 +223,7 @@
     if (Math.abs(deltaX) > 5) hasMoved = true;
     var top = getTopCard();
     var rot = -2 + deltaX * 0.1;
-    top.style.transform = 'translateX(' + deltaX + 'px) rotate(' + rot + 'deg)';
+    top.style.transform = 'translateX('+deltaX+'px) rotate('+rot+'deg)';
   }
 
   function onEnd() {
@@ -176,73 +232,19 @@
     var top = getTopCard();
 
     if (!hasMoved && Math.abs(deltaX) < 10) {
-      // TAP — shuffle to back with same animation as swipe
-      animating = true;
-      top.style.pointerEvents = 'none';
-
-      // Step 1: Kick it to the side (like a mini swipe)
-      top.style.transition = 'transform 0.25s ease-out';
-      top.style.transform = 'translateX(100px) rotate(8deg)';
-
-      setTimeout(function(){
-        // Step 2: Drop behind everything
-        stack.insertBefore(top, stack.firstChild);
-        top.style.zIndex = 0;
-        getCards().forEach(function(c, i) {
-          if (c !== top) c.style.zIndex = i;
-        });
-
-        // Step 3: Slow arc to back position
-        var tapDepth = getCards().length - 1;
-        requestAnimationFrame(function(){
-          top.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
-          top.style.transform = backTransform(tapDepth);
-          layoutStack(top);
-          updateCounter();
-          setTimeout(function(){ animating = false; }, 820);
-        });
-      }, 250);
+      // Tap
+      animateToBack(top, 1);
       return;
     }
 
     if (Math.abs(deltaX) > threshold) {
-      animating = true;
-
-      // Immediately move DOM to back (first child) and set z-index to 0
-      // This prevents any overlap — it's behind everything instantly
-      stack.insertBefore(top, stack.firstChild);
-      top.style.zIndex = 0;
-      top.style.pointerEvents = 'none';
-
-      // Keep it at its current swiped position (no jump)
-      // transition is still 'none' from drag
+      // Swipe
       var dir = deltaX > 0 ? 1 : -1;
-
-      // Bump z of all other cards
-      getCards().forEach(function(c, i) {
-        if (c !== top) {
-          c.style.zIndex = i;
-        }
-      });
-
-      // Now animate slowly to back-of-stack position
-      var depth = getCards().length - 1; // it's at index 0, depth = length-1
-      requestAnimationFrame(function(){
-        top.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
-        top.style.transform = backTransform(depth);
-
-        // Also re-layout the rest to shift up
-        layoutStack(top);
-        updateCounter();
-
-        setTimeout(function(){
-          animating = false;
-        }, 820);
-      });
-
+      animateToBack(top, dir);
     } else {
+      // Snap back
       top.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1)';
-      top.style.transform = 'rotate(-2deg) scale(1)';
+      top.style.transform = 'rotate(-2deg) scale(1) translateX(0px) translateY(0px)';
     }
   }
 
@@ -253,10 +255,9 @@
   window.addEventListener('touchmove', function(e){ if(isDragging) onMove(e.touches[0].clientX); }, {passive:false});
   window.addEventListener('touchend', function(){ onEnd(); });
 
-  layoutStack();
+  layoutRest();
   updateCounter();
 })();
 </script>
-
 </body>
 </html>
