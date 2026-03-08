@@ -118,36 +118,34 @@
 
   function getCards() { return Array.from(stack.children); }
 
-  function getBackTransform(depth) {
+  function backTransform(depth) {
     var s = 1 - depth * 0.025;
     var y = depth * 4;
     var rot = depth % 2 === 0 ? 1.5 : -1;
-    return { s: s, y: y, rot: rot };
+    return 'rotate(' + rot + 'deg) scale(' + s + ') translateY(' + y + 'px)';
   }
 
-  function layoutStack() {
+  function layoutStack(skipCard) {
     var cards = getCards();
     for (var i = 0; i < cards.length; i++) {
       var card = cards[i];
-      if (card._busy) continue;
+      if (card === skipCard) continue;
       var depth = cards.length - 1 - i;
       card.style.zIndex = i;
-      card.style.transition = 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+      card.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
       card.style.pointerEvents = (i === cards.length - 1) ? 'auto' : 'none';
       card.style.opacity = '1';
       if (depth === 0) {
-        card.style.transform = 'rotate(-2deg) scale(1) translateX(0) translateY(0)';
+        card.style.transform = 'rotate(-2deg) scale(1)';
       } else {
-        var t = getBackTransform(depth);
-        card.style.transform = 'rotate(' + t.rot + 'deg) scale(' + t.s + ') translateX(0) translateY(' + t.y + 'px)';
+        card.style.transform = backTransform(depth);
       }
     }
   }
 
   function updateCounter() {
     var top = getCards().slice(-1)[0];
-    var idx = parseInt(top.dataset.origIndex);
-    counter.textContent = (idx + 1) + ' / ' + total;
+    counter.textContent = (parseInt(top.dataset.origIndex) + 1) + ' / ' + total;
   }
 
   function getTopCard() { return getCards().slice(-1)[0]; }
@@ -157,8 +155,7 @@
     isDragging = true;
     startX = cx;
     deltaX = 0;
-    var top = getTopCard();
-    top.style.transition = 'none';
+    getTopCard().style.transition = 'none';
   }
 
   function onMove(cx) {
@@ -166,7 +163,7 @@
     deltaX = cx - startX;
     var top = getTopCard();
     var rot = -2 + deltaX * 0.1;
-    top.style.transform = 'translateX(' + deltaX + 'px) rotate(' + rot + 'deg) scale(1)';
+    top.style.transform = 'translateX(' + deltaX + 'px) rotate(' + rot + 'deg)';
   }
 
   function onEnd() {
@@ -176,40 +173,42 @@
 
     if (Math.abs(deltaX) > threshold) {
       animating = true;
-      top._busy = true;
+
+      // Immediately move DOM to back (first child) and set z-index to 0
+      // This prevents any overlap — it's behind everything instantly
+      stack.insertBefore(top, stack.firstChild);
+      top.style.zIndex = 0;
+      top.style.pointerEvents = 'none';
+
+      // Keep it at its current swiped position (no jump)
+      // transition is still 'none' from drag
       var dir = deltaX > 0 ? 1 : -1;
-      var cards = getCards();
-      var backDepth = cards.length - 1;
-      var bt = getBackTransform(backDepth);
 
-      // Step 1: Lift the card up and to the side a bit (still fully visible)
-      top.style.transition = 'transform 0.25s ease-out';
-      top.style.transform = 'translateX(' + (dir * 120) + 'px) translateY(-30px) rotate(' + (dir * 12) + 'deg) scale(1.02)';
+      // Bump z of all other cards
+      getCards().forEach(function(c, i) {
+        if (c !== top) {
+          c.style.zIndex = i;
+        }
+      });
 
-      setTimeout(function(){
-        // Step 2: Drop z-index behind everything, then arc down to back position
-        top.style.zIndex = 0;
-        // Bump all others up
-        getCards().forEach(function(c, i){
-          if (c !== top) c.style.zIndex = i + 1;
-        });
+      // Now animate slowly to back-of-stack position
+      var depth = getCards().length - 1; // it's at index 0, depth = length-1
+      requestAnimationFrame(function(){
+        top.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
+        top.style.transform = backTransform(depth);
 
-        top.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.2, 0.64, 1)';
-        top.style.transform = 'rotate(' + bt.rot + 'deg) scale(' + bt.s + ') translateX(0) translateY(' + bt.y + 'px)';
+        // Also re-layout the rest to shift up
+        layoutStack(top);
+        updateCounter();
 
         setTimeout(function(){
-          // Step 3: Move in DOM to first child
-          top._busy = false;
-          stack.insertBefore(top, stack.firstChild);
-          layoutStack();
-          updateCounter();
           animating = false;
-        }, 460);
-      }, 260);
+        }, 820);
+      });
 
     } else {
-      top.style.transition = 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)';
-      top.style.transform = 'rotate(-2deg) scale(1) translateX(0) translateY(0)';
+      top.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1)';
+      top.style.transform = 'rotate(-2deg) scale(1)';
     }
   }
 
