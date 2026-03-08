@@ -15,154 +15,222 @@
     align-items: center;
     justify-content: center;
     font-family: 'Inter', sans-serif;
-    min-height: 100vh;
     min-height: 100dvh;
   }
 
+  .table {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
   .polaroid {
+    position: absolute;
     background: #f5f0e8;
-    padding: 16px 16px 52px 16px;
-    border-radius: 3px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 80px rgba(255,105,180,0.05);
-    transform: rotate(-2deg);
-    width: min(75vw, 320px);
-    animation: polaroidDrop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    padding: 10px 10px 36px 10px;
+    border-radius: 2px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    width: min(55vw, 220px);
     cursor: grab;
     user-select: none;
     -webkit-user-select: none;
+    transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1), z-index 0s, box-shadow 0.3s;
+    opacity: 0;
+    animation: polaroidDrop 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards;
   }
   .polaroid:active { cursor: grabbing; }
+  .polaroid.focused {
+    z-index: 100 !important;
+    box-shadow: 0 12px 60px rgba(0,0,0,0.7), 0 0 80px rgba(255,105,180,0.1);
+  }
 
   .polaroid-img {
-    width: 100%;
-    aspect-ratio: 1;
+    width: 100%; aspect-ratio: 1;
     background: linear-gradient(135deg, #c8b8a0, #e8d8c4);
     border-radius: 1px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 4rem;
+    align-items: center; justify-content: center;
+    font-size: 2.5rem;
     overflow: hidden;
   }
-  .polaroid-img img {
-    width: 100%; height: 100%; object-fit: cover;
-  }
+  .polaroid-img img { width: 100%; height: 100%; object-fit: cover; }
 
   .polaroid-caption {
     font-family: 'Playfair Display', serif;
     font-style: italic;
-    font-size: 1rem;
+    font-size: 0.7rem;
     color: #3a3028;
     text-align: center;
-    margin-top: 14px;
-    line-height: 1.6;
-    animation: captionFade 1s ease-out 0.6s both;
-  }
-
-  .polaroid-date {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.65rem;
-    color: #a09888;
-    text-align: center;
     margin-top: 8px;
-    letter-spacing: 1px;
-    animation: captionFade 1s ease-out 0.9s both;
+    line-height: 1.5;
   }
 
   .scene-transition {
-    font-size: 0.8rem;
-    color: #ffffff18;
-    margin-top: 28px;
+    position: fixed;
+    bottom: 40px;
+    left: 0; right: 0;
+    font-size: 0.75rem;
+    color: #ffffff15;
     text-align: center;
     font-style: italic;
-    animation: captionFade 1.2s ease-out 1.4s both;
-    padding: 0 20px;
+    padding: 0 30px;
+    animation: captionFade 1s ease-out 2s both;
+    pointer-events: none;
+  }
+
+  .hint {
+    position: fixed;
+    top: 16px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.6rem;
+    color: #ffffff18;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    pointer-events: none;
+    animation: captionFade 1s ease-out 2.5s both;
   }
 
   .back-link {
     position: fixed;
-    top: 16px;
+    bottom: 16px;
     left: 16px;
-    font-size: 0.7rem;
-    color: #ffffff20;
+    font-size: 0.65rem;
+    color: #ffffff15;
     text-decoration: none;
-    z-index: 10;
+    z-index: 200;
   }
-  .back-link:hover { color: #ffffff50; }
 
   .block-label {
     position: fixed;
     bottom: 16px;
-    left: 0; right: 0;
-    text-align: center;
-    font-size: 0.6rem;
-    color: #ffffff12;
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    right: 16px;
+    font-size: 0.55rem;
+    color: #ffffff10;
+    letter-spacing: 1px;
+    z-index: 200;
   }
 
   @keyframes polaroidDrop {
-    from { opacity: 0; transform: rotate(-6deg) translateY(-50px) scale(0.85); }
-    to { opacity: 1; transform: rotate(-2deg) translateY(0) scale(1); }
+    from { opacity: 0; transform: var(--start-tf) scale(0.8); }
+    to { opacity: 1; transform: var(--end-tf) scale(1); }
   }
   @keyframes captionFade {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 </style>
 </head>
 <body>
 
+<div class="table" id="table">
+
+  <!-- SLOT: photos[] — array of {photo, caption} objects filled by AI -->
+
+  <div class="polaroid" data-rot="-4" data-x="12" data-y="15"
+       style="--start-tf:rotate(-10deg);--end-tf:rotate(-4deg);left:12%;top:15%;z-index:1;animation-delay:0s;">
+    <div class="polaroid-img">🌅</div>
+    <div class="polaroid-caption"><!-- SLOT: ai_caption_1 --> The sunset in Hawaii when you said "I could do this forever" <!-- /SLOT --></div>
+  </div>
+
+  <div class="polaroid" data-rot="3" data-x="45" data-y="8"
+       style="--start-tf:rotate(8deg);--end-tf:rotate(3deg);left:45%;top:8%;z-index:2;animation-delay:0.15s;">
+    <div class="polaroid-img">😂</div>
+    <div class="polaroid-caption"><!-- SLOT: ai_caption_2 --> When you tried to surf and lasted exactly four seconds <!-- /SLOT --></div>
+  </div>
+
+  <div class="polaroid" data-rot="-2" data-x="25" data-y="45"
+       style="--start-tf:rotate(-7deg);--end-tf:rotate(-2deg);left:25%;top:45%;z-index:3;animation-delay:0.3s;">
+    <div class="polaroid-img">✈️</div>
+    <div class="polaroid-caption"><!-- SLOT: ai_caption_3 --> Airport goodbye. You held on so tight I almost missed the flight <!-- /SLOT --></div>
+  </div>
+
+  <div class="polaroid" data-rot="5" data-x="55" data-y="50"
+       style="--start-tf:rotate(10deg);--end-tf:rotate(5deg);left:55%;top:50%;z-index:4;animation-delay:0.45s;">
+    <div class="polaroid-img">🐱</div>
+    <div class="polaroid-caption"><!-- SLOT: ai_caption_4 --> Kiru approved of me. That's when I knew I was in <!-- /SLOT --></div>
+  </div>
+
+</div>
+
+<div class="hint">tap a photo · drag to rearrange</div>
+<div class="scene-transition"><!-- SLOT: ai_scene_transition --> every photo is a promise that we'll make more <!-- /SLOT --></div>
+
 <a href="../building-blocks.html" class="back-link">← blocks</a>
-
-<div class="polaroid" id="polaroid">
-  <div class="polaroid-img">
-    <!-- SLOT: couple_photo --> 🌅 <!-- /SLOT -->
-  </div>
-  <div class="polaroid-caption">
-    <!-- SLOT: ai_memory_caption --> The sunset in Hawaii when you said "I could do this forever" and meant it <!-- /SLOT -->
-  </div>
-  <div class="polaroid-date">
-    <!-- SLOT: memory_date --> January 2026 <!-- /SLOT -->
-  </div>
-</div>
-
-<div class="scene-transition">
-  <!-- SLOT: ai_scene_transition --> that was the night everything changed <!-- /SLOT -->
-</div>
-
-<div class="block-label">closr — memory polaroid</div>
+<div class="block-label">closr · memory polaroid</div>
 
 <script>
-// Subtle tilt on drag / touch
 (function(){
-  var el = document.getElementById('polaroid');
-  var startX, startY, currentRot = -2;
-  
-  function onMove(x, y) {
-    var rect = el.getBoundingClientRect();
-    var cx = rect.left + rect.width/2;
-    var cy = rect.top + rect.height/2;
-    var dx = (x - cx) / rect.width;
-    var dy = (y - cy) / rect.height;
-    var rot = -2 + dx * 8;
-    var tiltX = dy * -5;
-    el.style.transform = 'rotate('+rot+'deg) perspective(600px) rotateX('+tiltX+'deg)';
-  }
-  
-  function onEnd() {
-    el.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    el.style.transform = 'rotate(-2deg)';
-    setTimeout(function(){ el.style.transition = ''; }, 500);
-  }
+  var table = document.getElementById('table');
+  var polars = document.querySelectorAll('.polaroid');
+  var topZ = polars.length + 1;
+  var focused = null;
+  var dragging = null;
+  var dragOffX, dragOffY, hasMoved;
 
-  el.addEventListener('mousemove', function(e){ onMove(e.clientX, e.clientY); });
-  el.addEventListener('mouseleave', onEnd);
-  el.addEventListener('touchmove', function(e){ 
-    e.preventDefault();
-    onMove(e.touches[0].clientX, e.touches[0].clientY); 
-  }, {passive:false});
-  el.addEventListener('touchend', onEnd);
+  polars.forEach(function(p){
+    // Touch & mouse drag
+    function startDrag(cx, cy){
+      var r = p.getBoundingClientRect();
+      dragOffX = cx - r.left;
+      dragOffY = cy - r.top;
+      dragging = p;
+      hasMoved = false;
+      p.style.zIndex = topZ++;
+      p.style.transition = 'box-shadow 0.3s';
+    }
+    function moveDrag(cx, cy){
+      if(dragging !== p) return;
+      var x = cx - dragOffX;
+      var y = cy - dragOffY;
+      p.style.left = x + 'px';
+      p.style.top = y + 'px';
+      hasMoved = true;
+    }
+    function endDrag(){
+      if(dragging !== p) return;
+      dragging = null;
+      p.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s';
+      // Tap (no drag) = focus/unfocus
+      if(!hasMoved){
+        if(focused === p){
+          // Unfocus — return to natural position
+          p.classList.remove('focused');
+          var rot = p.getAttribute('data-rot') || 0;
+          p.style.transform = 'rotate('+rot+'deg) scale(1)';
+          focused = null;
+        } else {
+          // Unfocus previous
+          if(focused){
+            focused.classList.remove('focused');
+            var pr = focused.getAttribute('data-rot') || 0;
+            focused.style.transform = 'rotate('+pr+'deg) scale(1)';
+          }
+          // Focus this one — center and scale up
+          p.classList.add('focused');
+          p.style.zIndex = topZ++;
+          var tr = table.getBoundingClientRect();
+          var pr2 = p.getBoundingClientRect();
+          var cx2 = tr.width/2 - pr2.width/2;
+          var cy2 = tr.height/2 - pr2.height/2;
+          p.style.left = cx2 + 'px';
+          p.style.top = cy2 + 'px';
+          p.style.transform = 'rotate(0deg) scale(1.25)';
+          focused = p;
+        }
+      }
+    }
+
+    p.addEventListener('mousedown', function(e){ e.preventDefault(); startDrag(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', function(e){ if(dragging===p) moveDrag(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', function(){ if(dragging===p) endDrag(); });
+
+    p.addEventListener('touchstart', function(e){ e.preventDefault(); var t=e.touches[0]; startDrag(t.clientX, t.clientY); }, {passive:false});
+    window.addEventListener('touchmove', function(e){ if(dragging===p){ var t=e.touches[0]; moveDrag(t.clientX, t.clientY); }}, {passive:false});
+    window.addEventListener('touchend', function(){ if(dragging===p) endDrag(); });
+  });
 })();
 </script>
 
