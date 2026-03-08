@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Memory Polaroid — Closr Building Block</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;500&family=Inter:wght@300;400;500;600&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; overflow: hidden; }
   body {
-    background: #0a0a12;
+    background: #08080e;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     font-family: 'Inter', sans-serif;
@@ -18,55 +18,153 @@
     user-select: none; -webkit-user-select: none;
     overflow: hidden;
   }
-  .stack { position: relative; width: min(72vw, 280px); height: min(92vw, 380px); }
+
+  /* Subtle ambient glow behind the stack */
+  .ambient {
+    position: fixed;
+    width: 340px; height: 420px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(255,105,180,0.04) 0%, rgba(122,175,204,0.02) 40%, transparent 70%);
+    pointer-events: none;
+    filter: blur(40px);
+  }
+
+  /* Floating particles */
+  .particle {
+    position: fixed;
+    width: 2px; height: 2px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(30px); opacity: 0; }
+  }
+
+  .stack { position: relative; width: min(74vw, 290px); height: min(96vw, 400px); z-index: 10; }
+
   .polaroid {
     position: absolute; inset: 0;
-    background: #f5f0e8; padding: 12px 12px 44px 12px;
-    border-radius: 3px; box-shadow: 0 6px 30px rgba(0,0,0,0.5);
+    background: linear-gradient(175deg, #f8f4ec, #f0eade, #ebe5d8);
+    padding: 14px 14px 52px 14px;
+    border-radius: 2px;
+    box-shadow:
+      0 2px 4px rgba(0,0,0,0.15),
+      0 8px 24px rgba(0,0,0,0.35),
+      0 20px 60px rgba(0,0,0,0.25),
+      inset 0 0 0 1px rgba(255,255,255,0.08);
     display: flex; flex-direction: column;
     will-change: transform; cursor: grab;
   }
   .polaroid:active { cursor: grabbing; }
+
+  /* Subtle paper texture overlay */
+  .polaroid::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: 2px;
+  }
+
   .polaroid-img {
-    flex: 1; background: linear-gradient(135deg, #c8b8a0, #e8d8c4);
-    border-radius: 1px; display: flex; align-items: center; justify-content: center;
-    font-size: 3.5rem; overflow: hidden;
+    flex: 1;
+    border-radius: 1px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.5rem;
+    overflow: hidden;
+    position: relative;
+    /* Photo-like gradient placeholder */
+    background: linear-gradient(145deg, #d4c5a9 0%, #c2b393 30%, #b8a888 50%, #c8b898 70%, #d0c4a8 100%);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
   }
+
   .polaroid-caption {
-    font-family: 'Playfair Display', serif; font-style: italic;
-    font-size: 0.8rem; color: #3a3028; text-align: center;
-    margin-top: 10px; line-height: 1.5;
+    font-family: 'Caveat', cursive;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: #4a4035;
+    text-align: center;
+    margin-top: 12px;
+    line-height: 1.4;
+    letter-spacing: 0.2px;
   }
-  .counter {
-    position: fixed; bottom: 50px; left: 0; right: 0;
-    text-align: center; font-size: 0.65rem; color: #ffffff20;
-    letter-spacing: 3px; pointer-events: none;
+
+  /* Dots indicator */
+  .dots {
+    position: fixed;
+    bottom: 48px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    pointer-events: none;
   }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    transition: background 0.4s, transform 0.4s;
+  }
+  .dot.active {
+    background: rgba(255,105,180,0.4);
+    transform: scale(1.3);
+  }
+
   .hint {
-    position: fixed; bottom: 28px; left: 0; right: 0;
-    text-align: center; font-size: 0.55rem; color: #ffffff12;
-    letter-spacing: 2px; text-transform: uppercase; pointer-events: none;
+    position: fixed;
+    bottom: 24px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.5rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
   }
-  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff15; text-decoration: none; z-index: 200; }
-  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.55rem; color: #ffffff10; letter-spacing: 1px; z-index: 200; }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
 </style>
 </head>
 <body>
+
+<div class="ambient"></div>
+
 <a href="../building-blocks.html" class="back-link">← blocks</a>
 <div class="block-label">closr · memory polaroid</div>
+
 <div class="stack" id="stack">
   <div class="polaroid"><div class="polaroid-img">🐱</div><div class="polaroid-caption">Kiru approved of me. That's when I knew I was in</div></div>
   <div class="polaroid"><div class="polaroid-img">✈️</div><div class="polaroid-caption">Airport goodbye. You held on so tight I almost missed the flight</div></div>
   <div class="polaroid"><div class="polaroid-img">😂</div><div class="polaroid-caption">When you tried to surf and lasted exactly four seconds</div></div>
   <div class="polaroid"><div class="polaroid-img">🌅</div><div class="polaroid-caption">The sunset in Hawaii when you said "I could do this forever"</div></div>
 </div>
-<div class="counter" id="counter">1 / 4</div>
-<div class="hint">swipe or tap to flip through</div>
+
+<div class="dots" id="dots"></div>
+<div class="hint">swipe or tap</div>
 
 <script>
 (function(){
+  // Spawn floating particles
+  for (var i = 0; i < 15; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = Math.random() * 100 + 'vh';
+    p.style.width = (Math.random() * 2 + 1) + 'px';
+    p.style.height = p.style.width;
+    p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    document.body.appendChild(p);
+  }
+
   var stack = document.getElementById('stack');
-  var counter = document.getElementById('counter');
+  var dotsEl = document.getElementById('dots');
   var total = stack.children.length;
   var startX = 0, deltaX = 0, isDragging = false, animating = false, hasMoved = false;
   var threshold = 60;
@@ -74,8 +172,24 @@
   function getCards() { return Array.from(stack.children); }
   getCards().forEach(function(c, i){ c.dataset.origIndex = i; });
 
+  // Create dots
+  for (var i = 0; i < total; i++) {
+    var d = document.createElement('div');
+    d.className = 'dot';
+    dotsEl.appendChild(d);
+  }
+
+  function updateDots() {
+    var top = getCards().slice(-1)[0];
+    var idx = parseInt(top.dataset.origIndex);
+    var dots = dotsEl.children;
+    for (var i = 0; i < dots.length; i++) {
+      dots[i].className = i === idx ? 'dot active' : 'dot';
+    }
+  }
+
   function backPos(depth) {
-    return { s: 1 - depth * 0.025, y: depth * 4, rot: depth % 2 === 0 ? 1.5 : -1 };
+    return { s: 1 - depth * 0.022, y: depth * 5, rot: depth % 2 === 0 ? 1.2 : -0.8 };
   }
 
   function layoutRest(skipCard) {
@@ -84,18 +198,17 @@
       if (c === skipCard) return;
       var depth = cards.length - 1 - i;
       c.style.zIndex = i;
-      c.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+      c.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.5s';
       c.style.pointerEvents = (depth === 0) ? 'auto' : 'none';
       var p = backPos(depth);
-      c.style.transform = depth === 0
-        ? 'rotate(-2deg) scale(1) translateX(0px) translateY(0px)'
-        : 'rotate('+p.rot+'deg) scale('+p.s+') translateX(0px) translateY('+p.y+'px)';
+      if (depth === 0) {
+        c.style.transform = 'rotate(-1.5deg) scale(1) translateX(0px) translateY(0px)';
+        c.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.35), 0 20px 60px rgba(0,0,0,0.25)';
+      } else {
+        c.style.transform = 'rotate('+p.rot+'deg) scale('+p.s+') translateX(0px) translateY('+p.y+'px)';
+        c.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.2)';
+      }
     });
-  }
-
-  function updateCounter() {
-    var top = getCards().slice(-1)[0];
-    counter.textContent = (parseInt(top.dataset.origIndex) + 1) + ' / ' + total;
   }
 
   function getTopCard() { return getCards().slice(-1)[0]; }
@@ -115,16 +228,12 @@
     var targetDepth = total - 1;
     var tp = backPos(targetDepth);
 
-    // Just clear of the stack — card width + small gap
     var stackRect = stack.getBoundingClientRect();
-    var clearX = dir * (stackRect.width + 20);
+    var clearX = dir * (stackRect.width + 25);
     var clearY = 0;
-    var clearRot = dir * 8;
-    var clearScale = 0.95;
+    var clearRot = dir * 6;
+    var clearScale = 0.96;
 
-    // Phase 1 (0-0.3): slide just outside the stack
-    // Phase 2 (0.3-0.35): z-swap while just outside
-    // Phase 3 (0.35-1.0): slide back in to back of stack
     var duration = 1000;
     var p1End = 0.3;
     var p2End = 0.35;
@@ -153,7 +262,7 @@
           card.style.zIndex = 0;
           getCards().forEach(function(c, i) { if (c !== card) c.style.zIndex = i; });
           layoutRest(card);
-          updateCounter();
+          updateDots();
         }
       } else {
         var p = easeInOut((t - p2End) / (1 - p2End));
@@ -164,6 +273,9 @@
       }
 
       card.style.transform = 'translateX('+x+'px) translateY('+y+'px) rotate('+rot+'deg) scale('+scale+')';
+      // Shadow fades down when going to back
+      var shadowAlpha = t > p2End ? lerp(0.35, 0.15, (t-p2End)/(1-p2End)) : 0.35;
+      card.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,'+shadowAlpha+')';
 
       if (t < 1) {
         requestAnimationFrame(frame);
@@ -185,7 +297,13 @@
     deltaX = cx - startX;
     if (Math.abs(deltaX) > 5) hasMoved = true;
     var top = getTopCard();
-    top.style.transform = 'translateX('+deltaX+'px) rotate('+(-2 + deltaX*0.1)+'deg)';
+    var rot = -1.5 + deltaX * 0.08;
+    // Shadow lifts as you drag
+    var lift = Math.min(Math.abs(deltaX) / 100, 1);
+    var sy = 20 + lift * 15;
+    var sb = 60 + lift * 20;
+    top.style.transform = 'translateX('+deltaX+'px) rotate('+rot+'deg) scale('+(1 + lift*0.02)+')';
+    top.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15), 0 '+sy+'px '+sb+'px rgba(0,0,0,'+(0.25 + lift*0.1)+')';
   }
   function onEnd() {
     if (!isDragging) return;
@@ -195,8 +313,9 @@
     if (Math.abs(deltaX) > threshold) {
       animateToBack(top, deltaX > 0 ? 1 : -1);
     } else {
-      top.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1)';
-      top.style.transform = 'rotate(-2deg) scale(1) translateX(0px) translateY(0px)';
+      top.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.5s';
+      top.style.transform = 'rotate(-1.5deg) scale(1) translateX(0px) translateY(0px)';
+      top.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.35), 0 20px 60px rgba(0,0,0,0.25)';
     }
   }
 
@@ -208,7 +327,7 @@
   window.addEventListener('touchend', function(){ onEnd(); });
 
   layoutRest();
-  updateCounter();
+  updateDots();
 })();
 </script>
 </body>
