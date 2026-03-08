@@ -10,49 +10,47 @@
   html, body { height: 100%; overflow: hidden; }
   body {
     background: #0a0a12;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
     font-family: 'Inter', sans-serif;
     min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
   }
 
-  .table {
+  .stack {
     position: relative;
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
+    width: min(72vw, 280px);
+    height: min(92vw, 380px);
   }
 
   .polaroid {
     position: absolute;
+    inset: 0;
     background: #f5f0e8;
-    padding: 10px 10px 36px 10px;
-    border-radius: 2px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    width: min(55vw, 220px);
+    padding: 12px 12px 44px 12px;
+    border-radius: 3px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.5);
+    display: flex; flex-direction: column;
+    transform-origin: center center;
+    will-change: transform;
     cursor: grab;
-    user-select: none;
-    -webkit-user-select: none;
-    transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1), z-index 0s, box-shadow 0.3s;
-    opacity: 0;
-    animation: polaroidDrop 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards;
   }
   .polaroid:active { cursor: grabbing; }
-  .polaroid.focused {
-    z-index: 100 !important;
-    box-shadow: 0 12px 60px rgba(0,0,0,0.7), 0 0 80px rgba(255,105,180,0.1);
+  .polaroid.gone {
+    transition: transform 0.4s ease-in, opacity 0.4s ease-in;
+    pointer-events: none;
+  }
+  .polaroid.back {
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
   }
 
   .polaroid-img {
-    width: 100%; aspect-ratio: 1;
+    flex: 1;
     background: linear-gradient(135deg, #c8b8a0, #e8d8c4);
     border-radius: 1px;
-    display: flex;
-    align-items: center; justify-content: center;
-    font-size: 2.5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.5rem;
     overflow: hidden;
   }
   .polaroid-img img { width: 100%; height: 100%; object-fit: cover; }
@@ -60,177 +58,181 @@
   .polaroid-caption {
     font-family: 'Playfair Display', serif;
     font-style: italic;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     color: #3a3028;
     text-align: center;
-    margin-top: 8px;
+    margin-top: 10px;
     line-height: 1.5;
   }
 
-  .scene-transition {
+  .counter {
     position: fixed;
-    bottom: 40px;
+    bottom: 50px;
     left: 0; right: 0;
-    font-size: 0.75rem;
-    color: #ffffff15;
     text-align: center;
-    font-style: italic;
-    padding: 0 30px;
-    animation: captionFade 1s ease-out 2s both;
+    font-size: 0.65rem;
+    color: #ffffff20;
+    letter-spacing: 3px;
     pointer-events: none;
   }
 
   .hint {
     position: fixed;
-    top: 16px;
+    bottom: 28px;
     left: 0; right: 0;
     text-align: center;
-    font-size: 0.6rem;
-    color: #ffffff18;
+    font-size: 0.55rem;
+    color: #ffffff12;
     letter-spacing: 2px;
     text-transform: uppercase;
     pointer-events: none;
-    animation: captionFade 1s ease-out 2.5s both;
   }
+
+  .scene-transition {
+    position: fixed;
+    top: 40px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #ffffff12;
+    font-style: italic;
+    padding: 0 30px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .scene-transition.show { opacity: 1; }
 
   .back-link {
-    position: fixed;
-    bottom: 16px;
-    left: 16px;
-    font-size: 0.65rem;
-    color: #ffffff15;
-    text-decoration: none;
-    z-index: 200;
+    position: fixed; top: 14px; left: 14px;
+    font-size: 0.65rem; color: #ffffff15;
+    text-decoration: none; z-index: 200;
   }
-
   .block-label {
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    font-size: 0.55rem;
-    color: #ffffff10;
-    letter-spacing: 1px;
-    z-index: 200;
-  }
-
-  @keyframes polaroidDrop {
-    from { opacity: 0; transform: var(--start-tf) scale(0.8); }
-    to { opacity: 1; transform: var(--end-tf) scale(1); }
-  }
-  @keyframes captionFade {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    position: fixed; top: 14px; right: 14px;
+    font-size: 0.55rem; color: #ffffff10;
+    letter-spacing: 1px; z-index: 200;
   }
 </style>
 </head>
 <body>
 
-<div class="table" id="table">
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · memory polaroid</div>
 
-  <!-- SLOT: photos[] — array of {photo, caption} objects filled by AI -->
+<div class="stack" id="stack">
 
-  <div class="polaroid" data-rot="-4" data-x="12" data-y="15"
-       style="--start-tf:rotate(-10deg);--end-tf:rotate(-4deg);left:12%;top:15%;z-index:1;animation-delay:0s;">
-    <div class="polaroid-img">🌅</div>
-    <div class="polaroid-caption"><!-- SLOT: ai_caption_1 --> The sunset in Hawaii when you said "I could do this forever" <!-- /SLOT --></div>
-  </div>
-
-  <div class="polaroid" data-rot="3" data-x="45" data-y="8"
-       style="--start-tf:rotate(8deg);--end-tf:rotate(3deg);left:45%;top:8%;z-index:2;animation-delay:0.15s;">
-    <div class="polaroid-img">😂</div>
-    <div class="polaroid-caption"><!-- SLOT: ai_caption_2 --> When you tried to surf and lasted exactly four seconds <!-- /SLOT --></div>
-  </div>
-
-  <div class="polaroid" data-rot="-2" data-x="25" data-y="45"
-       style="--start-tf:rotate(-7deg);--end-tf:rotate(-2deg);left:25%;top:45%;z-index:3;animation-delay:0.3s;">
-    <div class="polaroid-img">✈️</div>
-    <div class="polaroid-caption"><!-- SLOT: ai_caption_3 --> Airport goodbye. You held on so tight I almost missed the flight <!-- /SLOT --></div>
-  </div>
-
-  <div class="polaroid" data-rot="5" data-x="55" data-y="50"
-       style="--start-tf:rotate(10deg);--end-tf:rotate(5deg);left:55%;top:50%;z-index:4;animation-delay:0.45s;">
+  <!-- Card 4 (bottom of stack, shown last) -->
+  <div class="polaroid" data-index="3" style="z-index:1; transform: rotate(1deg) scale(0.94) translateY(9px);">
     <div class="polaroid-img">🐱</div>
     <div class="polaroid-caption"><!-- SLOT: ai_caption_4 --> Kiru approved of me. That's when I knew I was in <!-- /SLOT --></div>
   </div>
 
+  <!-- Card 3 -->
+  <div class="polaroid" data-index="2" style="z-index:2; transform: rotate(-1.5deg) scale(0.96) translateY(6px);">
+    <div class="polaroid-img">✈️</div>
+    <div class="polaroid-caption"><!-- SLOT: ai_caption_3 --> Airport goodbye. You held on so tight I almost missed the flight <!-- /SLOT --></div>
+  </div>
+
+  <!-- Card 2 -->
+  <div class="polaroid" data-index="1" style="z-index:3; transform: rotate(0.8deg) scale(0.98) translateY(3px);">
+    <div class="polaroid-img">😂</div>
+    <div class="polaroid-caption"><!-- SLOT: ai_caption_2 --> When you tried to surf and lasted exactly four seconds <!-- /SLOT --></div>
+  </div>
+
+  <!-- Card 1 (top of stack, shown first) -->
+  <div class="polaroid" data-index="0" style="z-index:4; transform: rotate(-2deg);">
+    <div class="polaroid-img">🌅</div>
+    <div class="polaroid-caption"><!-- SLOT: ai_caption_1 --> The sunset in Hawaii when you said "I could do this forever" <!-- /SLOT --></div>
+  </div>
+
 </div>
 
-<div class="hint">tap a photo · drag to rearrange</div>
-<div class="scene-transition"><!-- SLOT: ai_scene_transition --> every photo is a promise that we'll make more <!-- /SLOT --></div>
-
-<a href="../building-blocks.html" class="back-link">← blocks</a>
-<div class="block-label">closr · memory polaroid</div>
+<div class="counter" id="counter">1 / 4</div>
+<div class="hint">swipe to see more</div>
+<div class="scene-transition" id="end-msg"><!-- SLOT: ai_scene_transition --> every photo is a promise that we'll make more <!-- /SLOT --></div>
 
 <script>
 (function(){
-  var table = document.getElementById('table');
-  var polars = document.querySelectorAll('.polaroid');
-  var topZ = polars.length + 1;
-  var focused = null;
-  var dragging = null;
-  var dragOffX, dragOffY, hasMoved;
+  var stack = document.getElementById('stack');
+  var cards = Array.from(document.querySelectorAll('.polaroid'));
+  var counter = document.getElementById('counter');
+  var endMsg = document.getElementById('end-msg');
+  var total = cards.length;
+  var current = 0; // index into the ordered stack (0 = top card)
+  var topCard = cards[cards.length - 1]; // last in DOM = top visually
 
-  polars.forEach(function(p){
-    // Touch & mouse drag
-    function startDrag(cx, cy){
-      var r = p.getBoundingClientRect();
-      dragOffX = cx - r.left;
-      dragOffY = cy - r.top;
-      dragging = p;
-      hasMoved = false;
-      p.style.zIndex = topZ++;
-      p.style.transition = 'box-shadow 0.3s';
-    }
-    function moveDrag(cx, cy){
-      if(dragging !== p) return;
-      var x = cx - dragOffX;
-      var y = cy - dragOffY;
-      p.style.left = x + 'px';
-      p.style.top = y + 'px';
-      hasMoved = true;
-    }
-    function endDrag(){
-      if(dragging !== p) return;
-      dragging = null;
-      p.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s';
-      // Tap (no drag) = focus/unfocus
-      if(!hasMoved){
-        if(focused === p){
-          // Unfocus — return to natural position
-          p.classList.remove('focused');
-          var rot = p.getAttribute('data-rot') || 0;
-          p.style.transform = 'rotate('+rot+'deg) scale(1)';
-          focused = null;
-        } else {
-          // Unfocus previous
-          if(focused){
-            focused.classList.remove('focused');
-            var pr = focused.getAttribute('data-rot') || 0;
-            focused.style.transform = 'rotate('+pr+'deg) scale(1)';
-          }
-          // Focus this one — center and scale up
-          p.classList.add('focused');
-          p.style.zIndex = topZ++;
-          var tr = table.getBoundingClientRect();
-          var pr2 = p.getBoundingClientRect();
-          var cx2 = tr.width/2 - pr2.width/2;
-          var cy2 = tr.height/2 - pr2.height/2;
-          p.style.left = cx2 + 'px';
-          p.style.top = cy2 + 'px';
-          p.style.transform = 'rotate(0deg) scale(1.25)';
-          focused = p;
-        }
-      }
-    }
+  var startX = 0, startY = 0, deltaX = 0, deltaY = 0, isDragging = false;
+  var threshold = 80;
 
-    p.addEventListener('mousedown', function(e){ e.preventDefault(); startDrag(e.clientX, e.clientY); });
-    window.addEventListener('mousemove', function(e){ if(dragging===p) moveDrag(e.clientX, e.clientY); });
-    window.addEventListener('mouseup', function(){ if(dragging===p) endDrag(); });
+  function getTopCard() {
+    // The visible top card is the last .polaroid that isn't .gone
+    for (var i = cards.length - 1; i >= 0; i--) {
+      if (!cards[i].classList.contains('gone')) return cards[i];
+    }
+    return null;
+  }
 
-    p.addEventListener('touchstart', function(e){ e.preventDefault(); var t=e.touches[0]; startDrag(t.clientX, t.clientY); }, {passive:false});
-    window.addEventListener('touchmove', function(e){ if(dragging===p){ var t=e.touches[0]; moveDrag(t.clientX, t.clientY); }}, {passive:false});
-    window.addEventListener('touchend', function(){ if(dragging===p) endDrag(); });
-  });
+  function updateCounter() {
+    var gone = document.querySelectorAll('.polaroid.gone').length;
+    if (gone >= total) {
+      counter.textContent = '✓';
+      endMsg.classList.add('show');
+    } else {
+      counter.textContent = (gone + 1) + ' / ' + total;
+    }
+  }
+
+  function onStart(cx, cy) {
+    topCard = getTopCard();
+    if (!topCard) return;
+    isDragging = true;
+    startX = cx;
+    startY = cy;
+    deltaX = 0;
+    topCard.style.transition = 'none';
+  }
+
+  function onMove(cx, cy) {
+    if (!isDragging || !topCard) return;
+    deltaX = cx - startX;
+    deltaY = cy - startY;
+    var rot = deltaX * 0.08;
+    topCard.style.transform = 'translateX(' + deltaX + 'px) translateY(' + (deltaY * 0.3) + 'px) rotate(' + rot + 'deg)';
+    topCard.style.opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 400);
+  }
+
+  function onEnd() {
+    if (!isDragging || !topCard) return;
+    isDragging = false;
+    if (Math.abs(deltaX) > threshold) {
+      // Swipe away
+      var dir = deltaX > 0 ? 1 : -1;
+      topCard.classList.add('gone');
+      topCard.style.transform = 'translateX(' + (dir * 600) + 'px) rotate(' + (dir * 30) + 'deg)';
+      topCard.style.opacity = '0';
+      updateCounter();
+    } else {
+      // Snap back
+      topCard.classList.add('back');
+      topCard.style.opacity = '1';
+      // Restore subtle offset based on position
+      topCard.style.transform = 'rotate(-2deg)';
+      setTimeout(function(){ if(topCard) topCard.classList.remove('back'); }, 400);
+    }
+  }
+
+  // Mouse events
+  stack.addEventListener('mousedown', function(e) { e.preventDefault(); onStart(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', function() { onEnd(); });
+
+  // Touch events
+  stack.addEventListener('touchstart', function(e) { e.preventDefault(); var t = e.touches[0]; onStart(t.clientX, t.clientY); }, {passive:false});
+  window.addEventListener('touchmove', function(e) { if(isDragging) { var t = e.touches[0]; onMove(t.clientX, t.clientY); }}, {passive:false});
+  window.addEventListener('touchend', function() { onEnd(); });
+
+  updateCounter();
 })();
 </script>
 
