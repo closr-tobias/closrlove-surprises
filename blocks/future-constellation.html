@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Future Constellation — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #06060c;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 100dvh;
+    user-select: none; -webkit-user-select: none;
+    touch-action: none;
+    overflow: hidden;
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; font-family: 'Inter', sans-serif; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; font-family: 'Inter', sans-serif; }
+
+  .star {
+    position: fixed;
+    width: 1px; height: 1px;
+    background: #fff;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: twinkle ease-in-out infinite alternate;
+  }
+  @keyframes twinkle {
+    0% { opacity: 0.1; transform: scale(1); }
+    100% { opacity: 0.7; transform: scale(1.3); }
+  }
+
+  .nebula {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(80px);
+    opacity: 0;
+    animation: nebulaIn 4s ease-out forwards;
+  }
+  @keyframes nebulaIn { to { opacity: 1; } }
+
+  .center-word {
+    position: absolute;
+    font-size: clamp(2.8rem, 9vw, 5rem);
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    color: transparent;
+    background: linear-gradient(135deg, #e8c4a0, #f0d0b8, #d4a8c8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    z-index: 20;
+    opacity: 0;
+    transform: scale(0.8);
+    animation: centerReveal 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s forwards;
+    text-align: center;
+    line-height: 1.1;
+  }
+  @keyframes centerReveal {
+    0% { opacity: 0; transform: scale(0.8); letter-spacing: 0.6em; filter: blur(8px); }
+    60% { opacity: 1; filter: blur(0); }
+    100% { opacity: 1; transform: scale(1); letter-spacing: 0.15em; filter: blur(0); }
+  }
+
+  .phrase {
+    position: absolute;
+    font-size: clamp(0.7rem, 2.2vw, 0.95rem);
+    font-weight: 300;
+    color: #b8b0c8;
+    white-space: nowrap;
+    opacity: 0;
+    z-index: 15;
+    pointer-events: none;
+    transition: color 0.6s, text-shadow 0.6s;
+    font-style: italic;
+    letter-spacing: 0.04em;
+  }
+  .phrase.visible {
+    animation: phraseIn 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+  @keyframes phraseIn {
+    0% { opacity: 0; filter: blur(6px); }
+    100% { opacity: 0.7; filter: blur(0); }
+  }
+  .phrase.lit {
+    color: #f0d8c4;
+    text-shadow: 0 0 30px rgba(232, 196, 160, 0.3);
+    opacity: 1 !important;
+  }
+
+  .connections {
+    position: fixed; inset: 0;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .connections line {
+    stroke: rgba(200, 180, 220, 0.06);
+    stroke-width: 0.5;
+    transition: stroke 1s, stroke-opacity 1s;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 40px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6rem;
+    color: #ffffff15;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    z-index: 100;
+    opacity: 0;
+    animation: hintIn 1s ease 6s forwards;
+  }
+  @keyframes hintIn { to { opacity: 1; } }
+  .hint.hidden { opacity: 0 !important; transition: opacity 0.5s; }
+
+  .shooting-star {
+    position: fixed;
+    width: 80px; height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.6), transparent);
+    pointer-events: none;
+    z-index: 3;
+    opacity: 0;
+  }
+
+  .final-message {
+    position: fixed;
+    bottom: 80px;
+    font-size: clamp(0.75rem, 2vw, 0.9rem);
+    font-weight: 300;
+    color: #d4c0a8;
+    letter-spacing: 0.08em;
+    text-align: center;
+    z-index: 50;
+    opacity: 0;
+    padding: 0 30px;
+    font-style: italic;
+    line-height: 1.6;
+  }
+  .final-message.show {
+    animation: finalIn 3s ease forwards;
+  }
+  @keyframes finalIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 0.8; transform: translateY(0); }
+  }
+
+  .drifting {
+    animation: gentleDrift 20s ease-in-out infinite alternate !important;
+    opacity: 0.7 !important;
+  }
+  @keyframes gentleDrift {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(3px, -2px); }
+    50% { transform: translate(-2px, 4px); }
+    75% { transform: translate(4px, 1px); }
+    100% { transform: translate(-1px, -3px); }
+  }
+</style>
+</head>
+<body>
+
+<a class="back-link" href="../building-blocks.html">← blocks</a>
+<span class="block-label">FUTURE VISION</span>
+
+<svg class="connections" id="connections"></svg>
+<div class="hint" id="hint">tap anywhere to illuminate</div>
+<div class="final-message" id="final"></div>
+
+<script>
+// === AI CONTENT SLOTS ===
+
+// <!-- SLOT: center_word --> The central anchoring word
+const centerWord = 'Someday';
+// <!-- /SLOT -->
+
+// <!-- SLOT: future_visions --> Future moments the AI envisions for this couple
+const visions = [
+  'an apartment with too many plants',
+  'Sunday mornings with nowhere to be',
+  'a dog named something ridiculous',
+  'cooking disasters we laugh about for years',
+  'your head on my shoulder, flight to anywhere',
+  'slow dancing in the kitchen at 2 AM',
+  'arguing over whose turn to pick the movie',
+  'a front porch and two rocking chairs',
+  'matching terrible Christmas sweaters',
+  'building IKEA furniture without divorcing',
+  'road trips with a playlist we both hate',
+  'growing old and still making each other snort-laugh'
+];
+// <!-- /SLOT -->
+
+// <!-- SLOT: closing_line --> The final emotional anchor
+const closingLine = 'Every version of the future I imagine has you in it.';
+// <!-- /SLOT -->
+
+// === SETUP ===
+const W = window.innerWidth;
+const H = window.innerHeight;
+const CX = W / 2;
+const CY = H / 2;
+
+// Starfield
+for (let i = 0; i < 120; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  s.style.left = Math.random() * 100 + '%';
+  s.style.top = Math.random() * 100 + '%';
+  s.style.width = s.style.height = (Math.random() * 1.5 + 0.5) + 'px';
+  s.style.animationDuration = (Math.random() * 3 + 2) + 's';
+  s.style.animationDelay = (Math.random() * 4) + 's';
+  document.body.appendChild(s);
+}
+
+// Nebula glows
+[
+  { x: '30%', y: '25%', w: 300, h: 200, c: 'rgba(80,50,120,0.06)', d: '0s' },
+  { x: '65%', y: '60%', w: 250, h: 280, c: 'rgba(120,70,90,0.05)', d: '1s' },
+  { x: '20%', y: '70%', w: 200, h: 200, c: 'rgba(60,80,130,0.04)', d: '2s' },
+].forEach(n => {
+  const el = document.createElement('div');
+  el.className = 'nebula';
+  el.style.left = n.x; el.style.top = n.y;
+  el.style.width = n.w + 'px'; el.style.height = n.h + 'px';
+  el.style.background = 'radial-gradient(ellipse, ' + n.c + ', transparent 70%)';
+  el.style.animationDelay = n.d;
+  document.body.appendChild(el);
+});
+
+// Center word
+const cw = document.createElement('div');
+cw.className = 'center-word';
+cw.textContent = centerWord;
+document.body.appendChild(cw);
+
+// Position phrases in constellation
+const phraseEls = [];
+const positions = [];
+const radiusMin = Math.min(W, H) * 0.22;
+const radiusMax = Math.min(W, H) * 0.42;
+
+visions.forEach((text, i) => {
+  const angle = (i / visions.length) * Math.PI * 2 + (Math.random() * 0.3 - 0.15);
+  const r = radiusMin + Math.random() * (radiusMax - radiusMin);
+  const x = CX + Math.cos(angle) * r;
+  const y = CY + Math.sin(angle) * r;
+
+  const el = document.createElement('div');
+  el.className = 'phrase';
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.transform = 'translate(-50%, -50%) rotate(' + (Math.random() * 6 - 3).toFixed(1) + 'deg)';
+  const sv = 0.85 + Math.random() * 0.3;
+  el.style.fontSize = 'calc(clamp(0.7rem, 2.2vw, 0.95rem) * ' + sv + ')';
+
+  document.body.appendChild(el);
+  phraseEls.push(el);
+  positions.push({ x, y });
+});
+
+// Constellation lines
+const svg = document.getElementById('connections');
+svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+const lines = [];
+for (let i = 0; i < positions.length; i++) {
+  for (let j = i + 1; j < positions.length; j++) {
+    const dx = positions[i].x - positions[j].x;
+    const dy = positions[i].y - positions[j].y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < radiusMax * 0.9) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', positions[i].x);
+      line.setAttribute('y1', positions[i].y);
+      line.setAttribute('x2', positions[j].x);
+      line.setAttribute('y2', positions[j].y);
+      svg.appendChild(line);
+      lines.push({ el: line, i: i, j: j });
+    }
+  }
+  // Faint line to center
+  const cLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  cLine.setAttribute('x1', CX);
+  cLine.setAttribute('y1', CY);
+  cLine.setAttribute('x2', positions[i].x);
+  cLine.setAttribute('y2', positions[i].y);
+  cLine.style.stroke = 'rgba(200, 180, 220, 0.03)';
+  svg.appendChild(cLine);
+}
+
+// Staggered reveal
+phraseEls.forEach((el, i) => {
+  setTimeout(() => el.classList.add('visible'), 3000 + i * 400);
+});
+
+// Start drift after all revealed
+setTimeout(() => {
+  phraseEls.forEach((el, i) => {
+    el.style.animationDelay = (i * 0.8) + 's';
+    el.classList.add('drifting');
+  });
+}, 3000 + visions.length * 400 + 1000);
+
+// === TAP TO ILLUMINATE ===
+let tapCount = 0;
+let allLit = false;
+
+document.body.addEventListener('click', (e) => {
+  if (allLit) return;
+  document.getElementById('hint').classList.add('hidden');
+
+  let nearest = null, nearDist = Infinity;
+  phraseEls.forEach((el) => {
+    if (el.classList.contains('lit')) return;
+    const rect = el.getBoundingClientRect();
+    const px = rect.left + rect.width / 2;
+    const py = rect.top + rect.height / 2;
+    const d = Math.sqrt((e.clientX - px) ** 2 + (e.clientY - py) ** 2);
+    if (d < nearDist) { nearDist = d; nearest = el; }
+  });
+
+  if (nearest) {
+    nearest.classList.add('lit');
+    tapCount++;
+
+    const idx = phraseEls.indexOf(nearest);
+    lines.forEach(l => {
+      if (l.i === idx || l.j === idx) {
+        const otherIdx = l.i === idx ? l.j : l.i;
+        if (phraseEls[otherIdx].classList.contains('lit')) {
+          l.el.style.stroke = 'rgba(232, 196, 160, 0.15)';
+          l.el.style.strokeWidth = '0.8';
+        }
+      }
+    });
+
+    spawnBurst(nearest.getBoundingClientRect());
+    if (tapCount % 3 === 0) shootingStar();
+    if (tapCount >= phraseEls.length) {
+      allLit = true;
+      setTimeout(showFinal, 1200);
+    }
+  }
+});
+
+function spawnBurst(rect) {
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  for (let i = 0; i < 6; i++) {
+    const p = document.createElement('div');
+    p.style.cssText = 'position:fixed;left:' + cx + 'px;top:' + cy + 'px;width:2px;height:2px;background:#e8c4a0;border-radius:50%;pointer-events:none;z-index:30;opacity:0.8;';
+    document.body.appendChild(p);
+    const angle = (i / 6) * Math.PI * 2;
+    const dist = 20 + Math.random() * 30;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    p.animate([
+      { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.8 },
+      { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(0)', opacity: 0 }
+    ], { duration: 800, easing: 'cubic-bezier(0.25,0.46,0.45,0.94)' }).onfinish = () => p.remove();
+  }
+}
+
+function shootingStar() {
+  const s = document.createElement('div');
+  s.className = 'shooting-star';
+  s.style.left = (Math.random() * W * 0.6 + W * 0.2) + 'px';
+  s.style.top = (Math.random() * H * 0.3) + 'px';
+  const rot = 25 + Math.random() * 20;
+  s.style.transform = 'rotate(' + rot + 'deg)';
+  document.body.appendChild(s);
+  s.animate([
+    { opacity: 0, transform: 'rotate(' + rot + 'deg) translateX(0)' },
+    { opacity: 0.8, offset: 0.2 },
+    { opacity: 0, transform: 'rotate(' + rot + 'deg) translateX(' + (200 + Math.random() * 150) + 'px)' }
+  ], { duration: 700, easing: 'ease-out' }).onfinish = () => s.remove();
+}
+
+function showFinal() {
+  svg.querySelectorAll('line').forEach(l => {
+    l.style.stroke = 'rgba(232, 196, 160, 0.1)';
+    l.style.strokeWidth = '0.6';
+  });
+  const final = document.getElementById('final');
+  final.textContent = closingLine;
+  final.classList.add('show');
+  cw.animate([
+    { textShadow: '0 0 40px rgba(232,196,160,0)' },
+    { textShadow: '0 0 40px rgba(232,196,160,0.3)' },
+    { textShadow: '0 0 40px rgba(232,196,160,0)' },
+  ], { duration: 3000, iterations: Infinity });
+}
+</script>
+</body>
+</html>
