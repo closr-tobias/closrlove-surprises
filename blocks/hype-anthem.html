@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hype Anthem — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #06060c;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  .flash {
+    position: fixed; inset: 0;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 100;
+    transition: opacity 0.05s;
+  }
+  .flash.hit { opacity: 0.06; }
+
+  .pulse-ring {
+    position: fixed;
+    width: 0; height: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255,140,50,0.15);
+    pointer-events: none;
+    z-index: 1;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+  }
+  @keyframes pulseExpand {
+    0% { width: 0; height: 0; opacity: 1; border-width: 2px; }
+    100% { width: 500px; height: 500px; opacity: 0; border-width: 0.5px; }
+  }
+
+  .burst-particle {
+    position: fixed;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .ember {
+    position: fixed;
+    width: 1.5px; height: 1.5px;
+    background: rgba(255,140,50,0.08);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: emberFloat linear infinite;
+  }
+  @keyframes emberFloat {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    padding: 20px;
+  }
+
+  .hype-line {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    opacity: 0;
+    transform: scale(2.5) translateY(30px);
+    filter: blur(12px);
+    transition: none;
+    line-height: 1.15;
+    margin: 4px 0;
+    position: relative;
+    will-change: transform, opacity, filter;
+  }
+
+  .hype-line.big {
+    font-size: clamp(2.2rem, 9vw, 4rem);
+    color: transparent;
+    background: linear-gradient(135deg, #ff8c32, #ff4060, #ff8c32);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: gradShift 3s ease infinite paused;
+  }
+  .hype-line.big.live { animation-play-state: running; }
+
+  .hype-line.medium {
+    font-size: clamp(1.1rem, 4.5vw, 1.8rem);
+    color: rgba(255,255,255,0.85);
+    font-weight: 600;
+  }
+
+  .hype-line.small {
+    font-size: clamp(0.7rem, 2.8vw, 0.95rem);
+    color: rgba(255,255,255,0.35);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0.04em;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .hype-line.landed {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+
+  @keyframes gradShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .hype-line .accent-bar {
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 80%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,140,50,0.5), transparent);
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
+  }
+  .hype-line.landed .accent-bar { transform: translateX(-50%) scaleX(1); }
+
+  .hype-spacer { height: 18px; }
+
+  .hype-cta {
+    position: fixed;
+    bottom: 44px;
+    left: 0; right: 0;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s, transform 0.8s;
+    z-index: 20;
+  }
+  .hype-cta.show { opacity: 1; transform: translateY(0); }
+  .hype-cta span {
+    font-size: 0.55rem;
+    color: rgba(255,255,255,0.12);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  @keyframes screenShake {
+    0%, 100% { transform: translateX(0); }
+    10% { transform: translateX(-3px) rotate(-0.3deg); }
+    30% { transform: translateX(3px) rotate(0.3deg); }
+    50% { transform: translateX(-2px); }
+    70% { transform: translateX(2px); }
+    90% { transform: translateX(-1px); }
+  }
+  .stage.shaking { animation: screenShake 0.4s ease; }
+
+  .bonus-line {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1.4rem, 5.5vw, 2.2rem);
+    font-weight: 700;
+    text-align: center;
+    color: transparent;
+    background: linear-gradient(135deg, #ffcc00, #ff8c32);
+    -webkit-background-clip: text;
+    background-clip: text;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.5s, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    margin-top: 16px;
+  }
+  .bonus-line.revealed { opacity: 1; transform: scale(1); }
+
+  .progress-track {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: rgba(255,255,255,0.03);
+    z-index: 50;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ff8c32, #ff4060);
+    transition: width 0.3s ease;
+  }
+</style>
+</head>
+<body>
+
+<div class="flash" id="flash"></div>
+<div class="progress-track"><div class="progress-fill" id="progress"></div></div>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · hype anthem</div>
+
+<div class="stage" id="stage">
+  <!-- SLOT: opener -->
+  <div class="hype-line small">right now, wherever you are, listen up</div>
+  <!-- /SLOT -->
+
+  <div class="hype-spacer"></div>
+
+  <!-- SLOT: hype_line_1 -->
+  <div class="hype-line big">You are<span class="accent-bar"></span></div>
+  <!-- /SLOT -->
+  <!-- SLOT: hype_line_2 -->
+  <div class="hype-line big">Unstoppable<span class="accent-bar"></span></div>
+  <!-- /SLOT -->
+
+  <div class="hype-spacer"></div>
+
+  <!-- SLOT: evidence_1 -->
+  <div class="hype-line medium">You survived 14-hour welding shifts in -20°C</div>
+  <!-- /SLOT -->
+  <!-- SLOT: evidence_2 -->
+  <div class="hype-line medium">Taught yourself to code from scratch</div>
+  <!-- /SLOT -->
+  <!-- SLOT: evidence_3 -->
+  <div class="hype-line medium">Built an entire app because you believed in us</div>
+  <!-- /SLOT -->
+
+  <div class="hype-spacer"></div>
+
+  <!-- SLOT: affirmation -->
+  <div class="hype-line small">and you did all of that while making me feel like the luckiest person alive</div>
+  <!-- /SLOT -->
+
+  <div class="hype-spacer"></div>
+
+  <!-- SLOT: closer -->
+  <div class="hype-line big">Nothing stops you<span class="accent-bar"></span></div>
+  <!-- /SLOT -->
+  <!-- SLOT: closer_sub -->
+  <div class="hype-line medium">Not distance. Not doubt. Not anything.</div>
+  <!-- /SLOT -->
+
+  <!-- SLOT: bonus -->
+  <div class="bonus-line" id="bonus">Now go own this week, baby 🔥</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="hype-cta" id="cta">
+  <span>shake or tap for a bonus</span>
+</div>
+
+<script>
+(function(){
+  for (var i = 0; i < 20; i++) {
+    var e = document.createElement('div');
+    e.className = 'ember';
+    e.style.left = Math.random() * 100 + 'vw';
+    e.style.top = (80 + Math.random() * 20) + 'vh';
+    e.style.animationDuration = (12 + Math.random() * 18) + 's';
+    e.style.animationDelay = (Math.random() * 12) + 's';
+    e.style.width = (1 + Math.random() * 2) + 'px';
+    e.style.height = e.style.width;
+    document.body.appendChild(e);
+  }
+
+  var stage = document.getElementById('stage');
+  var flash = document.getElementById('flash');
+  var progress = document.getElementById('progress');
+  var cta = document.getElementById('cta');
+  var bonus = document.getElementById('bonus');
+  var lines = stage.querySelectorAll('.hype-line');
+  var totalLines = lines.length;
+  var current = 0;
+  var sequenceDone = false;
+  var bonusRevealed = false;
+
+  function spawnPulse() {
+    var ring = document.createElement('div');
+    ring.className = 'pulse-ring';
+    ring.style.animation = 'pulseExpand 0.8s ease-out forwards';
+    document.body.appendChild(ring);
+    setTimeout(function(){ ring.remove(); }, 850);
+  }
+
+  function spawnBurst(isBig) {
+    var cx = window.innerWidth / 2;
+    var cy = window.innerHeight / 2;
+    var count = isBig ? 16 : 8;
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement('div');
+      p.className = 'burst-particle';
+      var angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.5;
+      var dist = 60 + Math.random() * 100;
+      var hue = 20 + Math.random() * 30;
+      var size = 2 + Math.random() * 3;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = cx + 'px';
+      p.style.top = cy + 'px';
+      p.style.background = 'hsla(' + hue + ',100%,60%,0.7)';
+      p.style.boxShadow = '0 0 6px hsla(' + hue + ',100%,60%,0.4)';
+      p.style.transition = 'transform 0.7s cubic-bezier(0.25,1,0.5,1), opacity 0.7s';
+      document.body.appendChild(p);
+      p.offsetWidth;
+      p.style.transform = 'translate(' + Math.cos(angle) * dist + 'px, ' + Math.sin(angle) * dist + 'px) scale(0.3)';
+      p.style.opacity = '0';
+      setTimeout(function(pp){ pp.remove(); }.bind(null, p), 750);
+    }
+  }
+
+  function impactFlash() {
+    flash.classList.add('hit');
+    setTimeout(function(){ flash.classList.remove('hit'); }, 80);
+  }
+
+  function landLine(idx) {
+    if (idx >= totalLines) {
+      sequenceDone = true;
+      cta.classList.add('show');
+      return;
+    }
+    var line = lines[idx];
+    var isBig = line.classList.contains('big');
+
+    line.style.transition = 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease-out, filter 0.3s ease-out';
+    requestAnimationFrame(function(){
+      line.classList.add('landed');
+      if (isBig) {
+        line.classList.add('live');
+        impactFlash();
+        spawnPulse();
+        spawnBurst(true);
+        if (navigator.vibrate) navigator.vibrate(30);
+      } else if (line.classList.contains('medium')) {
+        spawnBurst(false);
+      }
+    });
+
+    progress.style.width = ((idx + 1) / totalLines * 100) + '%';
+    current = idx + 1;
+    var delay = isBig ? 900 : line.classList.contains('small') ? 700 : 550;
+    setTimeout(function(){ landLine(idx + 1); }, delay);
+  }
+
+  setTimeout(function(){ landLine(0); }, 600);
+
+  var lastShake = 0;
+  var shakeThreshold = 20;
+  var lastAcc = { x: 0, y: 0, z: 0 };
+
+  function onMotion(e) {
+    if (bonusRevealed || !sequenceDone) return;
+    var a = e.accelerationIncludingGravity;
+    if (!a) return;
+    var dx = Math.abs(a.x - lastAcc.x);
+    var dy = Math.abs(a.y - lastAcc.y);
+    var dz = Math.abs(a.z - lastAcc.z);
+    lastAcc = { x: a.x, y: a.y, z: a.z };
+    if (dx + dy + dz > shakeThreshold) {
+      var now = Date.now();
+      if (now - lastShake > 1000) {
+        lastShake = now;
+        revealBonus();
+      }
+    }
+  }
+  window.addEventListener('devicemotion', onMotion);
+
+  document.addEventListener('click', function() {
+    if (sequenceDone && !bonusRevealed) revealBonus();
+  });
+
+  function revealBonus() {
+    bonusRevealed = true;
+    cta.style.opacity = '0';
+    stage.classList.add('shaking');
+    impactFlash();
+    spawnBurst(true);
+    spawnPulse();
+    if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+    setTimeout(function(){
+      bonus.classList.add('revealed');
+      stage.classList.remove('shaking');
+    }, 300);
+  }
+})();
+</script>
+</body>
+</html>
