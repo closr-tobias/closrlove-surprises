@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Celebration Fireworks — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&family=Caveat:wght@400;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #06060c;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    position: relative;
+  }
+
+  canvas#fireworks {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  .ambient {
+    position: fixed;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(255,180,80,0.04) 0%, rgba(255,100,150,0.02) 50%, transparent 70%);
+    pointer-events: none;
+    filter: blur(60px);
+    z-index: 0;
+  }
+
+  .content {
+    position: relative; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 0 32px;
+    gap: 24px;
+    opacity: 0;
+    animation: contentIn 1.5s ease 0.3s forwards;
+    pointer-events: none;
+  }
+  @keyframes contentIn {
+    0% { opacity: 0; transform: translateY(20px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .milestone-label {
+    font-size: 0.6rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+    font-weight: 500;
+  }
+
+  .headline {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3rem, 14vw, 6rem);
+    font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(135deg, #ffd700, #ff8c42, #ff5e8a, #c77dff, #5e9eff, #ffd700);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 4s ease infinite;
+    filter: drop-shadow(0 0 30px rgba(255,140,66,0.15));
+  }
+  @keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .headline-sub {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.2rem, 5vw, 2rem);
+    font-weight: 400;
+    font-style: italic;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.3;
+  }
+
+  .message {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+    color: rgba(255,255,255,0.35);
+    line-height: 1.6;
+    max-width: 300px;
+    font-weight: 400;
+  }
+
+  .tap-ring {
+    position: fixed;
+    border-radius: 50%;
+    border: 1px solid rgba(255,215,0,0.15);
+    pointer-events: none;
+    z-index: 5;
+    animation: ringPulse 0.8s ease-out forwards;
+  }
+  @keyframes ringPulse {
+    0% { width: 0; height: 0; opacity: 0.6; }
+    100% { width: 120px; height: 120px; opacity: 0; }
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 28px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.5rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 200;
+    animation: hintFade 3s ease 4s forwards;
+  }
+  @keyframes hintFade { to { opacity: 0; } }
+
+  .star {
+    position: fixed;
+    width: 1px; height: 1px;
+    background: white;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: twinkle ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.05; }
+    50% { opacity: 0.25; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="fireworks"></canvas>
+<div class="ambient"></div>
+
+<a href="../building-blocks.html" class="back-link">&larr; blocks</a>
+<div class="block-label">closr &middot; celebration</div>
+
+<!-- SLOT: milestone_label --> <span style="display:none" id="slotLabel">Together Since</span> <!-- /SLOT -->
+<!-- SLOT: headline --> <span style="display:none" id="slotHeadline">6 Months</span> <!-- /SLOT -->
+<!-- SLOT: headline_sub --> <span style="display:none" id="slotSub">of us</span> <!-- /SLOT -->
+<!-- SLOT: message --> <span style="display:none" id="slotMessage">Half a year of late-night calls, terrible puns, and a love that crosses 5,000 miles like it's nothing. Here's to the next six — and the six hundred after that.</span> <!-- /SLOT -->
+
+<div class="content" id="content">
+  <div class="milestone-label" id="label"></div>
+  <div class="headline" id="headline"></div>
+  <div class="headline-sub" id="sub"></div>
+  <div class="message" id="message"></div>
+</div>
+
+<div class="hint">tap anywhere to celebrate</div>
+
+<script>
+(function(){
+  document.getElementById('label').textContent = document.getElementById('slotLabel').textContent;
+  document.getElementById('headline').textContent = document.getElementById('slotHeadline').textContent;
+  document.getElementById('sub').textContent = document.getElementById('slotSub').textContent;
+  document.getElementById('message').textContent = document.getElementById('slotMessage').textContent;
+
+  for (var i = 0; i < 40; i++) {
+    var s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.top = Math.random() * 100 + 'vh';
+    s.style.animationDuration = (Math.random() * 4 + 2) + 's';
+    s.style.animationDelay = (Math.random() * 4) + 's';
+    document.body.appendChild(s);
+  }
+
+  var canvas = document.getElementById('fireworks');
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var W, H;
+
+  function resize() {
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  }
+  resize();
+  window.addEventListener('resize', function(){ resize(); });
+
+  var particles = [];
+  var trails = [];
+
+  var palettes = [
+    ['#ffd700','#ffaa00','#ff8c42','#ffe066'],
+    ['#ff5e8a','#ff85a2','#ffc2d1','#ff3366'],
+    ['#c77dff','#9d4edd','#e0aaff','#7b2ff7'],
+    ['#5e9eff','#38b6ff','#a2d2ff','#0077ff'],
+    ['#ffffff','#f0f0f0','#ffd700','#ff5e8a'],
+  ];
+
+  function launchFirework(x, y) {
+    var palette = palettes[Math.floor(Math.random() * palettes.length)];
+    var count = 50 + Math.floor(Math.random() * 40);
+    var riseTime = 400 + Math.random() * 300;
+    var startY = H + 20;
+    var riseStart = performance.now();
+
+    trails.push({ x: x, startY: startY, endY: y, start: riseStart, dur: riseTime, color: palette[0] });
+
+    setTimeout(function(){
+      for (var i = 0; i < count; i++) {
+        var angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.3;
+        var speed = 1.5 + Math.random() * 3;
+        var color = palette[Math.floor(Math.random() * palette.length)];
+        particles.push({
+          x: x, y: y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+          life: 1, decay: 0.008 + Math.random() * 0.008,
+          color: color, size: 1.5 + Math.random() * 1.5,
+          gravity: 0.02 + Math.random() * 0.02, trail: []
+        });
+      }
+      for (var j = 0; j < 20; j++) {
+        var a2 = Math.random() * Math.PI * 2;
+        var sp2 = 0.3 + Math.random() * 0.8;
+        particles.push({
+          x: x, y: y, vx: Math.cos(a2) * sp2, vy: Math.sin(a2) * sp2,
+          life: 1, decay: 0.015 + Math.random() * 0.01,
+          color: '#ffffff', size: 0.8, gravity: 0.005, trail: []
+        });
+      }
+    }, riseTime);
+  }
+
+  function tick() {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(6,6,12,0.15)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+
+    var now = performance.now();
+
+    for (var t = trails.length - 1; t >= 0; t--) {
+      var tr = trails[t];
+      var prog = Math.min((now - tr.start) / tr.dur, 1);
+      if (prog >= 1) { trails.splice(t, 1); continue; }
+      var cy = tr.startY + (tr.endY - tr.startY) * (1 - Math.pow(1 - prog, 2));
+      var cx = tr.x + Math.sin(prog * 8) * 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+      ctx.fillStyle = tr.color;
+      ctx.globalAlpha = 1 - prog * 0.5;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx, cy + 12 * (1 - prog));
+      ctx.strokeStyle = tr.color;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.3 * (1 - prog);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.trail.push({x: p.x, y: p.y, life: p.life});
+      if (p.trail.length > 6) p.trail.shift();
+      p.x += p.vx; p.y += p.vy;
+      p.vy += p.gravity; p.vx *= 0.99;
+      p.life -= p.decay;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+      for (var j = 0; j < p.trail.length; j++) {
+        var tp = p.trail[j];
+        var ta = (j / p.trail.length) * p.life * 0.3;
+        ctx.beginPath();
+        ctx.arc(tp.x, tp.y, p.size * 0.5 * (j / p.trail.length), 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = ta;
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life * 0.08;
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  setTimeout(function(){ launchFirework(W * 0.5, H * 0.3); }, 600);
+  setTimeout(function(){ launchFirework(W * 0.3, H * 0.25); }, 1200);
+  setTimeout(function(){ launchFirework(W * 0.7, H * 0.28); }, 1800);
+
+  function handleTap(x, y) {
+    var ring = document.createElement('div');
+    ring.className = 'tap-ring';
+    ring.style.left = (x - 60) + 'px';
+    ring.style.top = (y - 60) + 'px';
+    document.body.appendChild(ring);
+    setTimeout(function(){ ring.remove(); }, 800);
+    launchFirework(x, y - 40);
+    if (navigator.vibrate) navigator.vibrate(15);
+  }
+
+  document.addEventListener('click', function(e) { handleTap(e.clientX, e.clientY); });
+  document.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    var t = e.touches[0];
+    handleTap(t.clientX, t.clientY);
+  }, {passive: false});
+
+  function autoFirework() {
+    var x = W * (0.2 + Math.random() * 0.6);
+    var y = H * (0.15 + Math.random() * 0.3);
+    launchFirework(x, y);
+    setTimeout(autoFirework, 5000 + Math.random() * 3000);
+  }
+  setTimeout(autoFirework, 4000);
+})();
+</script>
+</body>
+</html>
