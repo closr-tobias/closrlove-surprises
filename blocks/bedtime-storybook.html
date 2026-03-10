@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bedtime Storybook — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,500&family=Caveat:wght@400;500;600&family=Inter:wght@300;400&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:#08080e;
+    font-family:'Inter',sans-serif;
+    min-height:100dvh;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    overflow:hidden;
+  }
+
+  .sky{
+    position:fixed;inset:0;
+    background:linear-gradient(170deg,#08080e 0%,#0d1129 30%,#141833 60%,#0f1328 100%);
+    z-index:0;
+  }
+
+  .moon{
+    position:fixed;top:8vh;right:12vw;
+    width:60px;height:60px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#fef9e7 0%,#f5e6a3 40%,#e8d48b 100%);
+    box-shadow:0 0 40px rgba(254,249,231,0.15),0 0 80px rgba(254,249,231,0.08),0 0 120px rgba(254,249,231,0.04);
+    z-index:1;animation:moonFloat 8s ease-in-out infinite;
+  }
+  .moon::after{
+    content:'';position:absolute;top:12px;left:8px;
+    width:14px;height:14px;border-radius:50%;
+    background:rgba(0,0,0,0.06);
+    box-shadow:22px 18px 0 4px rgba(0,0,0,0.04),8px 30px 0 2px rgba(0,0,0,0.05);
+  }
+  @keyframes moonFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+  .star{
+    position:fixed;width:2px;height:2px;background:#fff;border-radius:50%;
+    z-index:1;animation:twinkle var(--dur) ease-in-out infinite;opacity:0;
+  }
+  @keyframes twinkle{0%,100%{opacity:0.1;transform:scale(0.8)}50%{opacity:var(--peak);transform:scale(1.2)}}
+
+  .firefly{
+    position:fixed;width:3px;height:3px;
+    background:radial-gradient(circle,rgba(255,223,130,0.8),transparent);
+    border-radius:50%;z-index:2;pointer-events:none;
+    animation:fireflyDrift var(--drift) ease-in-out infinite;opacity:0;
+  }
+  @keyframes fireflyDrift{
+    0%{opacity:0;transform:translate(0,0)}
+    15%{opacity:0.7}
+    50%{opacity:0.3;transform:translate(var(--dx),var(--dy))}
+    85%{opacity:0.6}
+    100%{opacity:0;transform:translate(var(--dx2),var(--dy2))}
+  }
+
+  .book-wrapper{
+    position:relative;z-index:10;
+    width:min(85vw,340px);
+    perspective:1200px;
+    display:flex;flex-direction:column;align-items:center;
+  }
+
+  .book{
+    position:relative;width:100%;aspect-ratio:3/4;
+    transform-style:preserve-3d;
+    border-radius:4px 12px 12px 4px;
+  }
+  .book::before{
+    content:'';position:absolute;left:-4px;top:2%;bottom:2%;width:8px;
+    background:linear-gradient(90deg,rgba(0,0,0,0.5),rgba(60,40,30,0.3),rgba(0,0,0,0.2));
+    border-radius:4px 0 0 4px;z-index:20;
+  }
+
+  .page{
+    position:absolute;inset:0;border-radius:2px 10px 10px 2px;
+    display:flex;flex-direction:column;
+    padding:clamp(24px,7vw,40px);
+    backface-visibility:hidden;
+    transition:transform 0.8s cubic-bezier(0.645,0.045,0.355,1),opacity 0.6s ease;
+    transform-origin:left center;cursor:pointer;overflow:hidden;
+  }
+
+  .page-bg{
+    position:absolute;inset:0;
+    background:linear-gradient(145deg,#1e1a2e 0%,#171425 50%,#12101f 100%);
+    border-radius:inherit;z-index:0;
+  }
+  .page-bg::after{
+    content:'';position:absolute;inset:0;
+    background:url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    border-radius:inherit;opacity:0.5;
+  }
+  .page::after{
+    content:'';position:absolute;right:0;top:0;bottom:0;width:20px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.015));
+    border-radius:0 10px 10px 0;z-index:1;
+  }
+  .page>*{position:relative;z-index:2}
+
+  .page.active{transform:rotateY(0deg);opacity:1;z-index:5}
+  .page.turned{transform:rotateY(-120deg);opacity:0;z-index:1;pointer-events:none}
+  .page.waiting{transform:rotateY(5deg);opacity:0;z-index:1;pointer-events:none}
+
+  .cover .page-bg{background:linear-gradient(145deg,#1a1535 0%,#12102a 50%,#0d0b1e 100%)}
+  .cover .page-bg::before{
+    content:'';position:absolute;inset:0;
+    border:1px solid rgba(255,223,130,0.08);border-radius:inherit;
+  }
+
+  .cover-ornament{
+    text-align:center;color:rgba(255,223,130,0.25);
+    font-size:24px;letter-spacing:12px;margin-bottom:auto;padding-top:10px;
+  }
+  .cover-title{text-align:center;margin:auto 0}
+  .cover-title .once{
+    font-family:'Caveat',cursive;font-size:clamp(14px,4vw,18px);
+    color:rgba(255,223,130,0.5);letter-spacing:3px;
+    text-transform:uppercase;display:block;margin-bottom:12px;
+  }
+  .cover-title h1{
+    font-family:'Cormorant Garamond',serif;font-weight:700;
+    font-size:clamp(24px,7vw,34px);color:#fef9e7;line-height:1.3;
+    text-shadow:0 2px 20px rgba(254,249,231,0.1);
+  }
+  .cover-subtitle{
+    text-align:center;font-family:'Cormorant Garamond',serif;
+    font-style:italic;font-size:clamp(13px,3.5vw,16px);
+    color:rgba(255,223,130,0.35);margin-top:16px;
+  }
+  .cover-footer{text-align:center;margin-top:auto;padding-bottom:10px}
+  .cover-footer .tap-hint{
+    font-family:'Inter',sans-serif;font-size:11px;font-weight:300;
+    color:rgba(255,255,255,0.2);letter-spacing:2px;text-transform:uppercase;
+    animation:hintPulse 3s ease-in-out infinite;
+  }
+  @keyframes hintPulse{0%,100%{opacity:0.2}50%{opacity:0.5}}
+
+  .story-chapter{
+    font-family:'Caveat',cursive;font-size:clamp(12px,3vw,14px);
+    color:rgba(255,223,130,0.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;
+  }
+  .story-heading{
+    font-family:'Cormorant Garamond',serif;font-weight:600;
+    font-size:clamp(20px,5.5vw,26px);color:#fef9e7;line-height:1.3;margin-bottom:20px;
+  }
+  .story-text{
+    font-family:'Cormorant Garamond',serif;font-size:clamp(15px,4vw,18px);
+    color:rgba(238,232,220,0.85);line-height:1.75;font-weight:400;flex:1;
+  }
+  .story-text em{color:#f5d5a0;font-style:italic}
+  .story-text .highlight{color:#fef3c7;font-weight:600}
+
+  .dropcap{
+    float:left;font-family:'Cormorant Garamond',serif;
+    font-size:clamp(48px,12vw,64px);font-weight:700;
+    color:rgba(255,223,130,0.3);line-height:0.8;padding-right:8px;padding-top:4px;
+  }
+
+  .page-num{
+    text-align:center;font-family:'Cormorant Garamond',serif;
+    font-style:italic;font-size:12px;color:rgba(255,255,255,0.15);
+    margin-top:auto;padding-top:16px;
+  }
+
+  .ending{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:16px;height:100%;
+  }
+  .ending-icon{font-size:40px;animation:endGlow 3s ease-in-out infinite}
+  @keyframes endGlow{
+    0%,100%{filter:drop-shadow(0 0 8px rgba(255,223,130,0.2))}
+    50%{filter:drop-shadow(0 0 20px rgba(255,223,130,0.5))}
+  }
+  .ending-text{
+    font-family:'Cormorant Garamond',serif;font-style:italic;
+    font-size:clamp(18px,5vw,24px);color:rgba(254,249,231,0.8);line-height:1.6;
+  }
+  .ending-sig{
+    font-family:'Caveat',cursive;font-size:clamp(16px,4.5vw,20px);
+    color:rgba(255,223,130,0.5);margin-top:12px;
+  }
+
+  .progress{display:flex;gap:8px;margin-top:24px;z-index:10;position:relative}
+  .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:rgba(255,255,255,0.12);transition:all 0.5s ease;
+  }
+  .dot.active{
+    background:rgba(255,223,130,0.6);
+    box-shadow:0 0 8px rgba(255,223,130,0.3);transform:scale(1.3);
+  }
+  .dot.read{background:rgba(255,223,130,0.25)}
+
+  .back{
+    position:fixed;top:20px;left:20px;z-index:100;
+    color:rgba(255,255,255,0.2);text-decoration:none;font-size:13px;
+    font-family:'Inter',sans-serif;transition:color 0.3s;
+  }
+  .back:hover{color:rgba(255,255,255,0.5)}
+
+  .word{display:inline-block;opacity:0;transform:translateY(8px);transition:opacity 0.4s ease,transform 0.4s ease}
+  .word.visible{opacity:1;transform:translateY(0)}
+
+  .ripple{
+    position:absolute;left:0;top:50%;width:40px;height:40px;border-radius:50%;
+    background:rgba(255,223,130,0.06);
+    transform:translate(-50%,-50%) scale(0);
+    animation:rippleOut 0.6s ease-out forwards;pointer-events:none;z-index:20;
+  }
+  @keyframes rippleOut{to{transform:translate(-50%,-50%) scale(8);opacity:0}}
+</style>
+</head>
+<body>
+
+<a class="back" href="../building-blocks.html">← back</a>
+<div class="sky"></div>
+<div class="moon"></div>
+
+<div class="book-wrapper">
+  <div class="book" id="book">
+
+    <div class="page cover active" data-page="0">
+      <div class="page-bg"></div>
+      <div class="cover-ornament">✦ ✦ ✦</div>
+      <div class="cover-title">
+        <!-- SLOT: story_label --> <span class="once">A Bedtime Story</span> <!-- /SLOT -->
+        <!-- SLOT: story_title --> <h1>The Girl Who<br>Crossed an Ocean<br>of Stars</h1> <!-- /SLOT -->
+        <!-- SLOT: story_dedication --> <div class="cover-subtitle">For Erica — who makes the distance disappear</div> <!-- /SLOT -->
+      </div>
+      <div class="cover-footer"><span class="tap-hint">tap to begin</span></div>
+    </div>
+
+    <div class="page waiting" data-page="1">
+      <div class="page-bg"></div>
+      <span class="story-chapter">Chapter One</span>
+      <!-- SLOT: chapter_1_title --> <h2 class="story-heading">The Boy in the Snow</h2> <!-- /SLOT -->
+      <!-- SLOT: chapter_1_text -->
+      <div class="story-text">
+        <span class="dropcap">O</span>nce, in a small town wrapped in winter — where the northern lights danced like secrets across the sky — there lived a boy who built things with his hands. He welded steel by day and dreamed in code by night, and though his life was full, there was a quiet space inside him shaped exactly like someone he hadn't met yet.
+      </div>
+      <!-- /SLOT -->
+      <div class="page-num">— 1 —</div>
+    </div>
+
+    <div class="page waiting" data-page="2">
+      <div class="page-bg"></div>
+      <span class="story-chapter">Chapter Two</span>
+      <!-- SLOT: chapter_2_title --> <h2 class="story-heading">The Girl with the Cat</h2> <!-- /SLOT -->
+      <!-- SLOT: chapter_2_text -->
+      <div class="story-text">
+        <span class="dropcap">A</span>cross the world, where the Pacific kissed the California shore, a girl sat in the glow of her screen with a <em>ridiculously fluffy white cat</em> on her lap. She had a laugh that could restart a frozen heart and a mind that saw beauty where others saw blank canvas. She didn't know it yet, but the universe was already plotting.
+      </div>
+      <!-- /SLOT -->
+      <div class="page-num">— 2 —</div>
+    </div>
+
+    <div class="page waiting" data-page="3">
+      <div class="page-bg"></div>
+      <span class="story-chapter">Chapter Three</span>
+      <!-- SLOT: chapter_3_title --> <h2 class="story-heading">The Distance Between</h2> <!-- /SLOT -->
+      <!-- SLOT: chapter_3_text -->
+      <div class="story-text">
+        <span class="dropcap">T</span>he distance was <span class="highlight">8,574 kilometers</span> — a number that would terrify most people. But love, as it turns out, is a terrible listener. It doesn't care about time zones or passport stamps. It heard two hearts tuning to the same frequency and thought, <em>"Ah, there you are."</em>
+      </div>
+      <!-- /SLOT -->
+      <div class="page-num">— 3 —</div>
+    </div>
+
+    <div class="page waiting" data-page="4">
+      <div class="page-bg"></div>
+      <span class="story-chapter">Chapter Four</span>
+      <!-- SLOT: chapter_4_title --> <h2 class="story-heading">Late Nights &amp; Bright Screens</h2> <!-- /SLOT -->
+      <!-- SLOT: chapter_4_text -->
+      <div class="story-text">
+        <span class="dropcap">T</span>hey fell into a rhythm only they understood. His 3AM was her 6PM. Her good morning was his goodnight. They built a world inside the glow of their screens — a world where <em>distance was just a word</em>, not a wall. And every night, before sleep pulled him under, he'd whisper into the phone: <span class="highlight">"Goodnight, my love."</span>
+      </div>
+      <!-- /SLOT -->
+      <div class="page-num">— 4 —</div>
+    </div>
+
+    <div class="page waiting" data-page="5">
+      <div class="page-bg"></div>
+      <div class="ending">
+        <!-- SLOT: ending_icon --> <div class="ending-icon">🌙</div> <!-- /SLOT -->
+        <!-- SLOT: ending_text -->
+        <div class="ending-text">
+          And so the boy closed his eyes,<br>
+          knowing that somewhere<br>
+          under the very same moon,<br>
+          she was closing hers too.<br><br>
+          And the distance between them<br>
+          was nothing at all.
+        </div>
+        <!-- /SLOT -->
+        <!-- SLOT: ending_signature --> <div class="ending-sig">— The End, for now ✦</div> <!-- /SLOT -->
+      </div>
+    </div>
+
+  </div>
+  <div class="progress" id="progress"></div>
+</div>
+
+<script>
+(function(){
+  const sky=document.querySelector('.sky');
+  for(let i=0;i<80;i++){
+    const s=document.createElement('div');s.className='star';
+    s.style.cssText='left:'+Math.random()*100+'%;top:'+Math.random()*70+'%;width:'+(Math.random()*2+1)+'px;height:'+(Math.random()*2+1)+'px;--dur:'+(Math.random()*4+2)+'s;--peak:'+(Math.random()*0.5+0.3)+';animation-delay:'+Math.random()*5+'s;';
+    sky.appendChild(s);
+  }
+  for(let i=0;i<12;i++){
+    const f=document.createElement('div');f.className='firefly';
+    f.style.cssText='left:'+Math.random()*100+'%;top:'+(30+Math.random()*60)+'%;--drift:'+(Math.random()*8+6)+'s;--dx:'+(Math.random()-0.5)*100+'px;--dy:'+(Math.random()-0.5)*80+'px;--dx2:'+(Math.random()-0.5)*120+'px;--dy2:'+(Math.random()-0.5)*100+'px;animation-delay:'+Math.random()*8+'s;';
+    sky.appendChild(f);
+  }
+
+  const pages=document.querySelectorAll('.page');
+  const total=pages.length;
+  let current=0,animating=false;
+
+  const prog=document.getElementById('progress');
+  for(let i=0;i<total;i++){
+    const d=document.createElement('div');
+    d.className='dot'+(i===0?' active':'');
+    prog.appendChild(d);
+  }
+  const dots=prog.querySelectorAll('.dot');
+
+  function updateDots(){
+    dots.forEach(function(d,i){
+      d.className='dot';
+      if(i===current)d.className='dot active';
+      else if(i<current)d.className='dot read';
+    });
+  }
+
+  function animateWords(page){
+    var els=page.querySelectorAll('.story-text,.ending-text');
+    els.forEach(function(el){
+      if(el.querySelector('.word'))return;
+      var nodes=[];
+      function walk(node){
+        if(node.nodeType===3){
+          var words=node.textContent.split(/(\s+)/);
+          words.forEach(function(w){nodes.push({type:'text',value:w});});
+        }else if(node.nodeType===1){
+          nodes.push({type:'open',tag:node.tagName.toLowerCase(),cls:node.className,html:node.outerHTML.match(/^<[^>]+>/)[0]});
+          node.childNodes.forEach(walk);
+          nodes.push({type:'close',tag:node.tagName.toLowerCase()});
+        }
+      }
+      var frag=document.createElement('div');
+      frag.innerHTML=el.innerHTML;
+      frag.childNodes.forEach(walk);
+
+      var html='',wi=0;
+      nodes.forEach(function(n){
+        if(n.type==='open')html+=n.html;
+        else if(n.type==='close')html+='</'+n.tag+'>';
+        else if(n.value.trim()){
+          html+='<span class="word" style="transition-delay:'+wi*60+'ms">'+n.value+'</span>';
+          wi++;
+        }else html+=n.value;
+      });
+      el.innerHTML=html;
+      requestAnimationFrame(function(){
+        setTimeout(function(){
+          el.querySelectorAll('.word').forEach(function(w){w.classList.add('visible');});
+        },200);
+      });
+    });
+  }
+
+  function turnPage(){
+    if(animating||current>=total-1)return;
+    animating=true;
+    var rip=document.createElement('div');rip.className='ripple';
+    pages[current].appendChild(rip);
+    setTimeout(function(){rip.remove()},700);
+    if(navigator.vibrate)navigator.vibrate(15);
+    pages[current].classList.remove('active');
+    pages[current].classList.add('turned');
+    current++;
+    pages[current].classList.remove('waiting');
+    pages[current].classList.add('active');
+    updateDots();
+    setTimeout(function(){animateWords(pages[current])},400);
+    setTimeout(function(){animating=false},850);
+  }
+
+  function prevPage(){
+    if(animating||current<=0)return;
+    animating=true;
+    pages[current].classList.remove('active');
+    pages[current].classList.add('waiting');
+    current--;
+    pages[current].classList.remove('turned');
+    pages[current].classList.add('active');
+    updateDots();
+    setTimeout(function(){animating=false},850);
+  }
+
+  document.getElementById('book').addEventListener('click',function(e){
+    var rect=this.getBoundingClientRect();
+    var x=(e.clientX-rect.left)/rect.width;
+    if(x>0.4)turnPage();else prevPage();
+  });
+
+  var startX=0;
+  document.getElementById('book').addEventListener('touchstart',function(e){startX=e.touches[0].clientX},{passive:true});
+  document.getElementById('book').addEventListener('touchend',function(e){
+    var dx=e.changedTouches[0].clientX-startX;
+    if(Math.abs(dx)>40){if(dx<0)turnPage();else prevPage();}
+  },{passive:true});
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key===' ')turnPage();
+    if(e.key==='ArrowLeft')prevPage();
+  });
+})();
+</script>
+</body>
+</html>
