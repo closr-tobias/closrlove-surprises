@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Countdown Heartbeat — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&family=Caveat:wght@400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    color: #fff;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  /* Radial pulse rings — the heartbeat */
+  .pulse-ring {
+    position: fixed;
+    border-radius: 50%;
+    border: 1px solid rgba(255,80,120,0.0);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: pulseRing 2.2s ease-out infinite;
+  }
+  .pulse-ring:nth-child(2) { animation-delay: 0.6s; }
+  .pulse-ring:nth-child(3) { animation-delay: 1.2s; }
+  @keyframes pulseRing {
+    0% { width: 180px; height: 180px; border-color: rgba(255,80,120,0.12); opacity: 1; }
+    100% { width: 520px; height: 520px; border-color: rgba(255,80,120,0); opacity: 0; }
+  }
+
+  .ambient {
+    position: fixed;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(255,80,120,0.05) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    filter: blur(60px);
+    animation: ambientPulse 2.2s ease-in-out infinite alternate;
+  }
+  @keyframes ambientPulse {
+    0% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.85); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  }
+
+  .particle {
+    position: fixed;
+    width: 2px; height: 2px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(25px); opacity: 0; }
+  }
+
+  /* Main container */
+  .countdown-container {
+    position: relative;
+    z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center;
+    padding: 0 24px;
+    opacity: 0;
+    animation: fadeIn 1.5s ease forwards 0.3s;
+  }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  .until-label {
+    font-size: 0.55rem;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.15);
+    margin-bottom: 28px;
+    opacity: 0;
+    animation: fadeIn 1s ease forwards 0.8s;
+  }
+
+  .time-grid {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+
+  .time-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .time-number {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.6rem, 10vw, 4rem);
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    min-width: 2.2ch;
+    text-align: center;
+    text-shadow: 0 0 40px rgba(255,80,120,0.1), 0 2px 4px rgba(0,0,0,0.5);
+    transition: transform 0.15s ease, text-shadow 0.3s ease;
+  }
+  .time-number.tick-anim {
+    transform: scale(1.06);
+    text-shadow: 0 0 50px rgba(255,80,120,0.25), 0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .time-label {
+    font-size: 0.45rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.12);
+  }
+
+  .time-sep {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 7vw, 2.8rem);
+    color: rgba(255,80,120,0.2);
+    padding-bottom: 22px;
+    animation: sepBlink 2.2s ease-in-out infinite;
+  }
+  @keyframes sepBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.15; }
+  }
+
+  .event-name {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.3rem, 5vw, 1.9rem);
+    font-weight: 700;
+    font-style: italic;
+    text-align: center;
+    line-height: 1.35;
+    margin-bottom: 18px;
+    opacity: 0;
+    letter-spacing: 0.8em;
+    filter: blur(4px);
+    animation: breatheIn 2.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards 1.2s;
+    background: linear-gradient(90deg, #e8a4b8, #f5d0dc, #c4a4e8, #e8a4b8);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  @keyframes breatheIn {
+    0% { letter-spacing: 0.8em; opacity: 0; filter: blur(4px); }
+    100% { letter-spacing: 0.02em; opacity: 1; filter: blur(0); }
+  }
+  .event-name.settled {
+    animation: gradientDrift 5s ease infinite;
+  }
+  @keyframes gradientDrift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .countdown-message {
+    font-family: 'Caveat', cursive;
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+    max-width: 270px;
+    line-height: 1.55;
+    opacity: 0;
+    animation: fadeIn 1.5s ease forwards 2.8s;
+  }
+
+  .hold-prompt {
+    position: fixed;
+    bottom: 40px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.45rem;
+    color: #ffffff0a;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: 0;
+    animation: fadeIn 1s ease forwards 4s;
+  }
+
+  /* Hold state */
+  body.holding .pulse-ring { animation-duration: 0.7s !important; }
+  body.holding .ambient {
+    animation-duration: 0.7s !important;
+    background: radial-gradient(ellipse, rgba(255,80,120,0.1) 0%, transparent 70%);
+  }
+  body.holding .time-number {
+    text-shadow: 0 0 60px rgba(255,80,120,0.3), 0 2px 4px rgba(0,0,0,0.5);
+  }
+  body.holding .time-sep {
+    color: rgba(255,80,120,0.4);
+    animation-duration: 0.7s !important;
+  }
+
+  /* Secret message after long hold */
+  .secret-message {
+    position: fixed;
+    bottom: 90px;
+    left: 24px; right: 24px;
+    text-align: center;
+    font-family: 'Caveat', cursive;
+    font-size: 1.15rem;
+    color: rgba(255,80,120,0);
+    pointer-events: none;
+    transition: color 1.8s ease;
+    line-height: 1.5;
+  }
+  body.held .secret-message {
+    color: rgba(255,80,120,0.5);
+  }
+
+  /* Tick flash */
+  .tick-flash {
+    position: fixed; inset: 0;
+    background: rgba(255,80,120,0.015);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.08s;
+  }
+  .tick-flash.on { opacity: 1; }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · countdown heartbeat</div>
+
+<div class="ambient"></div>
+<div class="pulse-ring"></div>
+<div class="pulse-ring"></div>
+<div class="pulse-ring"></div>
+<div class="tick-flash" id="tickFlash"></div>
+
+<div class="countdown-container">
+  <!-- SLOT: until_label --> <div class="until-label">Until</div> <!-- /SLOT -->
+
+  <div class="time-grid">
+    <div class="time-unit">
+      <div class="time-number" id="days">47</div>
+      <div class="time-label">Days</div>
+    </div>
+    <div class="time-sep">:</div>
+    <div class="time-unit">
+      <div class="time-number" id="hours">13</div>
+      <div class="time-label">Hours</div>
+    </div>
+    <div class="time-sep">:</div>
+    <div class="time-unit">
+      <div class="time-number" id="minutes">22</div>
+      <div class="time-label">Min</div>
+    </div>
+    <div class="time-sep">:</div>
+    <div class="time-unit">
+      <div class="time-number" id="seconds">08</div>
+      <div class="time-label">Sec</div>
+    </div>
+  </div>
+
+  <!-- SLOT: event_name --> <div class="event-name" id="eventName">I'm In Your Arms Again</div> <!-- /SLOT -->
+
+  <!-- SLOT: message --> <div class="countdown-message">Every second on this clock is one second closer to the moment I finally get to hold you. I'm counting every single one.</div> <!-- /SLOT -->
+</div>
+
+<!-- SLOT: secret_message --> <div class="secret-message">I'd wait forever if I had to. But I'm so glad I don't have to.</div> <!-- /SLOT -->
+
+<div class="hold-prompt">hold to feel the heartbeat</div>
+
+<script>
+(function(){
+  // Particles
+  for (var i = 0; i < 20; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = Math.random() * 100 + 'vh';
+    var s = (Math.random() * 2 + 1) + 'px';
+    p.style.width = s; p.style.height = s;
+    p.style.animationDuration = (Math.random() * 18 + 12) + 's';
+    p.style.animationDelay = (Math.random() * 12) + 's';
+    document.body.appendChild(p);
+  }
+
+  var daysEl = document.getElementById('days');
+  var hoursEl = document.getElementById('hours');
+  var minutesEl = document.getElementById('minutes');
+  var secondsEl = document.getElementById('seconds');
+  var tickFlash = document.getElementById('tickFlash');
+  var eventName = document.getElementById('eventName');
+
+  // Add gradientDrift after breatheIn completes
+  setTimeout(function(){ eventName.classList.add('settled'); }, 4200);
+
+  // Target: 47d 13h 22m 8s from now
+  var totalSec = 47*86400 + 13*3600 + 22*60 + 8;
+  var target = Date.now() + totalSec * 1000;
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  var lastSec = -1;
+
+  function tick() {
+    var diff = Math.max(0, target - Date.now());
+    var s = Math.floor(diff / 1000);
+    var d = Math.floor(s / 86400); s %= 86400;
+    var h = Math.floor(s / 3600); s %= 3600;
+    var m = Math.floor(s / 60); s %= 60;
+
+    if (s !== lastSec) {
+      lastSec = s;
+      // Flash
+      tickFlash.classList.add('on');
+      setTimeout(function(){ tickFlash.classList.remove('on'); }, 80);
+      // Seconds bounce
+      secondsEl.classList.add('tick-anim');
+      setTimeout(function(){ secondsEl.classList.remove('tick-anim'); }, 150);
+    }
+
+    daysEl.textContent = d;
+    hoursEl.textContent = pad(h);
+    minutesEl.textContent = pad(m);
+    secondsEl.textContent = pad(s);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // Hold interaction
+  var holdTimer = null;
+
+  function startHold() {
+    document.body.classList.add('holding');
+    holdTimer = setTimeout(function(){
+      document.body.classList.add('held');
+      if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 150]);
+    }, 2200);
+  }
+  function endHold() {
+    document.body.classList.remove('holding');
+    clearTimeout(holdTimer);
+  }
+
+  document.addEventListener('mousedown', startHold);
+  document.addEventListener('mouseup', endHold);
+  document.addEventListener('touchstart', function(e){ e.preventDefault(); startHold(); }, {passive:false});
+  document.addEventListener('touchend', endHold);
+  document.addEventListener('touchcancel', endHold);
+})();
+</script>
+</body>
+</html>
