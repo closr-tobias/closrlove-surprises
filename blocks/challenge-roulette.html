@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Challenge Roulette — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:#08080e;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif;
+    min-height:100dvh;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    overflow:hidden;
+  }
+
+  .particle{position:fixed;border-radius:50%;pointer-events:none;animation:drift linear infinite}
+  @keyframes drift{0%{transform:translateY(0) rotate(0deg);opacity:0}10%{opacity:1}90%{opacity:.6}100%{transform:translateY(-100vh) rotate(360deg);opacity:0}}
+
+  .back-link{position:fixed;top:14px;left:14px;font-size:.65rem;color:#ffffff12;text-decoration:none;z-index:200}
+  .block-label{position:fixed;top:14px;right:14px;font-size:.5rem;color:#ffffff0a;letter-spacing:1px;z-index:200}
+
+  .title{
+    font-family:'Playfair Display',serif;font-size:clamp(1.2rem,4vw,1.6rem);
+    color:#fff;text-align:center;margin-bottom:6px;
+    opacity:0;animation:fadeSlideIn .8s .3s forwards;
+    text-shadow:0 0 40px rgba(255,140,50,.08);
+  }
+  .subtitle{
+    font-size:.7rem;color:rgba(255,255,255,.2);letter-spacing:3px;text-transform:uppercase;
+    text-align:center;margin-bottom:clamp(16px,4vh,32px);
+    opacity:0;animation:fadeSlideIn .8s .5s forwards;
+  }
+  @keyframes fadeSlideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+  .wheel-container{
+    position:relative;
+    width:min(78vw,310px);height:min(78vw,310px);
+    opacity:0;animation:fadeSlideIn .8s .6s forwards;
+  }
+
+  canvas#wheel{
+    width:100%;height:100%;
+    filter:drop-shadow(0 8px 32px rgba(0,0,0,.6)) drop-shadow(0 0 60px rgba(255,140,50,.06));
+    border-radius:50%;
+  }
+
+  .hub{
+    position:absolute;top:50%;left:50%;
+    width:56px;height:56px;transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 35% 35%,#3a3a48,#1a1a24);
+    border-radius:50%;
+    box-shadow:0 2px 8px rgba(0,0,0,.5),0 0 0 3px rgba(255,255,255,.06),inset 0 1px 2px rgba(255,255,255,.1);
+    display:flex;align-items:center;justify-content:center;
+    z-index:10;cursor:pointer;
+    transition:transform .15s,box-shadow .15s;
+  }
+  .hub:active{transform:translate(-50%,-50%) scale(.93);box-shadow:0 1px 4px rgba(0,0,0,.5),0 0 0 3px rgba(255,255,255,.04)}
+  .hub-text{font-size:.55rem;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase}
+
+  .pointer{
+    position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+    width:0;height:0;
+    border-left:10px solid transparent;border-right:10px solid transparent;
+    border-top:18px solid #ff8c32;
+    filter:drop-shadow(0 2px 6px rgba(255,140,50,.4));
+    z-index:15;
+    transition:filter .1s;
+  }
+  .pointer.tick{filter:drop-shadow(0 2px 12px rgba(255,140,50,.8))}
+
+  .result-overlay{
+    position:fixed;inset:0;
+    background:rgba(8,8,14,.92);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    z-index:100;
+    opacity:0;pointer-events:none;
+    transition:opacity .5s;
+    padding:24px;
+  }
+  .result-overlay.show{opacity:1;pointer-events:auto}
+
+  .result-emoji{
+    font-size:3.5rem;
+    animation:bounceIn .6s cubic-bezier(.34,1.56,.64,1) forwards;
+    transform:scale(0);
+  }
+  @keyframes bounceIn{to{transform:scale(1)}}
+
+  .result-label{
+    font-size:.6rem;letter-spacing:4px;text-transform:uppercase;
+    color:rgba(255,140,50,.5);margin-top:16px;margin-bottom:8px;
+  }
+  .result-text{
+    font-family:'Playfair Display',serif;
+    font-size:clamp(1.1rem,4vw,1.5rem);font-style:italic;
+    color:#fff;text-align:center;
+    max-width:280px;line-height:1.5;
+    opacity:0;transform:translateY(10px);
+    animation:fadeSlideIn .6s .3s forwards;
+  }
+
+  .result-again{
+    margin-top:28px;
+    background:none;border:1px solid rgba(255,140,50,.2);
+    color:rgba(255,255,255,.4);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:.7rem;letter-spacing:2px;text-transform:uppercase;
+    padding:10px 24px;border-radius:24px;cursor:pointer;
+    transition:all .3s;
+  }
+  .result-again:hover,.result-again:active{border-color:rgba(255,140,50,.5);color:rgba(255,255,255,.7)}
+
+  .spin-hint{
+    margin-top:clamp(12px,3vh,24px);
+    font-size:.6rem;color:rgba(255,255,255,.1);letter-spacing:2px;text-transform:uppercase;
+    opacity:0;animation:fadeSlideIn .8s .9s forwards;
+    transition:opacity .3s;
+  }
+  .spin-hint.hidden{opacity:0 !important}
+
+  .confetti{position:fixed;pointer-events:none;z-index:110}
+  @keyframes confettiFall{
+    0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1}
+    100%{transform:translateY(100vh) rotate(720deg) scale(.3);opacity:0}
+  }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · challenge roulette</div>
+
+<!-- SLOT: title --> <div class="title">Dare to Play?</div> <!-- /SLOT -->
+<!-- SLOT: subtitle --> <div class="subtitle">spin for your challenge</div> <!-- /SLOT -->
+
+<div class="wheel-container">
+  <div class="pointer" id="pointer"></div>
+  <canvas id="wheel" width="640" height="640"></canvas>
+  <div class="hub" id="hub"><span class="hub-text">Spin</span></div>
+</div>
+
+<div class="spin-hint" id="spinHint">tap the center to spin</div>
+
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-emoji" id="resultEmoji"></div>
+  <div class="result-label">your challenge</div>
+  <div class="result-text" id="resultText"></div>
+  <button class="result-again" id="againBtn">Spin Again</button>
+</div>
+
+<script>
+(function(){
+  // <!-- SLOT: challenges -->
+  var challenges = [
+    { emoji: '\u{1F48B}', text: 'Kiss your partner somewhere you\'ve never kissed them before \u2014 get creative', color: '#e84393' },
+    { emoji: '\u{1F4F1}', text: 'Send them the most chaotic selfie you can take in the next 10 seconds', color: '#6c5ce7' },
+    { emoji: '\u{1F3A4}', text: 'Voice-record yourself singing their favorite song \u2014 no skipping the high notes', color: '#00b894' },
+    { emoji: '\u{270D}\uFE0F', text: 'Write 3 things you noticed about them this week that they don\'t know you noticed', color: '#fdcb6e' },
+    { emoji: '\u{1F373}', text: 'Cook or order their comfort food this weekend \u2014 no asking what they want, you should know', color: '#e17055' },
+    { emoji: '\u{1F52E}', text: 'Describe your dream date 5 years from now in embarrassing detail', color: '#a29bfe' },
+    { emoji: '\u{1F608}', text: 'Text them "I have a surprise for you" and then make them wait exactly 1 hour', color: '#ff6b6b' },
+    { emoji: '\u{1F319}', text: 'Tonight, no phones after 9pm \u2014 just you two and whatever happens', color: '#0984e3' },
+  ];
+  // <!-- /SLOT -->
+
+  // Particles
+  for(var i=0;i<12;i++){
+    var p=document.createElement('div');p.className='particle';
+    p.style.left=Math.random()*100+'vw';p.style.top=(60+Math.random()*40)+'vh';
+    p.style.width=p.style.height=(Math.random()*2+1)+'px';
+    p.style.background='rgba(255,140,50,'+(Math.random()*.04+.02)+')';
+    p.style.animationDuration=(Math.random()*18+12)+'s';
+    p.style.animationDelay=(Math.random()*8)+'s';
+    document.body.appendChild(p);
+  }
+
+  // Wheel
+  var canvas=document.getElementById('wheel');
+  var ctx=canvas.getContext('2d');
+  var W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,R=W/2-8;
+  var N=challenges.length;
+  var arc=2*Math.PI/N;
+  var rotation=0;
+  var spinning=false;
+  var lastSegment=-1;
+
+  function hexToRgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+
+  function drawWheel(rot){
+    ctx.clearRect(0,0,W,H);
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(rot);
+
+    for(var i=0;i<N;i++){
+      var a0=i*arc-Math.PI/2;
+      var a1=a0+arc;
+      var rgb=hexToRgb(challenges[i].color);
+
+      // Segment
+      ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,R,a0,a1);ctx.closePath();
+      var g=ctx.createRadialGradient(0,0,R*.2,0,0,R);
+      g.addColorStop(0,'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.04)');
+      g.addColorStop(.6,'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.12)');
+      g.addColorStop(1,'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.28)');
+      ctx.fillStyle=g;ctx.fill();
+
+      // Border
+      ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,R,a0,a1);ctx.closePath();
+      ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;ctx.stroke();
+
+      // Emoji
+      var mid=a0+arc/2;
+      var er=R*.62;
+      ctx.save();
+      ctx.translate(Math.cos(mid)*er,Math.sin(mid)*er);
+      ctx.rotate(mid+Math.PI/2);
+      ctx.font='36px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(challenges[i].emoji,0,0);
+      ctx.restore();
+    }
+
+    // Outer ring
+    ctx.beginPath();ctx.arc(0,0,R,0,2*Math.PI);
+    ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=3;ctx.stroke();
+    // Outer glow ring
+    ctx.beginPath();ctx.arc(0,0,R+2,0,2*Math.PI);
+    ctx.strokeStyle='rgba(255,140,50,0.04)';ctx.lineWidth=1;ctx.stroke();
+
+    // Inner ring
+    ctx.beginPath();ctx.arc(0,0,38,0,2*Math.PI);
+    ctx.fillStyle='#12121a';ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=2;ctx.stroke();
+
+    ctx.restore();
+  }
+
+  drawWheel(0);
+
+  // Spin
+  var velocity=0,friction=.984,minVel=.0004;
+  var resultOverlay=document.getElementById('resultOverlay');
+  var resultText=document.getElementById('resultText');
+  var resultEmoji=document.getElementById('resultEmoji');
+  var pointer=document.getElementById('pointer');
+  var spinHint=document.getElementById('spinHint');
+
+  function getSegment(rot){
+    var norm=(((-rot%(2*Math.PI))+(2*Math.PI))%(2*Math.PI));
+    return Math.floor(norm/arc)%N;
+  }
+
+  function tick(){
+    if(!spinning)return;
+    velocity*=friction;
+    rotation+=velocity;
+    drawWheel(rotation);
+
+    var seg=getSegment(rotation);
+    if(seg!==lastSegment){
+      lastSegment=seg;
+      pointer.classList.add('tick');
+      setTimeout(function(){pointer.classList.remove('tick')},80);
+      if(navigator.vibrate)navigator.vibrate(6);
+    }
+
+    if(Math.abs(velocity)<minVel){
+      spinning=false;velocity=0;
+      showResult(getSegment(rotation));
+      return;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function spin(){
+    if(spinning)return;
+    spinning=true;
+    velocity=.14+Math.random()*.16;
+    spinHint.classList.add('hidden');
+    requestAnimationFrame(tick);
+  }
+
+  function showResult(idx){
+    var c=challenges[idx];
+    resultEmoji.textContent=c.emoji;
+    resultEmoji.style.transform='scale(0)';
+    resultText.textContent=c.text;
+    resultText.style.opacity='0';resultText.style.transform='translateY(10px)';
+    resultOverlay.classList.add('show');
+    void resultEmoji.offsetWidth;
+    resultEmoji.style.animation='none';void resultEmoji.offsetWidth;
+    resultEmoji.style.animation='bounceIn .6s cubic-bezier(.34,1.56,.64,1) forwards';
+    resultText.style.animation='none';void resultText.offsetWidth;
+    resultText.style.animation='fadeSlideIn .6s .3s forwards';
+    spawnConfetti(c.color);
+  }
+
+  function hideResult(){resultOverlay.classList.remove('show')}
+
+  document.getElementById('hub').addEventListener('click',function(e){e.stopPropagation();spin()});
+  document.getElementById('againBtn').addEventListener('click',function(){hideResult();setTimeout(spin,300)});
+  resultOverlay.addEventListener('click',function(e){if(e.target===resultOverlay)hideResult()});
+
+  // Confetti
+  function spawnConfetti(color){
+    var rgb=hexToRgb(color);
+    for(var i=0;i<28;i++){
+      var c=document.createElement('div');c.className='confetti';
+      c.style.left=(20+Math.random()*60)+'vw';
+      c.style.top=(10+Math.random()*30)+'vh';
+      var s=Math.random()*6+3;
+      c.style.width=s+'px';c.style.height=(s*(Math.random()>.5?1:2.5))+'px';
+      c.style.borderRadius=Math.random()>.5?'50%':'1px';
+      var a=.3+Math.random()*.6;
+      c.style.background=Math.random()>.3?'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+a+')':'rgba(255,255,255,'+(a*.3)+')';
+      c.style.animation='confettiFall '+(1.2+Math.random()*2.2)+'s ease-out forwards';
+      c.style.animationDelay=(Math.random()*.4)+'s';
+      document.body.appendChild(c);
+      (function(el){setTimeout(function(){el.remove()},4500)})(c);
+    }
+  }
+})();
+</script>
+</body>
+</html>

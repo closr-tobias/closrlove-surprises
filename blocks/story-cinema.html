@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Story Cinema — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #06060a;
+    font-family: 'Cormorant Garamond', serif;
+    min-height: 100dvh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    color: #e8e4dc;
+  }
+
+  .letterbox-top, .letterbox-bottom {
+    position: fixed; left: 0; right: 0; height: 12vh;
+    background: #000; z-index: 100;
+    transition: height 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .letterbox-top { top: 0; }
+  .letterbox-bottom { bottom: 0; }
+  body.wide-shot .letterbox-top,
+  body.wide-shot .letterbox-bottom { height: 18vh; }
+
+  .grain {
+    position: fixed; inset: 0; z-index: 90; pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .vignette {
+    position: fixed; inset: 0; z-index: 80; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+  }
+
+  .scene {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 14vh 8vw;
+    opacity: 0;
+    transform: scale(1.02);
+    transition: opacity 1.5s ease, transform 1.5s ease;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .scene.active {
+    opacity: 1; transform: scale(1);
+    pointer-events: auto;
+  }
+  .scene.exiting {
+    opacity: 0; transform: scale(0.97);
+  }
+
+  .scene-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.55rem;
+    font-weight: 300;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: rgba(232,228,220,0.12);
+    margin-bottom: 2.5rem;
+  }
+
+  .scene-text {
+    font-size: clamp(1.3rem, 5.5vw, 2rem);
+    font-weight: 300;
+    line-height: 1.65;
+    text-align: center;
+    max-width: 520px;
+    font-style: italic;
+  }
+  .scene-text .word {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.5s ease, transform 0.5s ease, color 0.6s ease, text-shadow 0.6s ease;
+  }
+  .scene-text .word.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .scene-text .word.emphasis {
+    color: #e8a4b8;
+    text-shadow: 0 0 30px rgba(232,164,184,0.2);
+    font-weight: 400;
+  }
+
+  .scene-mood {
+    position: absolute;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0;
+    transition: opacity 2s ease;
+    pointer-events: none;
+  }
+  .scene.active .scene-mood { opacity: 1; }
+
+  .dust {
+    position: fixed;
+    width: 1.5px; height: 1.5px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  @keyframes dustDrift {
+    0% { transform: translate(0, 0) scale(1); opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.5); opacity: 0; }
+  }
+
+  .progress {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 2px; z-index: 110;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(232,164,184,0.3), rgba(232,164,184,0.6));
+    width: 0%;
+    transition: width 0.8s ease;
+  }
+
+  .hint {
+    position: fixed; bottom: 3.5vh; left: 0; right: 0;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.06);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    z-index: 110;
+    pointer-events: none;
+    animation: hintPulse 3s ease infinite;
+  }
+  @keyframes hintPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff0c; text-decoration: none; z-index: 200; font-family: 'Inter', sans-serif; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff08; letter-spacing: 1px; z-index: 200; font-family: 'Inter', sans-serif; }
+
+  .title-card {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 50;
+    opacity: 1;
+    transition: opacity 1.5s ease;
+  }
+  .title-card.hidden { opacity: 0; pointer-events: none; }
+  .title-card h1 {
+    font-size: clamp(2rem, 8vw, 3.5rem);
+    font-weight: 300;
+    letter-spacing: 2px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: titleIn 2s ease 0.5s forwards;
+  }
+  .title-card .subtitle {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: rgba(232,228,220,0.2);
+    margin-top: 1rem;
+    opacity: 0;
+    animation: titleIn 2s ease 1.2s forwards;
+  }
+  @keyframes titleIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .end-card {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 2s ease;
+  }
+  .end-card.visible { opacity: 1; }
+  .end-card .fin {
+    font-size: clamp(1.5rem, 6vw, 2.5rem);
+    font-weight: 300;
+    letter-spacing: 8px;
+    color: rgba(232,228,220,0.5);
+  }
+  .end-card .dedication {
+    font-size: 0.9rem;
+    font-style: italic;
+    font-weight: 300;
+    color: rgba(232,164,184,0.4);
+    margin-top: 1.5rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="letterbox-top"></div>
+<div class="letterbox-bottom"></div>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · story cinema</div>
+
+<div class="title-card" id="titleCard">
+  <!-- SLOT: story_title -->
+  <h1>The Night We Almost Didn't Meet</h1>
+  <!-- /SLOT -->
+  <!-- SLOT: story_subtitle -->
+  <div class="subtitle">A Story About Us</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="scene" id="scene-0">
+  <div class="scene-mood" style="background: rgba(100,140,180,0.08);"></div>
+  <div class="scene-label">Scene I</div>
+  <!-- SLOT: scene_1 -->
+  <div class="scene-text">You were about to leave. Your friend had bailed, the bar was loud, and you'd already called a ride. <em>Thirty more seconds</em> and you'd have been gone.</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="scene" id="scene-1">
+  <div class="scene-mood" style="background: rgba(232,164,184,0.06);"></div>
+  <div class="scene-label">Scene II</div>
+  <!-- SLOT: scene_2 -->
+  <div class="scene-text">But someone bumped your elbow — your drink went sideways, and there I was, catching it like some <em>absolutely ridiculous movie moment</em> that neither of us would admit was romantic until much later.</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="scene" id="scene-2">
+  <div class="scene-mood" style="background: rgba(180,160,120,0.07);"></div>
+  <div class="scene-label">Scene III</div>
+  <!-- SLOT: scene_3 -->
+  <div class="scene-text">You laughed. Not the polite kind — the real kind, where your whole face changed and I forgot what words were for approximately <em>four seconds</em>.</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="scene" id="scene-3">
+  <div class="scene-mood" style="background: rgba(140,120,200,0.06);"></div>
+  <div class="scene-label">Scene IV</div>
+  <!-- SLOT: scene_4 -->
+  <div class="scene-text">We talked until they kicked us out. Then we talked in the parking lot until 3 AM. You said something about constellations being <em>"just dead light that hasn't given up yet"</em> and I thought: oh no. I'm in trouble.</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="scene" id="scene-4">
+  <div class="scene-mood" style="background: rgba(232,164,184,0.08);"></div>
+  <div class="scene-label">Scene V</div>
+  <!-- SLOT: scene_5 -->
+  <div class="scene-text">Here's the thing about almost: it didn't happen. The ride got cancelled. You stayed. And every day since then has been the <em>longest, strangest, best</em> story I've ever been part of.</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="end-card" id="endCard">
+  <div class="fin">FIN</div>
+  <!-- SLOT: dedication -->
+  <div class="dedication">For you. Always for you.</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+<div class="hint" id="hint">tap to begin</div>
+
+<script>
+(function(){
+  for (var i = 0; i < 20; i++) {
+    var d = document.createElement('div');
+    d.className = 'dust';
+    d.style.left = Math.random() * 100 + 'vw';
+    d.style.top = Math.random() * 100 + 'vh';
+    d.style.setProperty('--dx', (Math.random() * 60 - 30) + 'px');
+    d.style.setProperty('--dy', (Math.random() * -80 - 20) + 'px');
+    d.style.animation = 'dustDrift ' + (Math.random() * 20 + 12) + 's linear ' + (Math.random() * 10) + 's infinite';
+    d.style.width = (Math.random() * 2 + 0.5) + 'px';
+    d.style.height = d.style.width;
+    document.body.appendChild(d);
+  }
+
+  var scenes = document.querySelectorAll('.scene');
+  var titleCard = document.getElementById('titleCard');
+  var endCard = document.getElementById('endCard');
+  var progressFill = document.getElementById('progressFill');
+  var hint = document.getElementById('hint');
+  var totalScenes = scenes.length;
+  var currentScene = -1;
+  var transitioning = false;
+  var wordTimers = [];
+
+  scenes.forEach(function(scene) {
+    var textEl = scene.querySelector('.scene-text');
+    var html = textEl.innerHTML;
+    var temp = document.createElement('div');
+    temp.innerHTML = html;
+    var words = [];
+    function walk(node) {
+      if (node.nodeType === 3) {
+        node.textContent.split(/(\s+)/).forEach(function(t) {
+          if (t.trim()) words.push({ text: t, emphasis: false });
+        });
+      } else if (node.nodeName === 'EM') {
+        node.textContent.split(/(\s+)/).forEach(function(t) {
+          if (t.trim()) words.push({ text: t, emphasis: true });
+        });
+      } else {
+        node.childNodes.forEach(walk);
+      }
+    }
+    walk(temp);
+    textEl.innerHTML = '';
+    words.forEach(function(w, i) {
+      var span = document.createElement('span');
+      span.className = 'word' + (w.emphasis ? ' emphasis' : '');
+      span.textContent = w.text;
+      textEl.appendChild(span);
+      if (i < words.length - 1) textEl.appendChild(document.createTextNode(' '));
+    });
+  });
+
+  function clearTimers() { wordTimers.forEach(clearTimeout); wordTimers = []; }
+
+  function revealWords(scene) {
+    var words = scene.querySelectorAll('.word');
+    words.forEach(function(w, i) {
+      w.classList.remove('visible');
+      var t = setTimeout(function() { w.classList.add('visible'); }, i * 140 + 400);
+      wordTimers.push(t);
+    });
+  }
+
+  function updateProgress() {
+    var pct = currentScene < 0 ? 0 : ((currentScene + 1) / (totalScenes + 1)) * 100;
+    progressFill.style.width = pct + '%';
+  }
+
+  function advance() {
+    if (transitioning) return;
+    transitioning = true;
+    clearTimers();
+    hint.style.opacity = '0';
+    hint.style.transition = 'opacity 0.5s';
+
+    if (currentScene === -1) {
+      titleCard.classList.add('hidden');
+      currentScene = 0;
+      setTimeout(function() {
+        scenes[0].classList.add('active');
+        revealWords(scenes[0]);
+        updateProgress();
+        transitioning = false;
+      }, 800);
+    } else if (currentScene < totalScenes - 1) {
+      var prev = scenes[currentScene];
+      prev.classList.remove('active');
+      prev.classList.add('exiting');
+      currentScene++;
+      if (currentScene === 2 || currentScene === 3) document.body.classList.add('wide-shot');
+      else document.body.classList.remove('wide-shot');
+      setTimeout(function() {
+        prev.classList.remove('exiting');
+        prev.querySelectorAll('.word').forEach(function(w) { w.classList.remove('visible'); });
+        scenes[currentScene].classList.add('active');
+        revealWords(scenes[currentScene]);
+        updateProgress();
+        transitioning = false;
+      }, 1200);
+    } else {
+      scenes[currentScene].classList.remove('active');
+      scenes[currentScene].classList.add('exiting');
+      document.body.classList.remove('wide-shot');
+      currentScene++;
+      updateProgress();
+      setTimeout(function() {
+        endCard.classList.add('visible');
+        progressFill.style.width = '100%';
+        transitioning = false;
+      }, 1500);
+    }
+  }
+
+  document.addEventListener('click', advance);
+  document.addEventListener('touchend', function(e) { e.preventDefault(); advance(); }, { passive: false });
+  updateProgress();
+})();
+</script>
+</body>
+</html>
