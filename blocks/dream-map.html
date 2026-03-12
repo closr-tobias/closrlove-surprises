@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dream Map — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #06081a;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    color: #e0ddd6; overflow: hidden;
+  }
+  canvas#stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .dream-container {
+    position: relative; z-index: 1;
+    width: 100%; height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dream-node {
+    position: absolute; width: 120px; height: 120px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; font-size: 0.75rem; font-weight: 500;
+    padding: 16px; cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s;
+    opacity: 0; animation: nodeAppear 0.8s forwards; line-height: 1.3;
+  }
+  .dream-node:hover, .dream-node.active { transform: scale(1.2); z-index: 10; }
+  .dream-node.yours {
+    background: radial-gradient(circle at 30% 30%, #1a3a5c, #0d1f3a);
+    border: 1.5px solid #3a7acc; box-shadow: 0 0 30px rgba(58,122,204,0.2); color: #a8c8e8;
+  }
+  .dream-node.yours:hover, .dream-node.yours.active { box-shadow: 0 0 50px rgba(58,122,204,0.4); }
+  .dream-node.theirs {
+    background: radial-gradient(circle at 30% 30%, #3a1a3c, #1f0d2a);
+    border: 1.5px solid #b46acc; box-shadow: 0 0 30px rgba(180,106,204,0.2); color: #d8b8e8;
+  }
+  .dream-node.theirs:hover, .dream-node.theirs.active { box-shadow: 0 0 50px rgba(180,106,204,0.4); }
+  .dream-node.shared {
+    background: radial-gradient(circle at 30% 30%, #3a2a1a, #2a1a0d);
+    border: 1.5px solid #ccaa5a; box-shadow: 0 0 30px rgba(204,170,90,0.2);
+    color: #e8d8b8; width: 140px; height: 140px; font-size: 0.85rem;
+  }
+  .dream-node.shared:hover, .dream-node.shared.active { box-shadow: 0 0 50px rgba(204,170,90,0.5); }
+  @keyframes nodeAppear { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+  .detail-panel {
+    position: fixed; bottom: -100%; left: 0; right: 0;
+    background: linear-gradient(180deg, rgba(10,12,30,0.95), rgba(6,8,26,0.98));
+    backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 32px 24px 48px; z-index: 50;
+    transition: bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 50vh; overflow-y: auto;
+  }
+  .detail-panel.open { bottom: 0; }
+  .detail-panel h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 12px; color: #f0ece4; }
+  .detail-panel p { font-size: 0.9rem; line-height: 1.7; color: #a0a0a0; }
+  .detail-panel .tag {
+    display: inline-block; font-size: 0.65rem; text-transform: uppercase;
+    letter-spacing: 0.1em; padding: 4px 10px; border-radius: 20px; margin-bottom: 12px;
+  }
+  .tag.yours-tag { background: rgba(58,122,204,0.2); color: #7aafcc; border: 1px solid rgba(58,122,204,0.3); }
+  .tag.theirs-tag { background: rgba(180,106,204,0.2); color: #b46acc; border: 1px solid rgba(180,106,204,0.3); }
+  .tag.shared-tag { background: rgba(204,170,90,0.2); color: #ccaa5a; border: 1px solid rgba(204,170,90,0.3); }
+  svg.connections { position: absolute; inset: 0; z-index: 0; pointer-events: none; width: 100%; height: 100%; }
+  svg.connections line { stroke: rgba(255,255,255,0.06); stroke-width: 1; stroke-dasharray: 4 6; }
+  .legend {
+    position: fixed; top: 20px; left: 20px; z-index: 30;
+    font-size: 0.65rem; color: #555; display: flex; flex-direction: column; gap: 6px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-dot.l-yours { background: #3a7acc; }
+  .legend-dot.l-theirs { background: #b46acc; }
+  .legend-dot.l-shared { background: #ccaa5a; }
+  .title-bar {
+    position: fixed; top: 0; left: 0; right: 0; text-align: center;
+    padding: 24px; z-index: 20;
+    background: linear-gradient(180deg, rgba(6,8,26,0.9), transparent);
+  }
+  .title-bar h1 {
+    font-family: 'Playfair Display', serif; font-size: 1.2rem; color: #888;
+    font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="title-bar"><h1>Dream Map</h1></div>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot l-yours"></div> Your dreams</div>
+  <div class="legend-item"><div class="legend-dot l-theirs"></div> Their dreams</div>
+  <div class="legend-item"><div class="legend-dot l-shared"></div> Shared dreams</div>
+</div>
+<div class="dream-container" id="dreamContainer">
+  <svg class="connections" id="connections"></svg>
+  <div class="dream-node shared" data-title="AI_SLOT_1_TITLE" data-detail="AI_SLOT_1_DETAIL" style="top:38%;left:44%;" data-delay="0"><span>AI_SLOT_1_TITLE</span></div>
+  <div class="dream-node yours" data-title="AI_SLOT_2_TITLE" data-detail="AI_SLOT_2_DETAIL" style="top:18%;left:22%;" data-delay="200"><span>AI_SLOT_2_TITLE</span></div>
+  <div class="dream-node theirs" data-title="AI_SLOT_3_TITLE" data-detail="AI_SLOT_3_DETAIL" style="top:15%;left:65%;" data-delay="400"><span>AI_SLOT_3_TITLE</span></div>
+  <div class="dream-node yours" data-title="AI_SLOT_4_TITLE" data-detail="AI_SLOT_4_DETAIL" style="top:62%;left:18%;" data-delay="600"><span>AI_SLOT_4_TITLE</span></div>
+  <div class="dream-node theirs" data-title="AI_SLOT_5_TITLE" data-detail="AI_SLOT_5_DETAIL" style="top:58%;left:70%;" data-delay="800"><span>AI_SLOT_5_TITLE</span></div>
+  <div class="dream-node shared" data-title="AI_SLOT_6_TITLE" data-detail="AI_SLOT_6_DETAIL" style="top:78%;left:45%;" data-delay="1000"><span>AI_SLOT_6_TITLE</span></div>
+</div>
+<div class="detail-panel" id="detailPanel">
+  <div class="tag shared-tag" id="detailTag">shared dream</div>
+  <h3 id="detailTitle"></h3>
+  <p id="detailText"></p>
+</div>
+<script>
+const c=document.getElementById('stars'),ctx=c.getContext('2d');
+function resize(){c.width=innerWidth;c.height=innerHeight;}
+resize();addEventListener('resize',resize);
+const stars=Array.from({length:200},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.2+0.3,a:Math.random(),s:Math.random()*0.005+0.002}));
+function drawStars(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a+=s.s;const alpha=0.3+Math.sin(s.a)*0.25;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(200,200,220,${alpha})`;ctx.fill();});requestAnimationFrame(drawStars);}
+drawStars();
+const nodes=document.querySelectorAll('.dream-node');
+const svg=document.getElementById('connections');
+nodes.forEach(n=>{n.style.animationDelay=(parseInt(n.dataset.delay)||0)+'ms';});
+setTimeout(()=>{const rects=Array.from(nodes).map(n=>{const r=n.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};});const ns='http://www.w3.org/2000/svg';for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++){const d=Math.hypot(rects[i].x-rects[j].x,rects[i].y-rects[j].y);if(d<400){const l=document.createElementNS(ns,'line');l.setAttribute('x1',rects[i].x);l.setAttribute('y1',rects[i].y);l.setAttribute('x2',rects[j].x);l.setAttribute('y2',rects[j].y);svg.appendChild(l);}}},1500);
+const panel=document.getElementById('detailPanel'),dTitle=document.getElementById('detailTitle'),dText=document.getElementById('detailText'),dTag=document.getElementById('detailTag');
+nodes.forEach(n=>{n.addEventListener('click',()=>{nodes.forEach(x=>x.classList.remove('active'));n.classList.add('active');dTitle.textContent=n.dataset.title;dText.textContent=n.dataset.detail;const t=n.classList.contains('yours')?'yours':n.classList.contains('theirs')?'theirs':'shared';dTag.className='tag '+t+'-tag';dTag.textContent=t==='shared'?'shared dream':t==='yours'?'your dream':'their dream';panel.classList.add('open');});});
+document.addEventListener('click',e=>{if(!e.target.closest('.dream-node')&&!e.target.closest('.detail-panel')){panel.classList.remove('open');nodes.forEach(x=>x.classList.remove('active'));}});
+</script>
+</body>
+</html>
