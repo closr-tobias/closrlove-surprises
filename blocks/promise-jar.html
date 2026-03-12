@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Promise Jar — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;600;700&family=Inter:wght@300;400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:#08080e;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'Inter',sans-serif;
+    min-height:100dvh;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    overflow:hidden;
+  }
+
+  .ambient{
+    position:fixed;
+    width:300px;height:400px;
+    top:50%;left:50%;transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:radial-gradient(ellipse,rgba(255,183,77,0.06) 0%,rgba(255,105,180,0.03) 40%,transparent 70%);
+    pointer-events:none;filter:blur(60px);
+  }
+
+  .particle{
+    position:fixed;width:2px;height:2px;
+    background:rgba(255,220,150,0.06);border-radius:50%;
+    pointer-events:none;animation:floatUp linear infinite;
+  }
+  @keyframes floatUp{
+    0%{transform:translateY(0) translateX(0);opacity:0}
+    10%{opacity:1}90%{opacity:1}
+    100%{transform:translateY(-100vh) translateX(20px);opacity:0}
+  }
+
+  .jar-scene{
+    position:relative;
+    width:min(70vw,260px);height:min(90vw,360px);
+    z-index:10;
+  }
+
+  .jar{
+    position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+    width:100%;height:85%;
+    border-radius:12px 12px 20px 20px;
+    background:linear-gradient(180deg,
+      rgba(255,255,255,0.06) 0%,
+      rgba(255,255,255,0.03) 30%,
+      rgba(255,255,255,0.02) 70%,
+      rgba(255,255,255,0.04) 100%
+    );
+    border:1.5px solid rgba(255,255,255,0.08);
+    box-shadow:
+      inset 0 0 40px rgba(255,255,255,0.02),
+      inset -20px 0 30px rgba(255,255,255,0.015),
+      0 4px 30px rgba(0,0,0,0.3),
+      0 0 60px rgba(255,183,77,0.03);
+    overflow:hidden;
+  }
+
+  .jar::before{
+    content:'';position:absolute;
+    top:0;left:8%;width:20%;height:100%;
+    background:linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02),transparent);
+    border-radius:12px;pointer-events:none;
+  }
+  .jar::after{
+    content:'';position:absolute;
+    top:0;right:12%;width:8%;height:60%;
+    background:linear-gradient(180deg,rgba(255,255,255,0.04),transparent);
+    border-radius:12px;pointer-events:none;
+  }
+
+  .jar-lid{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:70%;height:10%;min-height:30px;
+    background:linear-gradient(180deg,#4a3f2f,#3d3425,#352c1f);
+    border-radius:6px 6px 2px 2px;
+    border:1px solid rgba(255,255,255,0.05);
+    box-shadow:0 2px 10px rgba(0,0,0,0.4);
+    z-index:2;
+  }
+  .jar-lid::before{
+    content:'';position:absolute;
+    top:3px;left:10%;right:10%;height:30%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);
+    border-radius:2px;
+  }
+
+  .jar-notes{
+    position:absolute;bottom:0;left:0;right:0;
+    height:100%;display:flex;flex-wrap:wrap;
+    align-items:flex-end;justify-content:center;
+    padding:12px 10px;gap:4px;
+  }
+
+  .note-in-jar{
+    width:36px;height:28px;
+    border-radius:3px;
+    cursor:pointer;
+    transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1), filter 0.3s;
+    position:relative;
+    animation:gentleBob 3s ease-in-out infinite;
+  }
+  .note-in-jar:nth-child(odd){animation-delay:-1.5s}
+  .note-in-jar:nth-child(3n){animation-delay:-0.8s}
+  .note-in-jar:hover,.note-in-jar:active{
+    transform:scale(1.15) translateY(-3px) !important;
+    filter:brightness(1.2);
+  }
+
+  @keyframes gentleBob{
+    0%,100%{transform:translateY(0) rotate(var(--rot,0deg))}
+    50%{transform:translateY(-2px) rotate(var(--rot,0deg))}
+  }
+
+  .note-in-jar:nth-child(1){background:linear-gradient(135deg,#f4e4c1,#e8d5a8);--rot:-8deg;transform:rotate(-8deg)}
+  .note-in-jar:nth-child(2){background:linear-gradient(135deg,#f0d4d4,#e4c2c2);--rot:5deg;transform:rotate(5deg)}
+  .note-in-jar:nth-child(3){background:linear-gradient(135deg,#d4e4f0,#c2d2e4);--rot:-3deg;transform:rotate(-3deg)}
+  .note-in-jar:nth-child(4){background:linear-gradient(135deg,#e4f0d4,#d2e4c2);--rot:10deg;transform:rotate(10deg)}
+  .note-in-jar:nth-child(5){background:linear-gradient(135deg,#f0e4f4,#e2d4e8);--rot:-6deg;transform:rotate(-6deg)}
+  .note-in-jar:nth-child(6){background:linear-gradient(135deg,#f4ecd4,#e8dcc2);--rot:4deg;transform:rotate(4deg)}
+  .note-in-jar:nth-child(7){background:linear-gradient(135deg,#d4f0e8,#c2e4d8);--rot:-12deg;transform:rotate(-12deg)}
+
+  .note-in-jar::before{
+    content:'';position:absolute;
+    top:45%;left:10%;right:10%;height:1px;
+    background:rgba(0,0,0,0.08);
+  }
+  .note-in-jar::after{
+    content:'';position:absolute;
+    left:45%;top:10%;bottom:10%;width:1px;
+    background:rgba(0,0,0,0.06);
+  }
+
+  .counter{
+    position:fixed;bottom:60px;
+    font-size:0.65rem;color:rgba(255,255,255,0.12);
+    letter-spacing:2px;text-transform:uppercase;
+    pointer-events:none;
+  }
+
+  .hint{
+    position:fixed;bottom:28px;
+    text-align:center;font-size:0.5rem;
+    color:#ffffff0d;letter-spacing:3px;text-transform:uppercase;
+    pointer-events:none;transition:opacity 0.5s;
+  }
+
+  .note-overlay{
+    position:fixed;inset:0;
+    background:rgba(8,8,14,0.92);
+    display:flex;align-items:center;justify-content:center;
+    z-index:100;
+    opacity:0;pointer-events:none;
+    transition:opacity 0.4s;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .note-overlay.active{opacity:1;pointer-events:auto}
+
+  .unfolded-note{
+    width:min(82vw,320px);
+    padding:40px 32px;
+    background:linear-gradient(175deg,#f8f4ec,#f0eade,#ebe5d8);
+    border-radius:3px;
+    box-shadow:
+      0 4px 20px rgba(0,0,0,0.3),
+      0 20px 60px rgba(0,0,0,0.2),
+      inset 0 0 0 1px rgba(255,255,255,0.1);
+    transform:scale(0.3) rotate(8deg);
+    transition:transform 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    position:relative;
+  }
+  .note-overlay.active .unfolded-note{
+    transform:scale(1) rotate(-1deg);
+  }
+
+  .unfolded-note::before{
+    content:'';position:absolute;inset:0;
+    background:url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events:none;border-radius:3px;
+  }
+
+  .unfolded-note::after{
+    content:'';position:absolute;
+    top:48%;left:5%;right:5%;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(0,0,0,0.06),rgba(0,0,0,0.08),rgba(0,0,0,0.06),transparent);
+  }
+
+  .note-label{
+    font-family:'Caveat',cursive;
+    font-size:0.8rem;font-weight:600;
+    color:rgba(120,100,70,0.5);
+    text-transform:uppercase;letter-spacing:3px;
+    margin-bottom:16px;
+  }
+
+  .note-text{
+    font-family:'Caveat',cursive;
+    font-size:1.35rem;font-weight:400;
+    color:#3a3225;
+    line-height:1.6;
+    opacity:0;
+    transition:opacity 0.6s 0.3s;
+  }
+  .note-overlay.active .note-text{opacity:1}
+
+  .note-close-hint{
+    margin-top:24px;
+    font-family:'Inter',sans-serif;
+    font-size:0.55rem;
+    color:rgba(80,70,55,0.25);
+    letter-spacing:2px;text-transform:uppercase;
+    text-align:right;
+  }
+
+  .orb{
+    position:fixed;
+    width:8px;height:8px;
+    border-radius:50%;
+    pointer-events:none;
+    z-index:50;
+  }
+
+  .title{
+    position:fixed;top:max(40px,8vh);
+    text-align:center;
+    pointer-events:none;z-index:5;
+  }
+  .title h2{
+    font-family:'Playfair Display',serif;
+    font-size:clamp(1.1rem,4vw,1.4rem);
+    font-weight:400;font-style:italic;
+    color:rgba(255,255,255,0.12);
+    letter-spacing:1px;
+  }
+  .title p{
+    font-family:'Inter',sans-serif;
+    font-size:0.55rem;
+    color:rgba(255,255,255,0.06);
+    margin-top:6px;letter-spacing:2px;text-transform:uppercase;
+  }
+
+  .back-link{position:fixed;top:14px;left:14px;font-size:0.65rem;color:#ffffff12;text-decoration:none;z-index:200}
+  .block-label{position:fixed;top:14px;right:14px;font-size:0.5rem;color:#ffffff0a;letter-spacing:1px;z-index:200}
+</style>
+</head>
+<body>
+
+<div class="ambient"></div>
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · promise jar</div>
+
+<div class="title">
+  <!-- SLOT: title -->
+  <h2>Promises I'm Keeping</h2>
+  <!-- /SLOT -->
+  <!-- SLOT: subtitle -->
+  <p>for you, always</p>
+  <!-- /SLOT -->
+</div>
+
+<div class="jar-scene">
+  <div class="jar-lid"></div>
+  <div class="jar">
+    <div class="jar-notes" id="jarNotes">
+      <!-- SLOT: promises -->
+      <div class="note-in-jar" data-promise="I promise to always FaceTime you before bed, even when the time zones make it 3AM for me. You're worth every lost hour of sleep." data-label="Always"></div>
+      <div class="note-in-jar" data-promise="I promise to learn your mom's kimchi recipe so that when we finally live together, it'll taste like home for you." data-label="Someday"></div>
+      <div class="note-in-jar" data-promise="I promise to never let a fight last longer than a sunset. If the sky can start over every morning, so can we." data-label="Every time"></div>
+      <div class="note-in-jar" data-promise="I promise to build you a reading nook in our first apartment. Fairy lights, soft blankets, the works. Kiru gets his own shelf." data-label="Future"></div>
+      <div class="note-in-jar" data-promise="I promise to always be your biggest hype person. Your wins are my wins. Your dreams are my blueprints." data-label="Forever"></div>
+      <div class="note-in-jar" data-promise="I promise to keep surprising you. Not just with this app — with handwritten notes in your bag, songs that remind me of you, random flowers on a Tuesday." data-label="Daily"></div>
+      <div class="note-in-jar" data-promise="I promise that the distance is temporary but what we're building is permanent. Every mile between us is just a mile I'll cross to get to you." data-label="Until then"></div>
+      <!-- /SLOT -->
+    </div>
+  </div>
+</div>
+
+<div class="counter" id="counter">7 promises left</div>
+<div class="hint" id="hint">tap a note to unfold</div>
+
+<div class="note-overlay" id="overlay">
+  <div class="unfolded-note">
+    <div class="note-label" id="noteLabel"></div>
+    <div class="note-text" id="noteText"></div>
+    <div class="note-close-hint">tap to release ✦</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  for(var i=0;i<12;i++){
+    var p=document.createElement('div');p.className='particle';
+    p.style.left=Math.random()*100+'vw';p.style.top=Math.random()*100+'vh';
+    var s=Math.random()*2+1;p.style.width=s+'px';p.style.height=s+'px';
+    p.style.animationDuration=(Math.random()*18+12)+'s';
+    p.style.animationDelay=(Math.random()*10)+'s';
+    document.body.appendChild(p);
+  }
+
+  var overlay=document.getElementById('overlay');
+  var noteText=document.getElementById('noteText');
+  var noteLabel=document.getElementById('noteLabel');
+  var counter=document.getElementById('counter');
+  var hint=document.getElementById('hint');
+  var notes=document.querySelectorAll('.note-in-jar');
+  var remaining=notes.length;
+  var currentNote=null;
+  var colors=['rgba(255,183,77,0.6)','rgba(255,105,180,0.5)','rgba(130,180,255,0.5)','rgba(130,255,180,0.5)','rgba(220,160,255,0.5)','rgba(255,220,130,0.5)','rgba(160,230,220,0.5)'];
+
+  function updateCounter(){
+    counter.textContent=remaining+' promise'+(remaining!==1?'s':'')+' left';
+    if(remaining===0){
+      counter.textContent='all promises released \u2726';
+      hint.style.opacity='0';
+    }
+  }
+
+  function spawnOrb(x,y,color){
+    var orb=document.createElement('div');
+    orb.className='orb';
+    orb.style.left=x+'px';orb.style.top=y+'px';
+    orb.style.background='radial-gradient(circle,'+color+',transparent)';
+    orb.style.boxShadow='0 0 12px '+color+', 0 0 24px '+color;
+    var drift=(Math.random()-0.5)*120;
+    var dur=3+Math.random()*2;
+    orb.animate([
+      {transform:'translateY(0) translateX(0) scale(1)',opacity:0.8},
+      {transform:'translateY(-70vh) translateX('+drift+'px) scale(0.3)',opacity:0}
+    ],{duration:dur*1000,easing:'ease-out',fill:'forwards'});
+    document.body.appendChild(orb);
+    setTimeout(function(){orb.remove()},dur*1000+200);
+  }
+
+  notes.forEach(function(note,i){
+    note.addEventListener('click',function(e){
+      if(note.classList.contains('used'))return;
+      currentNote=note;
+      noteText.textContent=note.dataset.promise;
+      noteLabel.textContent=note.dataset.label;
+      overlay.classList.add('active');
+      if(navigator.vibrate)navigator.vibrate(15);
+    });
+  });
+
+  overlay.addEventListener('click',function(){
+    if(!overlay.classList.contains('active'))return;
+    overlay.classList.remove('active');
+
+    if(currentNote){
+      var rect=currentNote.getBoundingClientRect();
+      var cx=rect.left+rect.width/2;
+      var cy=rect.top+rect.height/2;
+      var idx=Array.from(notes).indexOf(currentNote);
+
+      currentNote.style.transition='transform 0.5s ease-out, opacity 0.5s ease-out';
+      currentNote.style.transform='scale(0.3) translateY(-40px)';
+      currentNote.style.opacity='0';
+      currentNote.style.pointerEvents='none';
+      currentNote.classList.add('used');
+
+      setTimeout(function(){
+        for(var j=0;j<3;j++){
+          (function(jj){
+            setTimeout(function(){
+              spawnOrb(
+                cx+(Math.random()-0.5)*30,
+                cy+(Math.random()-0.5)*20,
+                colors[idx%colors.length]
+              );
+            },jj*150);
+          })(j);
+        }
+      },300);
+
+      remaining--;
+      updateCounter();
+      if(navigator.vibrate)navigator.vibrate([10,30,10]);
+      currentNote=null;
+    }
+  });
+
+  updateCounter();
+  notes.forEach(function(note){
+    note.style.animationDelay='-'+(Math.random()*3)+'s';
+  });
+})();
+</script>
+</body>
+</html>
