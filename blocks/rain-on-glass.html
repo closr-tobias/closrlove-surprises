@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Rain on Glass — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;500;600&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .scene {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 60%, rgba(255,160,80,0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 75% 40%, rgba(180,120,255,0.08) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 80%, rgba(255,100,120,0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at 30% 20%, rgba(100,180,255,0.06) 0%, transparent 40%),
+      linear-gradient(180deg, #0c0a14 0%, #12101e 50%, #0e0c18 100%);
+  }
+
+  .bokeh {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(20px);
+    opacity: 0;
+    animation: bokehPulse ease-in-out infinite;
+  }
+  @keyframes bokehPulse {
+    0%, 100% { opacity: 0.15; transform: scale(1); }
+    50% { opacity: 0.25; transform: scale(1.1); }
+  }
+
+  canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+  #rainCanvas { z-index: 2; }
+  #fogCanvas { z-index: 3; }
+  #drawCanvas { z-index: 4; pointer-events: auto; cursor: crosshair; }
+
+  .message-layer {
+    position: fixed; inset: 0; z-index: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px 32px; text-align: center;
+  }
+
+  .msg-line {
+    font-family: 'Caveat', cursive;
+    font-size: 2rem; font-weight: 500;
+    color: rgba(255,220,200,0.9);
+    line-height: 1.6;
+    text-shadow: 0 0 30px rgba(255,160,100,0.3), 0 0 60px rgba(255,100,80,0.15);
+    opacity: 0;
+    animation: msgIn 2s ease forwards;
+  }
+  .msg-line:nth-child(1) { animation-delay: 0.5s; }
+  .msg-line:nth-child(2) { animation-delay: 1.2s; }
+  .msg-line:nth-child(3) { animation-delay: 1.9s; }
+  .msg-line:nth-child(4) { animation-delay: 2.6s; }
+  .msg-line:nth-child(5) { animation-delay: 3.3s; }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-signature {
+    font-family: 'Playfair Display', serif;
+    font-style: italic; font-size: 1rem;
+    color: rgba(255,180,160,0.5);
+    margin-top: 32px; opacity: 0;
+    animation: msgIn 2s ease forwards;
+    animation-delay: 4s;
+  }
+
+  .hint {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    text-align: center; padding: 24px;
+    z-index: 10; pointer-events: none;
+    transition: opacity 1.5s ease;
+  }
+  .hint-text {
+    font-size: 0.7rem; color: rgba(255,255,255,0.2);
+    letter-spacing: 3px; text-transform: uppercase;
+    animation: hintPulse 3s ease-in-out infinite;
+  }
+  .hint-icon { font-size: 1.2rem; margin-bottom: 6px; opacity: 0.15; animation: hintDraw 2.5s ease-in-out infinite; }
+  @keyframes hintPulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.4; } }
+  @keyframes hintDraw { 0%, 100% { transform: translateX(-8px); opacity: 0.1; } 50% { transform: translateX(8px); opacity: 0.25; } }
+  .hint.hidden { opacity: 0; }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  .drip-overlay {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 80px;
+    background: linear-gradient(to top, rgba(8,8,14,0.3), transparent);
+    z-index: 5; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="scene"></div>
+
+<div class="bokeh" style="width:120px;height:120px;background:rgba(255,180,80,0.4);top:15%;left:10%;animation-duration:4.2s;"></div>
+<div class="bokeh" style="width:80px;height:80px;background:rgba(255,100,150,0.35);top:25%;left:65%;animation-duration:5.1s;animation-delay:1s;"></div>
+<div class="bokeh" style="width:150px;height:150px;background:rgba(180,140,255,0.25);top:55%;left:75%;animation-duration:6.3s;animation-delay:0.5s;"></div>
+<div class="bokeh" style="width:60px;height:60px;background:rgba(100,200,255,0.3);top:70%;left:20%;animation-duration:4.8s;animation-delay:2s;"></div>
+<div class="bokeh" style="width:100px;height:100px;background:rgba(255,200,100,0.3);top:40%;left:40%;animation-duration:5.5s;animation-delay:1.5s;"></div>
+<div class="bokeh" style="width:70px;height:70px;background:rgba(255,120,80,0.35);top:80%;left:55%;animation-duration:4.5s;animation-delay:0.8s;"></div>
+<div class="bokeh" style="width:90px;height:90px;background:rgba(200,180,255,0.2);top:10%;left:50%;animation-duration:7s;animation-delay:2.5s;"></div>
+
+<!-- SLOT: message -->
+<div class="message-layer">
+  <div class="msg-line">I think about you</div>
+  <div class="msg-line">every time it rains.</div>
+  <div class="msg-line">Something about the sound</div>
+  <div class="msg-line">makes the distance feel</div>
+  <div class="msg-line">a little smaller.</div>
+  <div class="msg-signature">— always yours</div>
+</div>
+<!-- /SLOT -->
+
+<canvas id="rainCanvas"></canvas>
+<canvas id="fogCanvas"></canvas>
+<canvas id="drawCanvas"></canvas>
+
+<div class="drip-overlay"></div>
+
+<div class="hint" id="hint">
+  <div class="hint-icon">👆</div>
+  <div class="hint-text">draw on the glass</div>
+</div>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · rain on glass</div>
+
+<script>
+(function(){
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var W = window.innerWidth;
+  var H = window.innerHeight;
+
+  function initCanvas(id) {
+    var c = document.getElementById(id);
+    c.width = W * dpr; c.height = H * dpr;
+    c.style.width = W + 'px'; c.style.height = H + 'px';
+    var ctx = c.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { canvas: c, ctx: ctx };
+  }
+
+  var rain = initCanvas('rainCanvas');
+  var fog = initCanvas('fogCanvas');
+  var draw = initCanvas('drawCanvas');
+
+  // ── FOG ──
+  (function(){
+    var ctx = fog.ctx;
+    ctx.fillStyle = 'rgba(18, 16, 28, 0.84)';
+    ctx.fillRect(0, 0, W, H);
+    for (var i = 0; i < 6000; i++) {
+      ctx.beginPath();
+      ctx.arc(Math.random()*W, Math.random()*H, Math.random()*1.5+0.3, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(140,160,180,' + (Math.random()*0.06) + ')';
+      ctx.fill();
+    }
+    for (var i = 0; i < 12; i++) {
+      var x = Math.random()*W, y = Math.random()*H*0.3, len = Math.random()*100+40;
+      var grad = ctx.createLinearGradient(x, y, x+(Math.random()-0.5)*10, y+len);
+      grad.addColorStop(0, 'rgba(160,180,200,0.03)');
+      grad.addColorStop(0.5, 'rgba(160,180,200,0.06)');
+      grad.addColorStop(1, 'rgba(160,180,200,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x-2, y, 4, len);
+    }
+  })();
+
+  // ── DRAWING ──
+  var isDrawing = false, hasDrawn = false, lastX = 0, lastY = 0;
+  var drips = [];
+
+  function clearFogAt(x, y, radius) {
+    var ctx = fog.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    var grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    grad.addColorStop(0, 'rgba(0,0,0,1)');
+    grad.addColorStop(0.6, 'rgba(0,0,0,0.8)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function spawnDrip(x, y) {
+    if (Math.random() > 0.12) return;
+    drips.push({ x: x+(Math.random()-0.5)*8, y: y, vy: Math.random()*0.4+0.2, r: Math.random()*2+1.2, life: 1 });
+  }
+
+  function updateDrips() {
+    var ctx = fog.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    for (var i = drips.length-1; i >= 0; i--) {
+      var d = drips[i];
+      d.vy += 0.015;
+      d.x += (Math.random()-0.5)*0.3;
+      d.y += d.vy;
+      d.life -= 0.002;
+      var grad = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.r*2);
+      grad.addColorStop(0, 'rgba(0,0,0,' + (d.life*0.5) + ')');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r*2, 0, Math.PI*2);
+      ctx.fill();
+      if (d.life <= 0 || d.y > H+20) drips.splice(i, 1);
+    }
+    ctx.restore();
+  }
+
+  function onStart(x, y) {
+    isDrawing = true; lastX = x; lastY = y;
+    if (!hasDrawn) { hasDrawn = true; document.getElementById('hint').classList.add('hidden'); }
+    clearFogAt(x, y, 28);
+    spawnDrip(x, y);
+    if (navigator.vibrate) navigator.vibrate(5);
+  }
+
+  function onMove(x, y) {
+    if (!isDrawing) return;
+    var dx = x-lastX, dy = y-lastY;
+    var dist = Math.sqrt(dx*dx+dy*dy);
+    var steps = Math.max(Math.floor(dist/4), 1);
+    for (var i = 0; i <= steps; i++) {
+      var t = i/steps;
+      var ix = lastX+dx*t, iy = lastY+dy*t;
+      clearFogAt(ix, iy, 26);
+      if (i%3===0) spawnDrip(ix, iy);
+    }
+    lastX = x; lastY = y;
+  }
+
+  function onEnd() { isDrawing = false; }
+
+  var dc = draw.canvas;
+  dc.addEventListener('mousedown', function(e){ e.preventDefault(); onStart(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', function(e){ onMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', onEnd);
+  dc.addEventListener('touchstart', function(e){ e.preventDefault(); var t=e.touches[0]; onStart(t.clientX, t.clientY); }, {passive:false});
+  window.addEventListener('touchmove', function(e){ if(isDrawing){e.preventDefault(); var t=e.touches[0]; onMove(t.clientX, t.clientY);} }, {passive:false});
+  window.addEventListener('touchend', onEnd);
+
+  // ── RAIN ──
+  var drops = [], splashes = [];
+  function makeDrop() {
+    return { x: Math.random()*W, y: -Math.random()*H*0.5-20, len: Math.random()*18+8, speed: Math.random()*4+3, w: Math.random()*1.2+0.5, a: Math.random()*0.15+0.05, wind: -0.3 };
+  }
+  for (var i = 0; i < 120; i++) { var d = makeDrop(); d.y = Math.random()*H; drops.push(d); }
+
+  var surfaceDrops = [];
+  for (var i = 0; i < 40; i++) {
+    surfaceDrops.push({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*3+1, vy: Math.random()*0.1+0.02, a: Math.random()*0.12+0.03, wo: Math.random()*Math.PI*2 });
+  }
+
+  var regrowth = 0;
+
+  function animate(ts) {
+    var ctx = rain.ctx;
+    ctx.clearRect(0, 0, W, H);
+
+    // Rain
+    for (var i = 0; i < drops.length; i++) {
+      var d = drops[i];
+      d.y += d.speed; d.x += d.wind;
+      ctx.beginPath();
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(d.x + d.wind*d.len*0.3, d.y+d.len);
+      ctx.strokeStyle = 'rgba(180,200,220,' + d.a + ')';
+      ctx.lineWidth = d.w; ctx.lineCap = 'round';
+      ctx.stroke();
+      if (d.y > H+20) {
+        if (Math.random() > 0.7) {
+          for (var j = 0; j < 3; j++) {
+            splashes.push({ x: d.x, y: H, vx: (Math.random()-0.5)*2, vy: -Math.random()*1.5-0.5, r: Math.random()+0.3, life: 1 });
+          }
+        }
+        Object.assign(d, makeDrop());
+      }
+    }
+
+    // Surface drops
+    for (var i = 0; i < surfaceDrops.length; i++) {
+      var d = surfaceDrops[i];
+      d.y += d.vy;
+      if (d.y > H+10) { d.y = -5; d.x = Math.random()*W; }
+      var wx = Math.sin(ts*0.001+d.wo)*0.3;
+      var grad = ctx.createRadialGradient(d.x+wx-d.r*0.3, d.y-d.r*0.3, 0, d.x+wx, d.y, d.r);
+      grad.addColorStop(0, 'rgba(200,220,240,' + (d.a*1.5) + ')');
+      grad.addColorStop(0.7, 'rgba(160,180,200,' + d.a + ')');
+      grad.addColorStop(1, 'rgba(140,160,180,' + (d.a*0.3) + ')');
+      ctx.beginPath();
+      ctx.arc(d.x+wx, d.y, d.r, 0, Math.PI*2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+
+    // Splashes
+    for (var i = splashes.length-1; i >= 0; i--) {
+      var s = splashes[i];
+      s.x += s.vx; s.y += s.vy; s.vy += 0.08; s.life -= 0.04;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(180,200,220,' + (s.life*0.3) + ')';
+      ctx.fill();
+      if (s.life <= 0) splashes.splice(i, 1);
+    }
+
+    updateDrips();
+
+    // Slow fog regrowth
+    regrowth++;
+    if (regrowth >= 200 && hasDrawn) {
+      regrowth = 0;
+      fog.ctx.save();
+      fog.ctx.globalCompositeOperation = 'source-over';
+      fog.ctx.fillStyle = 'rgba(18, 16, 28, 0.003)';
+      fog.ctx.fillRect(0, 0, W, H);
+      fog.ctx.restore();
+    }
+
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>
