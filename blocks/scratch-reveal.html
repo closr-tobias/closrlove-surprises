@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Scratch Reveal — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;500;700&family=Inter:wght@300;400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow-x: hidden; }
+  body {
+    background: #08080e;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    display: flex; flex-direction: column;
+    align-items: center;
+    user-select: none; -webkit-user-select: none;
+    overflow-x: hidden;
+    padding: 60px 20px 40px;
+  }
+
+  .particle {
+    position: fixed;
+    width: 2px; height: 2px;
+    background: rgba(255,215,0,0.05);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: drift linear infinite;
+  }
+  @keyframes drift {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  .title-area {
+    text-align: center;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeIn 1s 0.3s forwards;
+  }
+  .title-area h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.4rem, 5vw, 1.8rem);
+    font-weight: 700;
+    color: #f0e6d3;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .title-area p {
+    font-size: 0.72rem;
+    color: rgba(255,215,0,0.25);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  .cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: min(88vw, 340px);
+  }
+
+  .scratch-card {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2.2 / 1;
+    border-radius: 12px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: cardIn 0.6s forwards;
+    box-shadow:
+      0 2px 8px rgba(0,0,0,0.3),
+      0 12px 40px rgba(0,0,0,0.25),
+      inset 0 0 0 1px rgba(255,215,0,0.06);
+  }
+  .scratch-card:nth-child(1) { animation-delay: 0.5s; }
+  .scratch-card:nth-child(2) { animation-delay: 0.7s; }
+  .scratch-card:nth-child(3) { animation-delay: 0.9s; }
+  .scratch-card:nth-child(4) { animation-delay: 1.1s; }
+
+  @keyframes cardIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 20px;
+    text-align: center;
+    background: linear-gradient(145deg, #12101a 0%, #0e0c16 100%);
+  }
+  .card-text .emoji-bg {
+    position: absolute;
+    font-size: 4rem;
+    opacity: 0.06;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .card-text .text-content {
+    position: relative;
+    z-index: 1;
+  }
+  .card-text .text-content p {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(1rem, 4vw, 1.25rem);
+    font-weight: 500;
+    color: #f0e6d3;
+    line-height: 1.5;
+  }
+  .card-text .text-content .context {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6rem;
+    color: rgba(255,215,0,0.3);
+    margin-top: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .scratch-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    cursor: pointer;
+    touch-action: none;
+  }
+
+  .scratch-card.revealed {
+    box-shadow:
+      0 2px 8px rgba(0,0,0,0.3),
+      0 12px 40px rgba(0,0,0,0.25),
+      0 0 30px rgba(255,215,0,0.06),
+      inset 0 0 0 1px rgba(255,215,0,0.12);
+  }
+  .scratch-card.revealed .card-text .text-content p {
+    animation: textGlow 0.8s ease forwards;
+  }
+  @keyframes textGlow {
+    0% { opacity: 0.5; transform: scale(0.96); }
+    50% { text-shadow: 0 0 20px rgba(255,215,0,0.15); }
+    100% { opacity: 1; transform: scale(1); text-shadow: none; }
+  }
+
+  .sparkle {
+    position: absolute;
+    width: 4px; height: 4px;
+    background: #ffd700;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10;
+    animation: sparkleBurst 0.6s ease-out forwards;
+  }
+  @keyframes sparkleBurst {
+    0% { opacity: 1; transform: scale(1) translate(0, 0); }
+    100% { opacity: 0; transform: scale(0) translate(var(--tx), var(--ty)); }
+  }
+
+  .scratch-hint {
+    position: absolute;
+    bottom: 6px; right: 8px;
+    font-size: 0.5rem;
+    color: rgba(80,60,20,0.5);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    z-index: 3;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .scratch-card.revealed .scratch-hint { opacity: 0; }
+
+  .counter {
+    margin-top: 28px;
+    text-align: center;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.08);
+    letter-spacing: 2px;
+    opacity: 0;
+    animation: fadeIn 1s 1.4s forwards;
+  }
+  .counter span { color: rgba(255,215,0,0.3); transition: color 0.4s; }
+
+  .hint-bottom {
+    position: fixed;
+    bottom: 20px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.5rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · scratch reveal</div>
+
+<div class="title-area">
+  <!-- SLOT: title --> <h1>Things Only We Know</h1> <!-- /SLOT -->
+  <p>scratch to reveal</p>
+</div>
+
+<div class="cards-container" id="cards">
+
+  <!-- SLOT: card_1 -->
+  <div class="scratch-card" data-index="0">
+    <div class="card-text">
+      <div class="emoji-bg">🐱</div>
+      <div class="text-content">
+        <p>"Kiru's judgment face" — the look he gives me on FaceTime when I interrupt his nap</p>
+        <div class="context">inside joke #1</div>
+      </div>
+    </div>
+    <canvas class="scratch-canvas"></canvas>
+    <div class="scratch-hint">scratch me</div>
+  </div>
+  <!-- /SLOT -->
+
+  <!-- SLOT: card_2 -->
+  <div class="scratch-card" data-index="1">
+    <div class="card-text">
+      <div class="emoji-bg">🍜</div>
+      <div class="text-content">
+        <p>That time you pronounced "pho" as "foe" at the restaurant and the waiter just... stared</p>
+        <div class="context">inside joke #2</div>
+      </div>
+    </div>
+    <canvas class="scratch-canvas"></canvas>
+    <div class="scratch-hint">scratch me</div>
+  </div>
+  <!-- /SLOT -->
+
+  <!-- SLOT: card_3 -->
+  <div class="scratch-card" data-index="2">
+    <div class="card-text">
+      <div class="emoji-bg">😴</div>
+      <div class="text-content">
+        <p>"Five more minutes" — which in our timezone math means you fall asleep mid-sentence at 3am</p>
+        <div class="context">inside joke #3</div>
+      </div>
+    </div>
+    <canvas class="scratch-canvas"></canvas>
+    <div class="scratch-hint">scratch me</div>
+  </div>
+  <!-- /SLOT -->
+
+  <!-- SLOT: card_4 -->
+  <div class="scratch-card" data-index="3">
+    <div class="card-text">
+      <div class="emoji-bg">🎮</div>
+      <div class="text-content">
+        <p>Your "gaming rage" voice that somehow sounds adorable instead of scary. I will never tell you this.</p>
+        <div class="context">inside joke #4</div>
+      </div>
+    </div>
+    <canvas class="scratch-canvas"></canvas>
+    <div class="scratch-hint">scratch me</div>
+  </div>
+  <!-- /SLOT -->
+
+</div>
+
+<div class="counter">
+  <span id="revealCount">0</span> / <span id="totalCount">4</span> revealed
+</div>
+
+<div class="hint-bottom">scratch the gold</div>
+
+<script>
+(function(){
+  for (var i = 0; i < 12; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = Math.random() * 100 + 'vh';
+    p.style.width = (Math.random() * 2 + 1) + 'px';
+    p.style.height = p.style.width;
+    p.style.animationDuration = (Math.random() * 18 + 12) + 's';
+    p.style.animationDelay = (Math.random() * 8) + 's';
+    document.body.appendChild(p);
+  }
+
+  var revealedCount = 0;
+  var totalCards = document.querySelectorAll('.scratch-card').length;
+  document.getElementById('totalCount').textContent = totalCards;
+
+  document.querySelectorAll('.scratch-card').forEach(function(card) {
+    var canvas = card.querySelector('.scratch-canvas');
+    var ctx = canvas.getContext('2d');
+    var isDrawing = false;
+    var hasRevealed = false;
+    var checkInterval = 0;
+
+    function initCanvas() {
+      var rect = card.getBoundingClientRect();
+      var dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.scale(dpr, dpr);
+
+      var w = rect.width, h = rect.height;
+      var grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#d4a843');
+      grad.addColorStop(0.3, '#f0d060');
+      grad.addColorStop(0.5, '#e8c84a');
+      grad.addColorStop(0.7, '#c89830');
+      grad.addColorStop(1, '#d4a843');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.globalAlpha = 0.12;
+      for (var i = 0; i < 6; i++) {
+        var y = Math.random() * h;
+        var sheenGrad = ctx.createLinearGradient(0, y - 8, 0, y + 8);
+        sheenGrad.addColorStop(0, 'transparent');
+        sheenGrad.addColorStop(0.5, '#fff8e0');
+        sheenGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = sheenGrad;
+        ctx.fillRect(0, y - 8, w, 16);
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.globalAlpha = 0.04;
+      for (var i = 0; i < 800; i++) {
+        ctx.fillStyle = Math.random() > 0.5 ? '#fff' : '#000';
+        ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      ctx.font = '600 ' + (w * 0.07) + 'px Inter';
+      ctx.fillStyle = '#4a3510';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('\u2727  SCRATCH HERE  \u2727', w / 2, h / 2);
+      ctx.restore();
+
+      ctx.strokeStyle = 'rgba(180,140,50,0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
+    }
+
+    function scratch(x, y) {
+      var rect = canvas.getBoundingClientRect();
+      var cx = x - rect.left;
+      var cy = y - rect.top;
+
+      ctx.globalCompositeOperation = 'destination-out';
+      var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 22);
+      grad.addColorStop(0, 'rgba(0,0,0,1)');
+      grad.addColorStop(0.7, 'rgba(0,0,0,0.8)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (var i = 0; i < 3; i++) {
+        var ox = cx + (Math.random() - 0.5) * 30;
+        var oy = cy + (Math.random() - 0.5) * 30;
+        ctx.beginPath();
+        ctx.arc(ox, oy, Math.random() * 4 + 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+
+      checkInterval++;
+      if (checkInterval % 6 === 0) checkReveal();
+    }
+
+    function checkReveal() {
+      if (hasRevealed) return;
+      var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      var pixels = imageData.data;
+      var transparent = 0;
+      for (var i = 3; i < pixels.length; i += 64) {
+        if (pixels[i] === 0) transparent++;
+      }
+      var ratio = transparent / (pixels.length / 64);
+      if (ratio > 0.45) revealCard();
+    }
+
+    function revealCard() {
+      if (hasRevealed) return;
+      hasRevealed = true;
+
+      canvas.style.transition = 'opacity 0.5s ease-out';
+      canvas.style.opacity = '0';
+      setTimeout(function() { canvas.style.display = 'none'; }, 500);
+
+      card.classList.add('revealed');
+
+      var rect = card.getBoundingClientRect();
+      for (var i = 0; i < 12; i++) {
+        var spark = document.createElement('div');
+        spark.className = 'sparkle';
+        var angle = (Math.PI * 2 / 12) * i + Math.random() * 0.5;
+        var dist = 40 + Math.random() * 60;
+        spark.style.cssText = 'left:' + (rect.width/2) + 'px;top:' + (rect.height/2) + 'px;' +
+          '--tx:' + (Math.cos(angle) * dist) + 'px;--ty:' + (Math.sin(angle) * dist) + 'px;' +
+          'width:' + (2 + Math.random() * 4) + 'px;height:' + (2 + Math.random() * 4) + 'px;' +
+          'animation-delay:' + (Math.random() * 0.15) + 's;';
+        card.appendChild(spark);
+        setTimeout(function(s){ s.remove(); }.bind(null, spark), 800);
+      }
+
+      if (navigator.vibrate) navigator.vibrate(30);
+
+      revealedCount++;
+      document.getElementById('revealCount').textContent = revealedCount;
+
+      if (revealedCount === totalCards) {
+        setTimeout(showComplete, 600);
+      }
+    }
+
+    function showComplete() {
+      var el = document.createElement('div');
+      el.style.cssText = 'text-align:center;margin-top:20px;opacity:0;animation:fadeIn 0.8s forwards;';
+      el.innerHTML = '<p style="font-family:Caveat,cursive;font-size:1.1rem;color:rgba(255,215,0,0.4);margin-bottom:4px;">all secrets revealed \u2727</p>' +
+        '<p style="font-size:0.55rem;color:rgba(255,255,255,0.06);letter-spacing:2px;text-transform:uppercase;">our little world</p>';
+      document.querySelector('.cards-container').appendChild(el);
+    }
+
+    canvas.addEventListener('mousedown', function(e) { isDrawing = true; scratch(e.clientX, e.clientY); });
+    canvas.addEventListener('mousemove', function(e) { if (isDrawing) scratch(e.clientX, e.clientY); });
+    canvas.addEventListener('mouseup', function() { isDrawing = false; });
+    canvas.addEventListener('mouseleave', function() { isDrawing = false; });
+
+    canvas.addEventListener('touchstart', function(e) {
+      e.preventDefault(); isDrawing = true;
+      scratch(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+    canvas.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+      if (isDrawing) scratch(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+    canvas.addEventListener('touchend', function() { isDrawing = false; });
+
+    var delay = parseInt(card.dataset.index) * 200 + 500;
+    setTimeout(function() { initCanvas(); }, delay + 600);
+
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() { if (!hasRevealed) initCanvas(); }, 200);
+    });
+  });
+})();
+</script>
+</body>
+</html>
