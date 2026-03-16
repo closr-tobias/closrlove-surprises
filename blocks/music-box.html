@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Music Box — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:#08080e;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'Inter',sans-serif;
+    min-height:100dvh;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    overflow:hidden;
+  }
+
+  .back-link{position:fixed;top:14px;left:14px;font-size:.65rem;color:#ffffff12;text-decoration:none;z-index:200}
+  .block-label{position:fixed;top:14px;right:14px;font-size:.5rem;color:#ffffff0a;letter-spacing:1px;z-index:200}
+
+  .ambient{
+    position:fixed;width:400px;height:400px;border-radius:50%;
+    background:radial-gradient(ellipse,rgba(218,165,32,.04) 0%,rgba(255,215,0,.02) 40%,transparent 70%);
+    pointer-events:none;filter:blur(60px);
+  }
+
+  .dust{
+    position:fixed;width:1.5px;height:1.5px;
+    background:rgba(255,215,0,.08);border-radius:50%;
+    pointer-events:none;animation:dustFloat linear infinite;
+  }
+  @keyframes dustFloat{
+    0%{transform:translateY(0) translateX(0);opacity:0}
+    10%{opacity:1}90%{opacity:1}
+    100%{transform:translateY(-100vh) translateX(20px);opacity:0}
+  }
+
+  .sound-hint{
+    position:fixed;top:50px;left:0;right:0;text-align:center;
+    font-size:.55rem;color:rgba(255,255,255,.15);letter-spacing:2px;
+    text-transform:uppercase;pointer-events:none;
+    opacity:0;transition:opacity .8s;
+  }
+  .sound-hint.visible{opacity:1}
+
+  /* THE MUSIC BOX */
+  .box-container{
+    position:relative;width:260px;height:300px;
+    perspective:800px;z-index:10;
+    cursor:pointer;
+  }
+
+  .box-base{
+    position:absolute;bottom:0;left:0;right:0;height:140px;
+    background:linear-gradient(175deg,#5c3d1e,#3d2510,#2a1a0c);
+    border-radius:6px 6px 4px 4px;
+    box-shadow:
+      0 8px 32px rgba(0,0,0,.6),
+      0 2px 8px rgba(0,0,0,.4),
+      inset 0 1px 0 rgba(255,215,0,.08),
+      inset 0 -2px 4px rgba(0,0,0,.3);
+    overflow:hidden;
+  }
+  .box-base::before{
+    content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(95deg,transparent 0px,rgba(255,255,255,.015) 1px,transparent 2px,transparent 8px);
+    pointer-events:none;
+  }
+  .box-base::after{
+    content:'';position:absolute;top:6px;left:8px;right:8px;bottom:8px;
+    border:1px solid rgba(218,165,32,.15);border-radius:3px;
+    pointer-events:none;
+  }
+
+  .clasp{
+    position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+    width:24px;height:12px;
+    background:linear-gradient(180deg,#daa520,#b8860b);
+    border-radius:3px 3px 0 0;z-index:5;
+    box-shadow:0 -1px 4px rgba(218,165,32,.3);
+    transition:opacity .4s;
+  }
+
+  .box-lid{
+    position:absolute;bottom:134px;left:0;right:0;height:60px;
+    transform-origin:bottom center;
+    transition:transform 1.2s cubic-bezier(.25,.46,.45,.94);
+    z-index:4;
+  }
+  .box-lid-face{
+    width:100%;height:100%;
+    background:linear-gradient(175deg,#6b4423,#4a2e14,#3d2510);
+    border-radius:4px 4px 0 0;
+    box-shadow:0 -4px 16px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,215,0,.1);
+    position:relative;
+  }
+  .box-lid-face::before{
+    content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(95deg,transparent 0px,rgba(255,255,255,.015) 1px,transparent 2px,transparent 8px);
+    border-radius:4px 4px 0 0;
+  }
+  .lid-ornament{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:40px;height:40px;
+    border:1px solid rgba(218,165,32,.2);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1rem;opacity:.5;
+  }
+  .lid-ornament::before{
+    content:'';position:absolute;inset:4px;
+    border:1px solid rgba(218,165,32,.1);border-radius:50%;
+  }
+
+  .box-container.open .box-lid{transform:rotateX(-115deg)}
+  .box-container.open .clasp{opacity:0}
+
+  .box-interior{
+    position:absolute;bottom:6px;left:10px;right:10px;height:128px;
+    background:linear-gradient(180deg,#1a0a04,#120804);
+    border-radius:2px;
+    box-shadow:inset 0 2px 8px rgba(0,0,0,.5);
+    overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .box-interior::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(80,10,20,.3),rgba(60,5,15,.4));
+    pointer-events:none;
+  }
+
+  .spinner{
+    position:relative;z-index:2;
+    width:36px;height:36px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.4rem;
+    opacity:0;transition:opacity .8s;
+    filter:drop-shadow(0 0 8px rgba(255,105,180,.3));
+  }
+  .spinner.active{opacity:1;animation:spinFigure 3s linear infinite}
+  @keyframes spinFigure{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
+
+  .sparkle{
+    position:fixed;width:3px;height:3px;
+    background:rgba(255,215,0,.6);border-radius:50%;
+    pointer-events:none;z-index:20;
+    animation:sparkleRise 2s ease-out forwards;
+  }
+  @keyframes sparkleRise{
+    0%{opacity:1;transform:translateY(0) scale(1)}
+    100%{opacity:0;transform:translateY(-120px) scale(0)}
+  }
+
+  .inner-glow{
+    position:absolute;bottom:140px;left:50%;transform:translateX(-50%);
+    width:200px;height:100px;
+    background:radial-gradient(ellipse,rgba(255,215,0,.06) 0%,transparent 70%);
+    pointer-events:none;opacity:0;transition:opacity 1.5s;z-index:3;
+  }
+  .box-container.open .inner-glow{opacity:1}
+
+  .messages{
+    position:fixed;bottom:0;left:0;right:0;
+    display:flex;flex-direction:column;align-items:center;
+    padding:0 30px 60px;gap:24px;
+    pointer-events:none;z-index:15;
+  }
+  .msg{
+    font-family:'Cormorant Garamond',serif;
+    font-size:1.15rem;font-weight:300;font-style:italic;
+    color:rgba(255,255,255,0);
+    text-align:center;line-height:1.6;letter-spacing:.3px;
+    transition:color 1.2s ease;
+    text-shadow:0 0 20px rgba(218,165,32,0);
+  }
+  .msg.visible{
+    color:rgba(255,255,255,.75);
+    text-shadow:0 0 20px rgba(218,165,32,.08);
+  }
+
+  .tap-prompt{
+    position:absolute;bottom:-40px;left:0;right:0;
+    text-align:center;font-size:.5rem;
+    color:rgba(255,255,255,.1);letter-spacing:3px;
+    text-transform:uppercase;
+    animation:tapPulse 2s ease-in-out infinite;
+  }
+  .box-container.open .tap-prompt{display:none}
+  @keyframes tapPulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+  .note-vis{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    pointer-events:none;z-index:1;overflow:hidden;
+  }
+  .note-bubble{
+    position:absolute;font-size:1rem;opacity:0;
+    animation:noteBubble 3s ease-out forwards;
+  }
+  @keyframes noteBubble{
+    0%{opacity:.6;transform:translateY(0) scale(.6) rotate(0deg)}
+    100%{opacity:0;transform:translateY(-200px) scale(1) rotate(20deg)}
+  }
+
+  .hint{
+    position:fixed;bottom:24px;left:0;right:0;text-align:center;
+    font-size:.5rem;color:#ffffff0d;letter-spacing:3px;text-transform:uppercase;
+    pointer-events:none;
+  }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · music box</div>
+<div class="ambient"></div>
+<div class="sound-hint" id="soundHint">🔊 best with sound</div>
+<div class="note-vis" id="noteVis"></div>
+
+<div class="box-container" id="boxContainer">
+  <div class="inner-glow"></div>
+  <div class="box-lid">
+    <div class="box-lid-face">
+      <div class="lid-ornament">♡</div>
+    </div>
+  </div>
+  <div class="clasp"></div>
+  <div class="box-base">
+    <div class="box-interior">
+      <div class="spinner" id="spinner">💗</div>
+    </div>
+  </div>
+  <div class="tap-prompt">tap to open</div>
+</div>
+
+<!-- SLOT: messages -->
+<div class="messages" id="messages">
+  <div class="msg">You are the melody I didn't know I was missing</div>
+  <div class="msg">Every time I hear your laugh, the whole world goes quiet</div>
+  <div class="msg">I keep our memories like treasures in a box — each one more precious than the last</div>
+  <div class="msg">This song is for you. It always was.</div>
+</div>
+<!-- /SLOT -->
+
+<div class="hint">tap box to pause · tap again to play</div>
+
+<script>
+(function(){
+  for(var i=0;i<12;i++){
+    var d=document.createElement('div');d.className='dust';
+    d.style.left=Math.random()*100+'vw';
+    d.style.top=Math.random()*100+'vh';
+    d.style.animationDuration=(Math.random()*20+15)+'s';
+    d.style.animationDelay=(Math.random()*10)+'s';
+    document.body.appendChild(d);
+  }
+
+  var box=document.getElementById('boxContainer');
+  var spinner=document.getElementById('spinner');
+  var msgs=document.querySelectorAll('.msg');
+  var noteVis=document.getElementById('noteVis');
+  var soundHint=document.getElementById('soundHint');
+  var isOpen=false,audioCtx=null,isPlaying=false,melodyTimeout=null;
+
+  setTimeout(function(){soundHint.classList.add('visible')},800);
+  setTimeout(function(){soundHint.classList.remove('visible')},4000);
+
+  // Pentatonic music-box melody (C6, D6, E6, G6, A6)
+  var melody=[
+    {note:1047,dur:.18},{note:1175,dur:.18},{note:1319,dur:.36},
+    {note:1175,dur:.18},{note:1568,dur:.36},{note:1760,dur:.18},
+    {note:1568,dur:.18},{note:1319,dur:.36},{note:1175,dur:.18},
+    {note:1047,dur:.36},{note:1319,dur:.18},{note:1568,dur:.54},
+    {note:1760,dur:.18},{note:1568,dur:.18},{note:1319,dur:.36},
+    {note:1175,dur:.18},{note:1047,dur:.54},{note:1319,dur:.18},
+    {note:1175,dur:.18},{note:1047,dur:.36},{note:880,dur:.36},
+    {note:1047,dur:.54},{note:1319,dur:.18},{note:1568,dur:.36},
+    {note:1760,dur:.36},{note:1568,dur:.54},
+    {note:1047,dur:.18},{note:1319,dur:.18},{note:1568,dur:.36},
+    {note:1760,dur:.18},{note:1568,dur:.18},{note:1319,dur:.36},
+    {note:1047,dur:.18},{note:1175,dur:.36},{note:1319,dur:.54},
+    {note:1568,dur:.18},{note:1760,dur:.36},{note:1568,dur:.18},
+    {note:1319,dur:.18},{note:1175,dur:.36},{note:1047,dur:.54},
+  ];
+
+  function createAudio(){
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  }
+
+  function playNote(freq,startTime,duration){
+    var osc=audioCtx.createOscillator();
+    var osc2=audioCtx.createOscillator();
+    var gain=audioCtx.createGain();
+    var gain2=audioCtx.createGain();
+    var master=audioCtx.createGain();
+
+    osc.type='sine';osc.frequency.value=freq;
+    osc2.type='sine';osc2.frequency.value=freq*2;
+
+    gain.gain.setValueAtTime(0,startTime);
+    gain.gain.linearRampToValueAtTime(.12,startTime+.005);
+    gain.gain.exponentialRampToValueAtTime(.04,startTime+.15);
+    gain.gain.exponentialRampToValueAtTime(.001,startTime+duration+.3);
+
+    gain2.gain.setValueAtTime(0,startTime);
+    gain2.gain.linearRampToValueAtTime(.04,startTime+.003);
+    gain2.gain.exponentialRampToValueAtTime(.001,startTime+duration+.15);
+
+    master.gain.value=.6;
+
+    osc.connect(gain);osc2.connect(gain2);
+    gain.connect(master);gain2.connect(master);
+    master.connect(audioCtx.destination);
+
+    osc.start(startTime);osc2.start(startTime);
+    osc.stop(startTime+duration+.5);
+    osc2.stop(startTime+duration+.3);
+  }
+
+  function playMelody(){
+    if(isPlaying)return;
+    isPlaying=true;
+    var t=audioCtx.currentTime+.3;
+    var gap=.02;
+    var totalDuration=0;
+
+    melody.forEach(function(n){totalDuration+=n.dur+gap});
+    var msgInterval=totalDuration/(msgs.length);
+
+    melody.forEach(function(n,i){
+      playNote(n.note,t,n.dur);
+      var delay=(t-audioCtx.currentTime)*1000;
+      setTimeout(function(){spawnSparkle();spawnNoteBubble()},delay);
+      t+=n.dur+gap;
+    });
+
+    msgs.forEach(function(m,i){
+      setTimeout(function(){m.classList.add('visible')},(msgInterval*i+1)*1000);
+    });
+
+    melodyTimeout=setTimeout(function(){
+      isPlaying=false;
+      playMelody();
+    },totalDuration*1000+800);
+  }
+
+  function spawnSparkle(){
+    var s=document.createElement('div');s.className='sparkle';
+    var r=box.getBoundingClientRect();
+    s.style.left=(r.left+40+Math.random()*(r.width-80))+'px';
+    s.style.top=(r.top+20+Math.random()*40)+'px';
+    s.style.width=(2+Math.random()*3)+'px';s.style.height=s.style.width;
+    s.style.background='rgba('+(200+Math.random()*55|0)+','+(180+Math.random()*40|0)+','+(20+Math.random()*40|0)+','+(0.3+Math.random()*0.5).toFixed(2)+')';
+    document.body.appendChild(s);
+    setTimeout(function(){s.remove()},2000);
+  }
+
+  function spawnNoteBubble(){
+    if(Math.random()>.4)return;
+    var notes=['\u266A','\u266B','\u266C','\u2669'];
+    var n=document.createElement('div');n.className='note-bubble';
+    n.textContent=notes[Math.random()*notes.length|0];
+    var r=box.getBoundingClientRect();
+    n.style.left=(r.left+Math.random()*r.width)+'px';
+    n.style.top=(r.top-10)+'px';
+    n.style.color='rgba(218,165,32,'+(0.2+Math.random()*0.3).toFixed(2)+')';
+    noteVis.appendChild(n);
+    setTimeout(function(){n.remove()},3000);
+  }
+
+  var paused=false;
+  box.addEventListener('click',function(){
+    if(!isOpen){
+      isOpen=true;
+      box.classList.add('open');
+      if(navigator.vibrate)navigator.vibrate(50);
+      if(!audioCtx)createAudio();
+      if(audioCtx.state==='suspended')audioCtx.resume();
+      setTimeout(function(){spinner.classList.add('active')},600);
+      setTimeout(function(){playMelody()},1000);
+      return;
+    }
+    // Toggle pause
+    if(!paused){
+      paused=true;
+      if(audioCtx)audioCtx.suspend();
+      spinner.style.animationPlayState='paused';
+    }else{
+      paused=false;
+      if(audioCtx)audioCtx.resume();
+      spinner.style.animationPlayState='running';
+    }
+  });
+})();
+</script>
+</body>
+</html>
