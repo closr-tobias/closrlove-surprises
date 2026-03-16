@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Voice Letter — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&family=Inter:wght@300;400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+  }
+
+  .ambient {
+    position: fixed;
+    width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .ambient::before {
+    content: '';
+    position: absolute;
+    top: 30%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(180,120,60,0.06) 0%, rgba(160,100,50,0.03) 40%, transparent 70%);
+    filter: blur(60px);
+  }
+
+  .mote {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    background: rgba(255,220,160,0.12);
+    animation: moteFloat linear infinite;
+  }
+  @keyframes moteFloat {
+    0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { transform: translateY(-80vh) translateX(40px) scale(0.5); opacity: 0; }
+  }
+
+  .envelope-scene {
+    perspective: 800px;
+    position: relative;
+    z-index: 10;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .envelope-scene.opened {
+    opacity: 0;
+    transform: scale(0.85) translateY(-30px);
+    pointer-events: none;
+  }
+
+  .envelope {
+    width: min(82vw, 320px);
+    height: min(55vw, 220px);
+    position: relative;
+    cursor: pointer;
+    transform-style: preserve-3d;
+  }
+
+  .envelope-body {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(170deg, #d4b896 0%, #c9a87c 30%, #bfa070 60%, #b89668 100%);
+    border-radius: 4px;
+    box-shadow:
+      0 4px 12px rgba(0,0,0,0.3),
+      0 15px 40px rgba(0,0,0,0.25),
+      inset 0 1px 0 rgba(255,255,255,0.15),
+      inset 0 -2px 4px rgba(0,0,0,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .envelope-body::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: 4px;
+  }
+
+  .envelope-body::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    width: 0; height: 0;
+    border-left: min(41vw, 160px) solid transparent;
+    border-right: min(41vw, 160px) solid transparent;
+    border-top: min(27vw, 110px) solid rgba(0,0,0,0.04);
+    transform: translateX(-50%);
+  }
+
+  .envelope-flap {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 50%;
+    transform-origin: top center;
+    transform-style: preserve-3d;
+    z-index: 5;
+    transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .envelope-flap.open {
+    transform: rotateX(-180deg);
+  }
+
+  .flap-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+  }
+  .flap-front {
+    width: 0; height: 0;
+    border-left: min(41vw, 160px) solid transparent;
+    border-right: min(41vw, 160px) solid transparent;
+    border-top: min(27vw, 110px) solid #c4a070;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  }
+  .flap-back {
+    width: 0; height: 0;
+    border-left: min(41vw, 160px) solid transparent;
+    border-right: min(41vw, 160px) solid transparent;
+    border-top: min(27vw, 110px) solid #b89060;
+    transform: rotateX(180deg);
+  }
+
+  .wax-seal {
+    position: absolute;
+    top: 46%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px; height: 48px;
+    z-index: 10;
+    transition: transform 0.6s ease, opacity 0.4s ease;
+  }
+  .envelope.tapped .wax-seal {
+    transform: translate(-50%, -50%) scale(1.3) rotate(15deg);
+    opacity: 0;
+  }
+  .seal-circle {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #d44040, #a82020 60%, #8a1818);
+    box-shadow:
+      0 2px 6px rgba(0,0,0,0.4),
+      inset 0 2px 4px rgba(255,150,150,0.3),
+      inset 0 -2px 4px rgba(0,0,0,0.2);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .seal-circle::before {
+    content: '\2665';
+    font-size: 20px;
+    color: rgba(255,200,200,0.6);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+  .seal-circle::after {
+    content: '';
+    position: absolute; inset: -3px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 70%, rgba(180,30,30,0.6) 0%, transparent 30%),
+                radial-gradient(circle at 80% 20%, rgba(180,30,30,0.4) 0%, transparent 25%),
+                radial-gradient(circle at 60% 90%, rgba(160,20,20,0.5) 0%, transparent 20%);
+    filter: blur(1px);
+  }
+
+  .tap-hint {
+    position: absolute;
+    bottom: -36px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.08);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    animation: hintPulse 3s ease-in-out infinite;
+  }
+  @keyframes hintPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  .letter-content {
+    position: fixed;
+    inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px 24px;
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1s ease 0.6s;
+  }
+  .letter-content.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .letter-paper {
+    width: min(88vw, 360px);
+    max-height: 80vh;
+    overflow-y: auto;
+    background: linear-gradient(175deg, #f8f4ec, #f2eddf, #ece5d5);
+    border-radius: 3px;
+    padding: 32px 24px 28px;
+    box-shadow:
+      0 4px 16px rgba(0,0,0,0.25),
+      0 20px 60px rgba(0,0,0,0.2),
+      inset 0 0 0 1px rgba(255,255,255,0.1);
+    position: relative;
+    transform: translateY(20px);
+    transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s;
+  }
+  .letter-content.visible .letter-paper {
+    transform: translateY(0);
+  }
+
+  .letter-paper::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: 3px;
+  }
+
+  .letter-greeting {
+    font-family: 'Caveat', cursive;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: #6a5a48;
+    margin-bottom: 16px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .letter-body {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    font-weight: 300;
+    line-height: 1.75;
+    color: #4a3f35;
+    margin-bottom: 20px;
+  }
+  .letter-body .word {
+    opacity: 0;
+    display: inline;
+    transition: opacity 0.4s ease;
+  }
+  .letter-body .word.visible {
+    opacity: 1;
+  }
+
+  .letter-sign {
+    font-family: 'Caveat', cursive;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #7a6a58;
+    text-align: right;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .waveform-container {
+    width: 100%;
+    height: 48px;
+    margin: 16px 0 20px;
+    position: relative;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    cursor: pointer;
+  }
+
+  .waveform-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .waveform-time {
+    position: absolute;
+    bottom: -16px;
+    right: 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.55rem;
+    color: #a09080;
+    letter-spacing: 0.5px;
+  }
+
+  .sound-indicator {
+    position: absolute;
+    bottom: -16px;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.55rem;
+    color: #a09080;
+    letter-spacing: 0.5px;
+  }
+  .sound-bars {
+    display: flex;
+    gap: 1.5px;
+    align-items: flex-end;
+    height: 10px;
+  }
+  .sound-bar {
+    width: 2px;
+    background: #c4956a;
+    border-radius: 1px;
+    animation: soundBarPulse 1.2s ease-in-out infinite;
+  }
+  .sound-bar:nth-child(1) { height: 4px; animation-delay: 0s; }
+  .sound-bar:nth-child(2) { height: 8px; animation-delay: 0.15s; }
+  .sound-bar:nth-child(3) { height: 5px; animation-delay: 0.3s; }
+  @keyframes soundBarPulse {
+    0%, 100% { transform: scaleY(0.6); }
+    50% { transform: scaleY(1); }
+  }
+  .sound-bars.paused .sound-bar { animation-play-state: paused; }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+</style>
+</head>
+<body>
+
+<div class="ambient"></div>
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · voice letter</div>
+
+<div class="envelope-scene" id="envelopeScene">
+  <div class="envelope" id="envelope">
+    <div class="envelope-body"></div>
+    <div class="envelope-flap" id="flap">
+      <div class="flap-face flap-front"></div>
+      <div class="flap-face flap-back"></div>
+    </div>
+    <div class="wax-seal"><div class="seal-circle"></div></div>
+    <div class="tap-hint">break the seal</div>
+  </div>
+</div>
+
+<div class="letter-content" id="letterContent">
+  <div class="letter-paper">
+
+    <!-- SLOT: greeting -->
+    <div class="letter-greeting" id="greeting">My love,</div>
+    <!-- /SLOT -->
+
+    <!-- SLOT: waveform_label -->
+    <div class="waveform-container" id="waveformContainer">
+      <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
+      <div class="sound-indicator">
+        <div class="sound-bars" id="soundBars">
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+        </div>
+        <span>tap to play</span>
+      </div>
+      <div class="waveform-time" id="waveformTime">0:00 / 0:12</div>
+    </div>
+    <!-- /SLOT -->
+
+    <!-- SLOT: body -->
+    <div class="letter-body" id="letterBody">I recorded this at 2 AM because I couldn't sleep and all I could think about was you. The way you scrunch your nose when you laugh. The way you say "babe" when you want something. The way your voice gets soft right before you fall asleep on call. I keep replaying our last video call — you were telling me about your day and I wasn't really listening to the words, I was just watching your face light up. I want to hear your voice every morning for the rest of my life. That's not a wish. That's a plan.</div>
+    <!-- /SLOT -->
+
+    <!-- SLOT: signature -->
+    <div class="letter-sign" id="letterSign">Forever yours &#9829;</div>
+    <!-- /SLOT -->
+
+  </div>
+</div>
+
+<script>
+(function(){
+  for (var i = 0; i < 12; i++) {
+    var m = document.createElement('div');
+    m.className = 'mote';
+    var size = Math.random() * 3 + 1;
+    m.style.width = size + 'px';
+    m.style.height = size + 'px';
+    m.style.left = Math.random() * 100 + 'vw';
+    m.style.top = (60 + Math.random() * 40) + 'vh';
+    m.style.animationDuration = (Math.random() * 18 + 12) + 's';
+    m.style.animationDelay = (Math.random() * 12) + 's';
+    document.body.appendChild(m);
+  }
+
+  var envelope = document.getElementById('envelope');
+  var flap = document.getElementById('flap');
+  var scene = document.getElementById('envelopeScene');
+  var letterContent = document.getElementById('letterContent');
+  var greeting = document.getElementById('greeting');
+  var letterBody = document.getElementById('letterBody');
+  var letterSign = document.getElementById('letterSign');
+  var waveformContainer = document.getElementById('waveformContainer');
+  var waveformCanvas = document.getElementById('waveformCanvas');
+  var waveformTime = document.getElementById('waveformTime');
+  var soundBars = document.getElementById('soundBars');
+
+  var opened = false;
+  var audioCtx = null;
+  var isPlaying = false;
+  var playbackTimer = null;
+
+  var bodyText = letterBody.textContent.trim();
+  var words = bodyText.split(/\s+/);
+  letterBody.innerHTML = '';
+  words.forEach(function(w, i) {
+    var span = document.createElement('span');
+    span.className = 'word';
+    span.textContent = w + ' ';
+    letterBody.appendChild(span);
+  });
+  var wordEls = letterBody.querySelectorAll('.word');
+
+  envelope.addEventListener('click', function() {
+    if (opened) return;
+    opened = true;
+    envelope.classList.add('tapped');
+    setTimeout(function() { flap.classList.add('open'); }, 300);
+    if (navigator.vibrate) navigator.vibrate([30, 50, 60]);
+
+    setTimeout(function() {
+      scene.classList.add('opened');
+      letterContent.classList.add('visible');
+      setTimeout(function() {
+        greeting.style.opacity = '1';
+        greeting.style.transform = 'translateY(0)';
+      }, 600);
+      setTimeout(function() {
+        waveformContainer.style.opacity = '1';
+        waveformContainer.style.transform = 'translateY(0)';
+        drawStaticWaveform();
+      }, 1000);
+      var baseDelay = 1400;
+      wordEls.forEach(function(w, i) {
+        setTimeout(function() { w.classList.add('visible'); }, baseDelay + i * 70);
+      });
+      setTimeout(function() {
+        letterSign.style.opacity = '1';
+        letterSign.style.transform = 'translateY(0)';
+      }, baseDelay + words.length * 70 + 400);
+    }, 800);
+  });
+
+  var waveData = [];
+  var barCount = 60;
+  for (var i = 0; i < barCount; i++) {
+    var t = i / barCount;
+    var env = Math.sin(t * Math.PI) * 0.7 + 0.3;
+    var burst = Math.sin(t * 47) * 0.3 + Math.sin(t * 23) * 0.2;
+    var val = (env + burst) * (0.5 + Math.random() * 0.5);
+    waveData.push(Math.max(0.08, Math.min(1, val)));
+  }
+
+  function drawStaticWaveform() {
+    var canvas = waveformCanvas;
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    var w = rect.width, h = rect.height;
+    var barW = (w - (barCount - 1) * 1.5) / barCount;
+    var maxH = h * 0.85;
+    ctx.clearRect(0, 0, w, h);
+    waveData.forEach(function(val, i) {
+      var x = i * (barW + 1.5);
+      var barH = val * maxH;
+      var y = (h - barH) / 2;
+      var grad = ctx.createLinearGradient(x, y, x, y + barH);
+      grad.addColorStop(0, 'rgba(200, 155, 110, 0.7)');
+      grad.addColorStop(0.5, 'rgba(200, 155, 110, 0.9)');
+      grad.addColorStop(1, 'rgba(200, 155, 110, 0.7)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, barH, 1);
+      ctx.fill();
+    });
+  }
+
+  function drawPlayingWaveform(progress) {
+    var canvas = waveformCanvas;
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    var w = rect.width, h = rect.height;
+    var barW = (w - (barCount - 1) * 1.5) / barCount;
+    var maxH = h * 0.85;
+    ctx.clearRect(0, 0, w, h);
+    var progressBar = Math.floor(progress * barCount);
+    waveData.forEach(function(val, i) {
+      var x = i * (barW + 1.5);
+      var barH = val * maxH;
+      var y = (h - barH) / 2;
+      if (i <= progressBar) {
+        var grad = ctx.createLinearGradient(x, y, x, y + barH);
+        grad.addColorStop(0, 'rgba(220, 170, 100, 0.95)');
+        grad.addColorStop(0.5, 'rgba(230, 180, 110, 1)');
+        grad.addColorStop(1, 'rgba(220, 170, 100, 0.95)');
+        ctx.fillStyle = grad;
+        if (i === progressBar) {
+          ctx.shadowColor = 'rgba(230, 180, 110, 0.5)';
+          ctx.shadowBlur = 8;
+        }
+      } else {
+        ctx.fillStyle = 'rgba(200, 155, 110, 0.35)';
+        ctx.shadowBlur = 0;
+      }
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, barH, 1);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+  }
+
+  function createAudio() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc1 = audioCtx.createOscillator();
+    var osc2 = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    var filter = audioCtx.createBiquadFilter();
+    osc1.type = 'sine';
+    osc1.frequency.value = 220;
+    osc2.type = 'sine';
+    osc2.frequency.value = 223;
+    filter.type = 'lowpass';
+    filter.frequency.value = 600;
+    filter.Q.value = 1;
+    gain.gain.value = 0;
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc1.start();
+    osc2.start();
+    gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 0.5);
+    return { osc1: osc1, osc2: osc2, gain: gain, filter: filter };
+  }
+
+  var audioNodes = null;
+  var playStartTime = 0;
+  var totalDuration = 12;
+
+  waveformContainer.addEventListener('click', function() {
+    if (isPlaying) {
+      isPlaying = false;
+      soundBars.classList.add('paused');
+      if (audioNodes) audioNodes.gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+      cancelAnimationFrame(playbackTimer);
+      return;
+    }
+    isPlaying = true;
+    soundBars.classList.remove('paused');
+    if (!audioCtx) {
+      audioNodes = createAudio();
+    } else {
+      audioCtx.resume();
+      audioNodes.gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 0.3);
+    }
+    playStartTime = Date.now();
+    if (navigator.vibrate) navigator.vibrate(15);
+    function tick() {
+      var elapsed = (Date.now() - playStartTime) / 1000;
+      var progress = Math.min(elapsed / totalDuration, 1);
+      drawPlayingWaveform(progress);
+      var secs = Math.floor(elapsed % 60);
+      var mins = Math.floor(elapsed / 60);
+      waveformTime.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs + ' / 0:' + totalDuration;
+      if (progress >= 1) {
+        isPlaying = false;
+        soundBars.classList.add('paused');
+        if (audioNodes) audioNodes.gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8);
+        return;
+      }
+      playbackTimer = requestAnimationFrame(tick);
+    }
+    tick();
+  });
+
+  window.addEventListener('resize', function() {
+    if (!isPlaying && opened) drawStaticWaveform();
+  });
+})();
+</script>
+</body>
+</html>
