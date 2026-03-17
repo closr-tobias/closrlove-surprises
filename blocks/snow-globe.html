@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Snow Globe — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Caveat:wght@400;500;600&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+  }
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+  .globe-wrap {
+    position: relative;
+    width: min(80vw, 320px);
+    height: min(80vw, 320px);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+  .globe {
+    position: relative;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 30% 25%, rgba(30,35,60,0.95), rgba(12,14,28,0.98) 70%);
+    box-shadow:
+      0 0 80px rgba(100,140,200,0.06),
+      0 0 160px rgba(100,140,200,0.03),
+      0 20px 60px rgba(0,0,0,0.5),
+      inset 0 0 60px rgba(0,0,0,0.3);
+    transition: box-shadow 2s ease;
+  }
+  .globe::before {
+    content: '';
+    position: absolute;
+    top: 6%; left: 12%;
+    width: 55%; height: 30%;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.07) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none; z-index: 50;
+  }
+  .globe::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 -2px 8px rgba(255,255,255,0.04), inset 0 2px 12px rgba(255,255,255,0.02);
+    pointer-events: none; z-index: 50;
+  }
+  #snowCanvas {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    border-radius: 50%; z-index: 10;
+  }
+  .message {
+    position: absolute;
+    top: 14%; left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    width: 78%; z-index: 20;
+    pointer-events: none;
+  }
+  .message-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-weight: 400;
+    font-style: italic;
+    color: rgba(255,255,255,0);
+    line-height: 1.6;
+    letter-spacing: 0.3px;
+    transition: color 2.5s ease, text-shadow 2.5s ease;
+  }
+  .message-text.visible {
+    color: rgba(255,255,255,0.85);
+    text-shadow: 0 0 20px rgba(200,220,255,0.15);
+  }
+  .scene {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 45%; z-index: 5;
+  }
+  .ground {
+    position: absolute;
+    bottom: 0; left: -5%; right: -5%;
+    height: 28%;
+    background: linear-gradient(to top, rgba(220,225,240,0.18) 0%, rgba(200,210,230,0.06) 60%, transparent 100%);
+    border-radius: 0 0 50% 50%;
+  }
+  .house {
+    position: absolute;
+    bottom: 14%; left: 50%;
+    transform: translateX(-50%); z-index: 6;
+  }
+  .house-body {
+    width: 34px; height: 26px;
+    background: linear-gradient(to bottom, #3a2820, #2a1c16);
+    border-radius: 2px; position: relative;
+  }
+  .house-roof {
+    width: 0; height: 0;
+    border-left: 22px solid transparent;
+    border-right: 22px solid transparent;
+    border-bottom: 16px solid #5a3828;
+    position: absolute; top: -14px; left: -5px;
+  }
+  .house-window {
+    position: absolute;
+    width: 9px; height: 9px;
+    background: rgba(255,180,80,0.12);
+    border: 1px solid rgba(255,180,80,0.15);
+    border-radius: 1px;
+    top: 7px; left: 50%;
+    transform: translateX(-50%);
+    transition: background 2s ease, box-shadow 2s ease;
+  }
+  .house-window.lit {
+    background: rgba(255,200,100,0.85);
+    box-shadow: 0 0 14px rgba(255,180,80,0.5), 0 0 35px rgba(255,160,60,0.25);
+  }
+  .tree { position: absolute; bottom: 14%; z-index: 5; }
+  .tree-trunk { width: 3px; height: 9px; background: #3a2a1e; margin: 0 auto; border-radius: 1px; }
+  .tree-top { width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 18px solid rgba(30,80,50,0.6); }
+  .tree-top2 { width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 14px solid rgba(35,90,55,0.5); margin-top: -8px; }
+  .tree.t1 { left: 20%; }
+  .tree.t2 { right: 18%; transform: scale(0.8); }
+  .tree.t3 { left: 33%; transform: scale(0.6); }
+  .base {
+    width: min(58vw, 240px);
+    height: 26px;
+    background: linear-gradient(to bottom, #2a1c14, #1e1410, #16100c);
+    border-radius: 0 0 12px 12px;
+    margin-top: -3px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .base::before {
+    content: '';
+    position: absolute; top: 0; left: 10%; right: 10%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent);
+  }
+  .counter {
+    position: fixed; bottom: 68px;
+    left: 50%; transform: translateX(-50%);
+    display: flex; gap: 10px; z-index: 100;
+  }
+  .counter-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.07);
+    transition: all 0.6s ease;
+  }
+  .counter-dot.done {
+    background: rgba(200,220,255,0.25);
+    border-color: rgba(200,220,255,0.3);
+    box-shadow: 0 0 8px rgba(200,220,255,0.15);
+  }
+  .prompt {
+    position: fixed; bottom: 30px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.55rem;
+    color: rgba(255,255,255,0.1);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    transition: opacity 0.8s; z-index: 100;
+  }
+  .globe.finale {
+    box-shadow:
+      0 0 80px rgba(255,200,120,0.08),
+      0 0 160px rgba(255,180,100,0.04),
+      0 20px 60px rgba(0,0,0,0.5),
+      inset 0 0 60px rgba(0,0,0,0.2);
+  }
+  .tap-start {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 300;
+    background: rgba(8,8,14,0.7);
+    cursor: pointer;
+    transition: opacity 0.6s;
+  }
+  .tap-start.hidden { opacity: 0; pointer-events: none; }
+  .tap-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+  .tap-sub {
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.1);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .ambient-particle {
+    position: fixed;
+    width: 1px; height: 1px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: ambientDrift linear infinite;
+  }
+  @keyframes ambientDrift {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · snow globe</div>
+<div class="tap-start" id="tapStart">
+  <div class="tap-title">A little warmth for you</div>
+  <div class="tap-sub">tap to begin</div>
+</div>
+<div class="globe-wrap">
+  <div class="globe" id="globe">
+    <canvas id="snowCanvas"></canvas>
+    <div class="message" id="message">
+      <div class="message-text" id="msgText"></div>
+    </div>
+    <div class="scene">
+      <div class="ground"></div>
+      <div class="tree t1"><div class="tree-top"></div><div class="tree-top2"></div><div class="tree-trunk"></div></div>
+      <div class="tree t2"><div class="tree-top"></div><div class="tree-top2"></div><div class="tree-trunk"></div></div>
+      <div class="tree t3"><div class="tree-top"></div><div class="tree-top2"></div><div class="tree-trunk"></div></div>
+      <div class="house">
+        <div class="house-roof"></div>
+        <div class="house-body">
+          <div class="house-window" id="houseWindow"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="base"></div>
+</div>
+<div class="counter" id="counter"></div>
+<div class="prompt" id="prompt">shake your phone · or tap the globe</div>
+<script>
+(function(){
+  var messages = [
+    "When the world feels heavy, remember — you never carry it alone",
+    "I fall for you in small moments. The laugh you do when you\u2019re tired. The way you say my name.",
+    "Every mile between us is just proof that something this strong doesn\u2019t need to be close to be felt",
+    "You are my warmth"
+  ];
+  for(var i=0;i<12;i++){var ap=document.createElement('div');ap.className='ambient-particle';ap.style.left=Math.random()*100+'vw';ap.style.top=Math.random()*100+'vh';ap.style.animationDuration=(Math.random()*20+15)+'s';ap.style.animationDelay=(Math.random()*10)+'s';document.body.appendChild(ap)}
+  var canvas=document.getElementById('snowCanvas'),ctx=canvas.getContext('2d'),globe=document.getElementById('globe'),msgText=document.getElementById('msgText'),promptEl=document.getElementById('prompt'),counterEl=document.getElementById('counter'),houseWindow=document.getElementById('houseWindow'),tapStart=document.getElementById('tapStart');
+  var W,H,cx,cy,radius,snowflakes=[],shakeCount=0,totalShakes=messages.length,isSettling=false,settleTimer=null,started=false;
+  for(var i=0;i<totalShakes;i++){var d=document.createElement('div');d.className='counter-dot';counterEl.appendChild(d)}
+  function resize(){var r=globe.getBoundingClientRect();canvas.width=r.width*devicePixelRatio;canvas.height=r.height*devicePixelRatio;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);W=r.width;H=r.height;cx=W/2;cy=H/2;radius=W/2}
+  function mkFlake(burst){var a=Math.random()*Math.PI*2,dist=Math.random()*radius*0.85,x=cx+Math.cos(a)*dist,y=burst?(cy-radius*0.3+Math.random()*radius*0.6):(cy+radius*0.2+Math.random()*radius*0.3),r=Math.random()*2.2+0.5;return{x:x,y:y,r:r,vx:burst?(Math.random()-0.5)*3:(Math.random()-0.5)*0.2,vy:burst?(Math.random()-0.5)*4-1:-Math.random()*0.15,opacity:Math.random()*0.5+0.25,settled:false,settleY:H-10-Math.random()*30,wobble:Math.random()*Math.PI*2,ws:Math.random()*0.02+0.008}}
+  function initSnow(){snowflakes=[];for(var i=0;i<160;i++){var s=mkFlake(false);s.y=H*0.62+Math.random()*H*0.32;s.vy=0;s.vx=0;s.settled=true;s.opacity=Math.random()*0.2+0.08;snowflakes.push(s)}}
+  function burstSnow(){for(var i=0;i<snowflakes.length;i++){var s=snowflakes[i];s.settled=false;s.vx=(Math.random()-0.5)*4;s.vy=-Math.random()*5-2;s.opacity=Math.random()*0.55+0.25}for(var i=0;i<70;i++)snowflakes.push(mkFlake(true));isSettling=false;clearTimeout(settleTimer);settleTimer=setTimeout(function(){isSettling=true},1800)}
+  function inCircle(x,y){var dx=x-cx,dy=y-cy;return dx*dx+dy*dy<=radius*radius}
+  function animate(){ctx.clearRect(0,0,W,H);for(var i=snowflakes.length-1;i>=0;i--){var s=snowflakes[i];if(!s.settled){s.vy+=0.028;s.vx*=0.996;s.vy*=0.996;s.wobble+=s.ws;s.x+=s.vx+Math.sin(s.wobble)*0.18;s.y+=s.vy;if(isSettling&&s.vy>0&&s.y>s.settleY&&Math.abs(s.vy)<0.8){s.settled=true;s.vy=0;s.vx=0}if(!inCircle(s.x,s.y)){var dx=s.x-cx,dy=s.y-cy,dist=Math.sqrt(dx*dx+dy*dy),nx=dx/dist,ny=dy/dist;s.x=cx+nx*(radius-2);s.y=cy+ny*(radius-2);var dot=s.vx*nx+s.vy*ny;s.vx-=1.5*dot*nx;s.vy-=1.5*dot*ny;s.vx*=0.4;s.vy*=0.4}}if(inCircle(s.x,s.y)){ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(220,230,245,'+s.opacity+')';ctx.fill()}}if(snowflakes.length>450)snowflakes.splice(0,snowflakes.length-350);requestAnimationFrame(animate)}
+  var lastAcc={x:0,y:0,z:0},lastShakeTime=0;
+  function handleMotion(e){if(!started||shakeCount>=totalShakes)return;var a=e.accelerationIncludingGravity;if(!a)return;var d=Math.abs(a.x-lastAcc.x)+Math.abs(a.y-lastAcc.y)+Math.abs(a.z-lastAcc.z);lastAcc={x:a.x,y:a.y,z:a.z};if(d>18){var now=Date.now();if(now-lastShakeTime>1200){lastShakeTime=now;triggerShake()}}}
+  function triggerShake(){if(shakeCount>=totalShakes)return;burstSnow();var idx=shakeCount;shakeCount++;var dots=counterEl.children;if(dots[idx])dots[idx].classList.add('done');var isFinal=idx===totalShakes-1;setTimeout(function(){msgText.classList.remove('visible');setTimeout(function(){msgText.textContent=messages[idx];msgText.classList.add('visible');if(isFinal){houseWindow.classList.add('lit');globe.classList.add('finale');promptEl.style.opacity='0'}else{promptEl.textContent='again\u2026'}},400)},2200)}
+  globe.addEventListener('click',function(){if(started&&shakeCount<totalShakes)triggerShake()});
+  tapStart.addEventListener('click',async function(){if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){try{var p=await DeviceMotionEvent.requestPermission();if(p==='granted')window.addEventListener('devicemotion',handleMotion)}catch(e){}}else if(typeof DeviceMotionEvent!=='undefined'){window.addEventListener('devicemotion',handleMotion)}tapStart.classList.add('hidden');started=true});
+  resize();initSnow();animate();
+  window.addEventListener('resize',resize);
+})();
+</script>
+</body>
+</html>
