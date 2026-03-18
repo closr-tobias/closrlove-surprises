@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pixel Dissolve — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    color: #fff;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  .ambient {
+    position: fixed;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(147,112,219,0.04) 0%, rgba(100,149,237,0.02) 40%, transparent 70%);
+    pointer-events: none;
+    filter: blur(60px);
+  }
+
+  .particle {
+    position: fixed;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: drift linear infinite;
+  }
+  @keyframes drift {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+  }
+
+  .canvas-wrap {
+    position: relative;
+    width: min(82vw, 320px);
+    aspect-ratio: 3/4;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow:
+      0 4px 8px rgba(0,0,0,0.3),
+      0 12px 40px rgba(0,0,0,0.4),
+      0 30px 80px rgba(0,0,0,0.3);
+    transition: box-shadow 1.5s ease;
+  }
+  .canvas-wrap.revealed {
+    box-shadow:
+      0 4px 8px rgba(0,0,0,0.3),
+      0 12px 40px rgba(147,112,219,0.15),
+      0 30px 80px rgba(100,149,237,0.1),
+      0 0 120px rgba(147,112,219,0.08);
+  }
+
+  canvas { width: 100%; height: 100%; display: block; }
+
+  .text-layer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 0 28px 72px;
+    text-align: center;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  .reveal-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: rgba(255,255,255,0);
+    letter-spacing: 0.3px;
+    transition: color 1.2s ease, transform 1.2s ease;
+    transform: translateY(12px);
+  }
+  .reveal-text.visible {
+    color: rgba(255,255,255,0.6);
+    transform: translateY(0);
+  }
+  .reveal-text.final {
+    color: rgba(255,255,255,0.85);
+    font-style: normal;
+    font-weight: 400;
+  }
+
+  .progress-ring {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 20;
+  }
+  .progress-ring circle { fill: none; stroke-width: 1.5; }
+  .progress-ring .bg { stroke: rgba(255,255,255,0.06); }
+  .progress-ring .fg {
+    stroke: rgba(147,112,219,0.35);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s ease;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 12px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.45rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+    transition: opacity 0.8s;
+  }
+
+  .shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%);
+    transform: translateX(-100%);
+    pointer-events: none;
+    z-index: 5;
+  }
+  .shimmer.play { animation: shimmerSlide 1.2s ease-out forwards; }
+  @keyframes shimmerSlide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient"></div>
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · pixel dissolve</div>
+
+<div class="canvas-wrap" id="wrap">
+  <canvas id="canvas"></canvas>
+  <div class="shimmer" id="shimmer"></div>
+</div>
+
+<div class="text-layer">
+  <div class="reveal-text" id="text"></div>
+</div>
+
+<svg class="progress-ring" width="28" height="28">
+  <circle class="bg" cx="14" cy="14" r="12"/>
+  <circle class="fg" id="progressFg" cx="14" cy="14" r="12"
+    stroke-dasharray="75.4" stroke-dashoffset="75.4"
+    transform="rotate(-90 14 14)"/>
+</svg>
+
+<div class="hint" id="hint">tap to focus</div>
+
+<script>
+(function(){
+  for (var i = 0; i < 12; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = Math.random() * 100 + 'vh';
+    var s = Math.random() * 2 + 1;
+    p.style.width = s + 'px'; p.style.height = s + 'px';
+    p.style.animationDuration = (Math.random() * 18 + 12) + 's';
+    p.style.animationDelay = (Math.random() * 12) + 's';
+    document.body.appendChild(p);
+  }
+
+  var canvas = document.getElementById('canvas');
+  var ctx = canvas.getContext('2d');
+  var wrap = document.getElementById('wrap');
+  var textEl = document.getElementById('text');
+  var hintEl = document.getElementById('hint');
+  var shimmer = document.getElementById('shimmer');
+  var progressFg = document.getElementById('progressFg');
+  var circumference = 75.4;
+
+  var W = 480, H = 640;
+  canvas.width = W; canvas.height = H;
+
+  // Generate a rich portrait-like gradient composition
+  function generatePortrait() {
+    var bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#2a1b3d');
+    bg.addColorStop(0.3, '#44318d');
+    bg.addColorStop(0.6, '#e98074');
+    bg.addColorStop(0.85, '#e8d5b7');
+    bg.addColorStop(1, '#1a1423');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    var grd = ctx.createRadialGradient(W*0.5, H*0.38, 30, W*0.5, H*0.38, 180);
+    grd.addColorStop(0, 'rgba(232,213,183,0.6)');
+    grd.addColorStop(0.5, 'rgba(233,128,116,0.3)');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    var light = ctx.createRadialGradient(W*0.3, H*0.25, 0, W*0.3, H*0.25, 250);
+    light.addColorStop(0, 'rgba(255,220,180,0.25)');
+    light.addColorStop(1, 'transparent');
+    ctx.fillStyle = light;
+    ctx.fillRect(0, 0, W, H);
+
+    for (var i = 0; i < 25; i++) {
+      var bx = Math.random() * W, by = Math.random() * H;
+      var br = Math.random() * 50 + 10;
+      var bokeh = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+      var alpha = Math.random() * 0.1 + 0.02;
+      bokeh.addColorStop(0, 'rgba(255,200,150,' + alpha + ')');
+      bokeh.addColorStop(0.6, 'rgba(200,160,220,' + (alpha * 0.5) + ')');
+      bokeh.addColorStop(1, 'transparent');
+      ctx.fillStyle = bokeh;
+      ctx.beginPath();
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  generatePortrait();
+  var fullImageData = ctx.getImageData(0, 0, W, H);
+
+  /* <!-- SLOT: dissolve_lines -->  */
+  var stages = [
+    { block: 64, text: "At first, you were just a name on a screen\u2026" },
+    { block: 32, text: "Then a voice that made my heart do things hearts shouldn\u2019t do." },
+    { block: 16, text: "Then the details started to matter \u2014 every laugh, every pause, every look." },
+    { block: 8,  text: "I started seeing you in everything." },
+    { block: 4,  text: "Now I see you clearer than I\u2019ve ever seen anyone." },
+    { block: 1,  text: "And I never want to look away." }
+  ];
+  /* <!-- /SLOT --> */
+
+  var currentStage = 0;
+  var isAnimating = false;
+
+  function drawPixelated(blockSize) {
+    if (blockSize <= 1) { ctx.putImageData(fullImageData, 0, 0); return; }
+    var data = fullImageData.data;
+    ctx.clearRect(0, 0, W, H);
+    for (var y = 0; y < H; y += blockSize) {
+      for (var x = 0; x < W; x += blockSize) {
+        var r = 0, g = 0, b = 0, count = 0;
+        for (var dy = 0; dy < blockSize && y + dy < H; dy++) {
+          for (var dx = 0; dx < blockSize && x + dx < W; dx++) {
+            var idx = ((y + dy) * W + (x + dx)) * 4;
+            r += data[idx]; g += data[idx+1]; b += data[idx+2]; count++;
+          }
+        }
+        ctx.fillStyle = 'rgb(' + Math.round(r/count) + ',' + Math.round(g/count) + ',' + Math.round(b/count) + ')';
+        ctx.fillRect(x, y, blockSize, blockSize);
+      }
+    }
+  }
+
+  function animateTransition(fromBlock, toBlock, callback) {
+    isAnimating = true;
+    var duration = toBlock <= 1 ? 2200 : 1000;
+    var steps = [];
+    var b = fromBlock;
+    while (b > toBlock) { b = Math.max(Math.floor(b / 2), toBlock); steps.push(b); }
+    var stepDur = duration / steps.length;
+    var stepIdx = -1, start = null;
+
+    function frame(ts) {
+      if (!start) start = ts;
+      var elapsed = ts - start;
+      var newIdx = Math.min(Math.floor(elapsed / stepDur), steps.length - 1);
+      if (newIdx !== stepIdx) { stepIdx = newIdx; drawPixelated(steps[stepIdx]); }
+      if (elapsed < duration) { requestAnimationFrame(frame); }
+      else { drawPixelated(toBlock); isAnimating = false; if (callback) callback(); }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function showText(stage) {
+    textEl.className = 'reveal-text';
+    textEl.textContent = '';
+    setTimeout(function() {
+      textEl.textContent = stages[stage].text;
+      textEl.classList.add('visible');
+      if (stage === stages.length - 1) textEl.classList.add('final');
+    }, 300);
+  }
+
+  function updateProgress() {
+    progressFg.style.strokeDashoffset = circumference * (1 - currentStage / (stages.length - 1));
+  }
+
+  function advance() {
+    if (isAnimating || currentStage >= stages.length - 1) return;
+    hintEl.style.opacity = '0';
+    var fromBlock = stages[currentStage].block;
+    currentStage++;
+    var toBlock = stages[currentStage].block;
+    textEl.classList.remove('visible');
+    updateProgress();
+
+    setTimeout(function() {
+      animateTransition(fromBlock, toBlock, function() {
+        showText(currentStage);
+        if (currentStage === stages.length - 1) {
+          wrap.classList.add('revealed');
+          shimmer.classList.add('play');
+          wrap.style.transition = 'transform 0.8s cubic-bezier(0.34,1.56,0.64,1)';
+          wrap.style.transform = 'scale(1.02)';
+          setTimeout(function() {
+            wrap.style.transition = 'transform 1.5s ease';
+            wrap.style.transform = 'scale(1)';
+          }, 800);
+        }
+      });
+    }, 400);
+  }
+
+  drawPixelated(stages[0].block);
+  showText(0);
+  updateProgress();
+
+  var holdTimer = null, holdTriggered = false;
+
+  wrap.addEventListener('click', function() {
+    if (holdTriggered) { holdTriggered = false; return; }
+    advance();
+  });
+
+  wrap.addEventListener('touchstart', function(e) {
+    e.preventDefault(); holdTriggered = false;
+    holdTimer = setTimeout(function() {
+      holdTriggered = true;
+      (function autoStep() {
+        if (currentStage < stages.length - 1 && !isAnimating) { advance(); setTimeout(autoStep, 2000); }
+      })();
+    }, 800);
+  }, {passive:false});
+
+  wrap.addEventListener('touchend', function() {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    if (!holdTriggered) advance();
+  });
+
+  wrap.addEventListener('mousedown', function() {
+    holdTriggered = false;
+    holdTimer = setTimeout(function() {
+      holdTriggered = true;
+      (function autoStep() {
+        if (currentStage < stages.length - 1 && !isAnimating) { advance(); setTimeout(autoStep, 2000); }
+      })();
+    }, 800);
+  });
+  wrap.addEventListener('mouseup', function() { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } });
+})();
+</script>
+</body>
+</html>
