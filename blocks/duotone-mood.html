@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Duotone Mood — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  .scene {
+    position: relative;
+    width: min(88vw, 360px);
+    aspect-ratio: 3/4;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  .photo-base {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8rem;
+    filter: grayscale(1) contrast(1.1) brightness(0.9);
+    background: linear-gradient(170deg, #4a4a4a 0%, #333 25%, #1a1a1a 50%, #2a2a2a 75%, #3a3a3a 100%);
+    z-index: 1;
+  }
+
+  .duotone-overlay {
+    position: absolute; inset: 0;
+    z-index: 2;
+    mix-blend-mode: color;
+    opacity: 0.85;
+    transition: background 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .duotone-highlight {
+    position: absolute; inset: 0;
+    z-index: 3;
+    mix-blend-mode: soft-light;
+    opacity: 0.5;
+    transition: background 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .vignette {
+    position: absolute; inset: 0;
+    z-index: 4;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%);
+    pointer-events: none;
+  }
+
+  .grain {
+    position: absolute; inset: 0;
+    z-index: 5;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .light-leak {
+    position: absolute; inset: 0;
+    z-index: 6;
+    background: radial-gradient(ellipse at 70% 30%, rgba(255,255,255,0.15), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.6s ease-out;
+    pointer-events: none;
+  }
+  .light-leak.flash { opacity: 1; }
+
+  .text-layer {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 10;
+    padding: 50px 24px 32px;
+    background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 60%, transparent 100%);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .mood-time {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 300;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    transition: opacity 0.5s ease;
+  }
+
+  .mood-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.45rem;
+    font-weight: 300;
+    line-height: 1.4;
+    color: rgba(255,255,255,0.92);
+    font-style: italic;
+    min-height: 4rem;
+    transition: opacity 0.5s ease;
+  }
+
+  .progress-wrap {
+    position: absolute;
+    bottom: 12px; left: 24px; right: 24px;
+    z-index: 11;
+    height: 2px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 1px;
+    transition: background 1.8s;
+  }
+
+  .dots {
+    position: fixed;
+    bottom: 36px;
+    display: flex; gap: 10px;
+    z-index: 20;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.5s, transform 0.5s;
+    cursor: pointer;
+  }
+  .dot.active { transform: scale(1.4); }
+
+  .hint {
+    position: fixed;
+    bottom: 16px;
+    font-size: 0.5rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .particle {
+    position: fixed;
+    width: 2px; height: 2px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: drift linear infinite;
+  }
+  @keyframes drift {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+  }
+
+  /* Breathing ambient glow behind scene */
+  .ambient-glow {
+    position: fixed;
+    width: 400px; height: 500px;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    transition: background 2s ease;
+    pointer-events: none;
+    z-index: 0;
+  }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · duotone mood</div>
+
+<div class="ambient-glow" id="ambientGlow"></div>
+
+<div class="scene" id="scene">
+  <div class="photo-base" id="photoBase">👩</div>
+  <div class="duotone-overlay" id="dtOverlay"></div>
+  <div class="duotone-highlight" id="dtHighlight"></div>
+  <div class="vignette"></div>
+  <div class="grain"></div>
+  <div class="light-leak" id="lightLeak"></div>
+  <div class="text-layer">
+    <!-- SLOT: mood_time_0 -->
+    <div class="mood-time" id="moodTime">at midnight</div>
+    <!-- /SLOT -->
+    <!-- SLOT: mood_message_0 -->
+    <div class="mood-text" id="moodText">I think about the way you laugh when you're half asleep — soft and unguarded, like the world can't touch you</div>
+    <!-- /SLOT -->
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+</div>
+
+<div class="dots" id="dots"></div>
+<div class="hint">tap to shift mood</div>
+
+<script>
+(function(){
+  var moods = [
+    {
+      time: 'at midnight',
+      /* SLOT: mood_message_0 */
+      text: "I think about the way you laugh when you\u2019re half asleep \u2014 soft and unguarded, like the world can\u2019t touch you",
+      /* /SLOT */
+      dark: '#0d1b3e', light: '#8ba4c8', dot: 'rgba(139,164,200,0.6)', bar: '#8ba4c8', glow: '#1a3060'
+    },
+    {
+      time: 'at golden hour',
+      /* SLOT: mood_message_1 */
+      text: "I see you in every warm thing \u2014 amber light through a window, honey in tea, the last breath of sun before it goes",
+      /* /SLOT */
+      dark: '#5c2e0e', light: '#f5d5a8', dot: 'rgba(245,213,168,0.6)', bar: '#f5d5a8', glow: '#6b3a10'
+    },
+    {
+      time: 'in the quiet morning',
+      /* SLOT: mood_message_2 */
+      text: "Before I even open my eyes, there\u2019s this pull \u2014 like my first conscious thought has your name woven through it",
+      /* /SLOT */
+      dark: '#3e1a2a', light: '#e8a0bf', dot: 'rgba(232,160,191,0.6)', bar: '#e8a0bf', glow: '#4a1e32'
+    },
+    {
+      time: 'when it rains',
+      /* SLOT: mood_message_3 */
+      text: "I wish you were here so I could pull you closer, listen to it hit the glass, and pretend the rest of the world doesn\u2019t exist",
+      /* /SLOT */
+      dark: '#1a2e2e', light: '#7ec8c8', dot: 'rgba(126,200,200,0.6)', bar: '#7ec8c8', glow: '#1e3838'
+    },
+    {
+      time: 'when I miss you most',
+      /* SLOT: mood_message_4 */
+      text: "Distance is just geography. What we have bends space \u2014 I feel you even when you\u2019re 8,000 kilometers away",
+      /* /SLOT */
+      dark: '#2a1a3e', light: '#c4a8e0', dot: 'rgba(196,168,224,0.6)', bar: '#c4a8e0', glow: '#321e4a'
+    }
+  ];
+
+  var currentIdx = 0, autoTimer = null, cycleDuration = 5000;
+  var overlay = document.getElementById('dtOverlay');
+  var highlight = document.getElementById('dtHighlight');
+  var moodTime = document.getElementById('moodTime');
+  var moodText = document.getElementById('moodText');
+  var progressFill = document.getElementById('progressFill');
+  var lightLeak = document.getElementById('lightLeak');
+  var dotsEl = document.getElementById('dots');
+  var scene = document.getElementById('scene');
+  var ambientGlow = document.getElementById('ambientGlow');
+
+  moods.forEach(function(m, i){
+    var d = document.createElement('div');
+    d.className = 'dot';
+    d.addEventListener('click', function(e){ e.stopPropagation(); goTo(i); });
+    dotsEl.appendChild(d);
+  });
+
+  for (var i = 0; i < 12; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = Math.random() * 100 + 'vh';
+    var s = Math.random() * 2 + 1;
+    p.style.width = s + 'px'; p.style.height = s + 'px';
+    p.style.animationDuration = (Math.random() * 18 + 12) + 's';
+    p.style.animationDelay = (Math.random() * 8) + 's';
+    document.body.appendChild(p);
+  }
+
+  function applyMood(idx, animate) {
+    var m = moods[idx];
+
+    if (animate) {
+      lightLeak.classList.add('flash');
+      setTimeout(function(){ lightLeak.classList.remove('flash'); }, 700);
+    }
+
+    overlay.style.background = 'linear-gradient(to bottom, ' + m.dark + ', ' + m.light + ')';
+    highlight.style.background = 'radial-gradient(ellipse at 50% 30%, ' + m.light + ', transparent 70%)';
+    ambientGlow.style.background = 'radial-gradient(circle, ' + m.glow + ', transparent 70%)';
+
+    if (animate) {
+      moodTime.style.opacity = '0';
+      moodText.style.opacity = '0';
+      setTimeout(function(){
+        moodTime.textContent = m.time;
+        moodText.textContent = m.text;
+        moodTime.style.opacity = '1';
+        moodText.style.opacity = '1';
+      }, 450);
+    } else {
+      moodTime.textContent = m.time;
+      moodText.textContent = m.text;
+    }
+
+    progressFill.style.background = m.bar;
+
+    var dots = dotsEl.children;
+    for (var j = 0; j < dots.length; j++) {
+      dots[j].className = j === idx ? 'dot active' : 'dot';
+      dots[j].style.background = j === idx ? m.dot : 'rgba(255,255,255,0.1)';
+    }
+  }
+
+  function startProgress() {
+    progressFill.style.transition = 'none';
+    progressFill.style.width = '0%';
+    progressFill.offsetWidth;
+    progressFill.style.transition = 'width ' + cycleDuration + 'ms linear';
+    progressFill.style.width = '100%';
+  }
+
+  function goTo(idx) {
+    clearInterval(autoTimer);
+    currentIdx = idx;
+    applyMood(idx, true);
+    startProgress();
+    autoTimer = setInterval(advance, cycleDuration);
+  }
+
+  function advance() {
+    currentIdx = (currentIdx + 1) % moods.length;
+    applyMood(currentIdx, true);
+    startProgress();
+  }
+
+  scene.addEventListener('click', function(){
+    goTo((currentIdx + 1) % moods.length);
+  });
+
+  var sx = 0, moved = false;
+  scene.addEventListener('touchstart', function(e){ sx = e.touches[0].clientX; moved = false; }, {passive: true});
+  scene.addEventListener('touchmove', function(e){ if (Math.abs(e.touches[0].clientX - sx) > 20) moved = true; }, {passive: true});
+  scene.addEventListener('touchend', function(e){
+    if (!moved) return;
+    var dx = e.changedTouches[0].clientX - sx;
+    if (Math.abs(dx) > 40) {
+      e.preventDefault();
+      goTo((currentIdx + (dx < 0 ? 1 : -1) + moods.length) % moods.length);
+    }
+  });
+
+  applyMood(0, false);
+  startProgress();
+  autoTimer = setInterval(advance, cycleDuration);
+})();
+</script>
+</body>
+</html>
