@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Message in a Bottle — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Inter:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    position: relative;
+  }
+
+  canvas#ocean { position: fixed; inset: 0; z-index: 1; }
+
+  .moon {
+    position: fixed;
+    top: 8%;
+    right: 15%;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffeedd, #f5d5a0);
+    box-shadow: 0 0 40px rgba(255,238,210,0.15), 0 0 80px rgba(255,238,210,0.08);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .stars {
+    position: fixed; inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .star {
+    position: absolute;
+    width: 2px; height: 2px;
+    background: #fff;
+    border-radius: 50%;
+    animation: twinkle ease-in-out infinite alternate;
+  }
+  @keyframes twinkle {
+    0% { opacity: 0.1; }
+    100% { opacity: 0.6; }
+  }
+
+  .bottle-container {
+    position: fixed;
+    z-index: 10;
+    cursor: pointer;
+    transition: filter 0.3s;
+  }
+  .bottle-container:hover { filter: brightness(1.1); }
+  .bottle-container.caught { pointer-events: none; }
+
+  .bottle-svg {
+    width: 70px;
+    height: 110px;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+  }
+
+  .tap-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 90px; height: 90px;
+    margin: -45px 0 0 -45px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 50%;
+    animation: pulseRing 2s ease-out infinite;
+    pointer-events: none;
+  }
+  @keyframes pulseRing {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+
+  .letter-overlay {
+    position: fixed; inset: 0;
+    z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+  }
+  .letter-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .letter-overlay::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(4,4,8,0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .letter-paper {
+    position: relative;
+    width: min(85vw, 340px);
+    background: linear-gradient(175deg, #f8f3e8, #f0eadb, #ebe4d2);
+    border-radius: 4px;
+    padding: 32px 28px;
+    box-shadow:
+      0 8px 32px rgba(0,0,0,0.4),
+      0 2px 8px rgba(0,0,0,0.2),
+      inset 0 1px 0 rgba(255,255,255,0.3);
+    transform: scale(0.6) translateY(40px);
+    transition: transform 0.7s cubic-bezier(0.34,1.56,0.64,1);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .letter-overlay.visible .letter-paper {
+    transform: scale(1) translateY(0);
+  }
+  .letter-paper::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: 4px;
+  }
+
+  .wax-seal {
+    position: absolute;
+    top: -18px; right: 24px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #d4555e, #a83040, #8a2030);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+
+  .letter-content { position: relative; z-index: 1; }
+
+  .letter-greeting {
+    font-family: 'Caveat', cursive;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #3a3225;
+    margin-bottom: 16px;
+  }
+  .letter-body {
+    font-family: 'Caveat', cursive;
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: #4a4035;
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+  .letter-sign {
+    font-family: 'Caveat', cursive;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #3a3225;
+    text-align: right;
+  }
+  .letter-close-hint {
+    text-align: center;
+    margin-top: 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.55rem;
+    color: #b0a898;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .cork-particle {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 24px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.5rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 5;
+    transition: opacity 0.5s;
+  }
+
+  .bottles-remaining {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.5rem;
+    color: #ffffff10;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · message in a bottle</div>
+
+<div class="stars" id="stars"></div>
+<div class="moon"></div>
+<canvas id="ocean"></canvas>
+
+<div class="hint" id="hint">catch the bottle</div>
+<div class="bottles-remaining" id="counter"></div>
+
+<div class="letter-overlay" id="letterOverlay">
+  <div class="letter-paper">
+    <div class="wax-seal">♥</div>
+    <div class="letter-content">
+      <div class="letter-greeting" id="letterGreeting"></div>
+      <div class="letter-body" id="letterBody"></div>
+      <div class="letter-sign" id="letterSign"></div>
+    </div>
+    <div class="letter-close-hint">tap anywhere to close</div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  var messages = [
+    {
+      /* <!-- SLOT: message_1_greeting --> */greeting: "My dearest Erica,"/* <!-- /SLOT --> */,
+      /* <!-- SLOT: message_1_body --> */body: "I keep replaying that night on the pier when the lights went out and you grabbed my hand in the dark. You laughed like it was the funniest thing in the world. I fell in love with you somewhere between that laugh and the way you refused to let go even after the lights came back on."/* <!-- /SLOT --> */,
+      /* <!-- SLOT: message_1_sign --> */sign: "Forever yours, T"/* <!-- /SLOT --> */
+    },
+    {
+      /* <!-- SLOT: message_2_greeting --> */greeting: "Hey you,"/* <!-- /SLOT --> */,
+      /* <!-- SLOT: message_2_body --> */body: "Do you know what I love most about our calls? It's not the talking. It's those random silences where we're both just... there. Existing together across an ocean. You'll be reading something and I'll be cooking and neither of us hangs up. That's not loneliness. That's home."/* <!-- /SLOT --> */,
+      /* <!-- SLOT: message_2_sign --> */sign: "Always, Tobias"/* <!-- /SLOT --> */
+    },
+    {
+      /* <!-- SLOT: message_3_greeting --> */greeting: "To the woman who stole my heart,"/* <!-- /SLOT --> */,
+      /* <!-- SLOT: message_3_body --> */body: "Kiru looked at the camera during our video call yesterday with this expression like he was personally offended that I exist in your phone. I think he's warming up to me though. Last week he only glared for twenty minutes instead of the full hour. Progress."/* <!-- /SLOT --> */,
+      /* <!-- SLOT: message_3_sign --> */sign: "Your long-distance admirer 🐱"/* <!-- /SLOT --> */
+    }
+  ];
+
+  // Stars
+  var starsEl = document.getElementById('stars');
+  for (var i = 0; i < 50; i++) {
+    var s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 45 + '%';
+    s.style.width = (Math.random() * 2 + 1) + 'px';
+    s.style.height = s.style.width;
+    s.style.animationDuration = (Math.random() * 3 + 2) + 's';
+    s.style.animationDelay = (Math.random() * 3) + 's';
+    starsEl.appendChild(s);
+  }
+
+  // Ocean canvas
+  var canvas = document.getElementById('ocean');
+  var ctx = canvas.getContext('2d');
+  var W, H, waterLine;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    waterLine = H * 0.55;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  var time = 0;
+
+  function drawOcean() {
+    ctx.clearRect(0, 0, W, H);
+
+    var sky = ctx.createLinearGradient(0, 0, 0, waterLine);
+    sky.addColorStop(0, '#08080e');
+    sky.addColorStop(0.7, '#0d1020');
+    sky.addColorStop(1, '#121830');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, waterLine);
+
+    // Moon reflection
+    var moonX = W * 0.85;
+    for (var r = 0; r < 20; r++) {
+      var ry = waterLine + r * 12 + Math.sin(time * 0.8 + r * 0.4) * 3;
+      var rw = 15 + r * 3 + Math.sin(time * 1.2 + r) * 5;
+      ctx.fillStyle = 'rgba(255,238,210,' + (0.04 - r * 0.0018) + ')';
+      ctx.fillRect(moonX - rw / 2, ry, rw, 2);
+    }
+
+    // Water layers
+    for (var layer = 0; layer < 4; layer++) {
+      var alpha = 0.15 - layer * 0.03;
+      var speed = 0.3 + layer * 0.15;
+      var amp = 6 + layer * 3;
+      var freq = 0.008 - layer * 0.001;
+
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+      for (var x = 0; x <= W; x += 3) {
+        var y = waterLine + layer * 25
+          + Math.sin(x * freq + time * speed) * amp
+          + Math.sin(x * freq * 2.3 + time * speed * 0.7) * amp * 0.4;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W, H);
+      ctx.closePath();
+
+      var wg = ctx.createLinearGradient(0, waterLine, 0, H);
+      wg.addColorStop(0, 'rgba(15,25,60,' + alpha + ')');
+      wg.addColorStop(0.3, 'rgba(10,18,45,' + (alpha + 0.1) + ')');
+      wg.addColorStop(1, 'rgba(5,8,20,' + (alpha + 0.3) + ')');
+      ctx.fillStyle = wg;
+      ctx.fill();
+    }
+
+    // Foam
+    ctx.strokeStyle = 'rgba(180,200,220,0.04)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (var x = 0; x <= W; x += 3) {
+      var y = waterLine + Math.sin(x * 0.008 + time * 0.3) * 6
+        + Math.sin(x * 0.0184 + time * 0.21) * 2.4;
+      if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Bottle management
+  var bottleIndex = 0;
+  var activeBottle = null;
+  var letterOverlay = document.getElementById('letterOverlay');
+  var hintEl = document.getElementById('hint');
+  var counterEl = document.getElementById('counter');
+
+  function updateCounter() {
+    var remaining = messages.length - bottleIndex;
+    if (remaining <= 0) {
+      counterEl.textContent = '';
+      hintEl.textContent = 'all bottles found';
+      hintEl.style.color = '#ffffff15';
+      setTimeout(function(){ hintEl.style.opacity = '0'; }, 3000);
+    } else {
+      counterEl.textContent = remaining + ' bottle' + (remaining > 1 ? 's' : '') + ' drifting';
+    }
+  }
+
+  function getWaveY(x, t) {
+    return waterLine + Math.sin(x * 0.008 + t * 0.3) * 6
+      + Math.sin(x * 0.0184 + t * 0.21) * 2.4 - 55;
+  }
+
+  function spawnBottle() {
+    if (bottleIndex >= messages.length) return;
+
+    var el = document.createElement('div');
+    el.className = 'bottle-container';
+    el.innerHTML = '<svg class="bottle-svg" viewBox="0 0 50 90" fill="none" xmlns="http://www.w3.org/2000/svg">'
+      + '<defs><linearGradient id="glass" x1="10" y1="0" x2="40" y2="90" gradientUnits="userSpaceOnUse">'
+      + '<stop offset="0%" stop-color="#7ec8a0" stop-opacity="0.5"/>'
+      + '<stop offset="40%" stop-color="#4a9a6e" stop-opacity="0.6"/>'
+      + '<stop offset="100%" stop-color="#2d6b4a" stop-opacity="0.7"/>'
+      + '</linearGradient>'
+      + '<linearGradient id="cork" x1="18" y1="8" x2="32" y2="20" gradientUnits="userSpaceOnUse">'
+      + '<stop offset="0%" stop-color="#c8a870"/>'
+      + '<stop offset="100%" stop-color="#a08050"/>'
+      + '</linearGradient></defs>'
+      + '<path d="M15 30 Q10 35 10 50 L10 78 Q10 85 17 85 L33 85 Q40 85 40 78 L40 50 Q40 35 35 30 L35 22 L15 22 Z" fill="url(#glass)" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>'
+      + '<path d="M16 35 Q14 45 14 55 L14 70" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-linecap="round" fill="none"/>'
+      + '<rect x="18" y="14" width="14" height="10" rx="2" fill="url(#cork)" stroke="rgba(160,128,80,0.3)" stroke-width="0.5"/>'
+      + '<rect x="21" y="16" width="8" height="3" rx="1" fill="#f0e8d8" opacity="0.7"/>'
+      + '<path d="M18 22 L18 14 M32 22 L32 14" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>'
+      + '</svg>'
+      + '<div class="tap-ring"></div>';
+
+    document.body.appendChild(el);
+
+    var startX = -80;
+    activeBottle = {
+      el: el,
+      x: startX,
+      speed: 0.3 + Math.random() * 0.15,
+      bobPhase: Math.random() * Math.PI * 2,
+      caught: false,
+      msgIndex: bottleIndex
+    };
+
+    el.addEventListener('click', function(e) { e.stopPropagation(); catchBottle(); });
+    el.addEventListener('touchstart', function(e) { e.preventDefault(); e.stopPropagation(); catchBottle(); }, { passive: false });
+
+    updateCounter();
+  }
+
+  function catchBottle() {
+    if (!activeBottle || activeBottle.caught) return;
+    activeBottle.caught = true;
+    activeBottle.el.classList.add('caught');
+
+    if (navigator.vibrate) navigator.vibrate([15, 30, 15]);
+
+    // Cork pop particles
+    var rect = activeBottle.el.getBoundingClientRect();
+    var cx = rect.left + rect.width / 2;
+    var cy = rect.top + 15;
+    for (var i = 0; i < 12; i++) {
+      var p = document.createElement('div');
+      p.className = 'cork-particle';
+      var angle = (Math.PI * 2 / 12) * i + Math.random() * 0.3;
+      var dist = 30 + Math.random() * 50;
+      var colors = ['#c8a870', '#f0e8d8', '#d4a855', '#e8d8c0', '#ffd700'];
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.left = cx + 'px';
+      p.style.top = cy + 'px';
+      p.style.width = (2 + Math.random() * 3) + 'px';
+      p.style.height = p.style.width;
+      document.body.appendChild(p);
+      (function(el, a, d) {
+        var tx = Math.cos(a) * d;
+        var ty = Math.sin(a) * d - 20;
+        el.style.transition = 'all 0.8s cubic-bezier(0.25,1,0.5,1)';
+        requestAnimationFrame(function(){
+          el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+          el.style.opacity = '0';
+        });
+        setTimeout(function(){ el.remove(); }, 900);
+      })(p, angle, dist);
+    }
+
+    var b = activeBottle;
+    b.el.style.transition = 'transform 1s ease-in, opacity 1s ease-in';
+    requestAnimationFrame(function(){
+      b.el.style.transform = b.el.style.transform + ' translateY(60px) scale(0.7)';
+      b.el.style.opacity = '0';
+    });
+
+    var msg = messages[b.msgIndex];
+    setTimeout(function(){
+      document.getElementById('letterGreeting').textContent = msg.greeting;
+      document.getElementById('letterBody').textContent = msg.body;
+      document.getElementById('letterSign').textContent = msg.sign;
+      letterOverlay.classList.add('visible');
+      b.el.remove();
+    }, 600);
+
+    bottleIndex++;
+  }
+
+  letterOverlay.addEventListener('click', function(){
+    letterOverlay.classList.remove('visible');
+    setTimeout(function(){
+      if (bottleIndex < messages.length) {
+        setTimeout(spawnBottle, 1500);
+      } else {
+        updateCounter();
+      }
+    }, 400);
+  });
+
+  // Main loop
+  function animate() {
+    time += 0.016;
+    drawOcean();
+
+    if (activeBottle && !activeBottle.caught) {
+      var b = activeBottle;
+      b.x += b.speed;
+      var waveY = getWaveY(b.x, time);
+      var bob = Math.sin(time * 1.5 + b.bobPhase) * 4;
+      var tilt = Math.sin(time * 0.8 + b.bobPhase) * 8;
+      b.el.style.left = b.x + 'px';
+      b.el.style.top = (waveY + bob) + 'px';
+      b.el.style.transform = 'rotate(' + tilt + 'deg)';
+
+      if (b.x > W + 100) b.x = -80;
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+  setTimeout(spawnBottle, 1200);
+
+})();
+</script>
+</body>
+</html>
