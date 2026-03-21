@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>For Erica 💕</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;500;600&family=Special+Elite&family=Inter:wght@300;400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #08080e;
+    color: #fff;
+    user-select: none; -webkit-user-select: none;
+  }
+
+  /* ─── SECTIONS ─── */
+  section {
+    min-height: 100dvh;
+    scroll-snap-align: start;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 40px 24px;
+  }
+
+  /* ─── SCROLL INDICATOR ─── */
+  .scroll-arrow {
+    position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+    font-size: 0.6rem; color: rgba(255,255,255,0.12);
+    letter-spacing: 3px; text-transform: uppercase;
+    animation: bobDown 2s ease-in-out infinite;
+  }
+  @keyframes bobDown { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(8px); } }
+
+  /* ─── SECTION 1: HERO ─── */
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(255,80,120,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-heart { font-size: 3.5rem; margin-bottom: 20px; animation: heroBeat 1.1s ease-in-out infinite; }
+  @keyframes heroBeat { 0%,100% { transform: scale(1); } 15% { transform: scale(1.12); } 30% { transform: scale(1); } 45% { transform: scale(1.08); } }
+  .hero-title {
+    font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700; text-align: center;
+    background: linear-gradient(135deg, #ff5078, #ff8fa3, #ffb347);
+    background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: shimmer 4s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  .hero-sub { font-family: 'Caveat', cursive; font-size: 1.3rem; color: rgba(255,200,210,0.4); margin-top: 12px; }
+  .hero-days {
+    font-family: 'Playfair Display', serif; font-size: 4rem; font-weight: 700; margin-top: 30px;
+    color: rgba(255,80,120,0.7);
+  }
+  .hero-days-label { font-size: 0.7rem; color: rgba(255,255,255,0.15); letter-spacing: 4px; text-transform: uppercase; margin-top: 4px; }
+
+  /* ─── SECTION 2: REASONS ─── */
+  #sec2 { background: linear-gradient(180deg, #08080e 0%, #0d0a14 100%); }
+  .reasons-title {
+    font-family: 'Playfair Display', serif; font-size: 1.6rem; font-style: italic;
+    color: rgba(255,180,120,0.5); margin-bottom: 40px; text-align: center;
+  }
+  .reason {
+    opacity: 0; transform: translateY(30px);
+    transition: all 0.8s ease;
+    font-family: 'Caveat', cursive; font-size: 1.35rem;
+    color: rgba(255,255,255,0.6); text-align: center;
+    margin: 16px 0; max-width: 340px; line-height: 1.4;
+  }
+  .reason.visible { opacity: 1; transform: translateY(0); }
+  .reason .num {
+    font-family: 'Playfair Display', serif; font-size: 0.7rem;
+    color: rgba(255,80,120,0.3); display: block; margin-bottom: 4px; letter-spacing: 2px;
+  }
+
+  /* ─── SECTION 3: LOVE LETTER ─── */
+  #sec3 { background: linear-gradient(180deg, #0d0a14 0%, #0a0810 100%); }
+  .letter-paper {
+    width: min(88vw, 400px);
+    background: linear-gradient(145deg, #1a1520, #12101a);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 2px; padding: 36px 28px;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
+    position: relative;
+  }
+  .letter-paper::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(255,255,255,0.015) 28px, rgba(255,255,255,0.015) 29px);
+    pointer-events: none;
+  }
+  .letter-greeting { font-family: 'Caveat', cursive; font-size: 1.1rem; color: rgba(255,180,120,0.6); margin-bottom: 18px; }
+  .letter-body { font-family: 'Special Elite', 'Courier New', monospace; font-size: 0.82rem; line-height: 1.9; color: rgba(255,255,255,0.65); }
+  .letter-sign { font-family: 'Caveat', cursive; font-size: 1.2rem; color: rgba(255,140,160,0.5); margin-top: 24px; }
+
+  /* ─── SECTION 4: MEMORIES ─── */
+  #sec4 { background: linear-gradient(180deg, #0a0810 0%, #0c0816 100%); }
+  .memories-title {
+    font-family: 'Playfair Display', serif; font-size: 1.4rem; font-style: italic;
+    color: rgba(255,200,210,0.4); margin-bottom: 32px; text-align: center;
+  }
+  .polaroid {
+    background: #f5f0e8; padding: 12px 12px 40px 12px; border-radius: 2px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    transform: rotate(var(--rot, 0deg));
+    margin: 12px 0;
+    opacity: 0; transform: translateY(40px) rotate(var(--rot, 0deg));
+    transition: all 0.8s ease;
+    max-width: 260px;
+  }
+  .polaroid.visible { opacity: 1; transform: translateY(0) rotate(var(--rot, 0deg)); }
+  .polaroid-img {
+    width: 100%; aspect-ratio: 1; border-radius: 1px;
+    background: linear-gradient(135deg, var(--c1, #2a1a3a), var(--c2, #1a2a3a));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem;
+  }
+  .polaroid-caption { font-family: 'Caveat', cursive; font-size: 1rem; color: #3a3535; text-align: center; margin-top: 8px; }
+
+  /* ─── SECTION 5: PROMISE ─── */
+  #sec5 { background: linear-gradient(180deg, #0c0816 0%, #08080e 100%); }
+  .promise-container { text-align: center; max-width: 340px; }
+  .promise-icon { font-size: 2rem; margin-bottom: 20px; opacity: 0.6; }
+  .promise {
+    font-family: 'Playfair Display', serif; font-size: 1.15rem; font-style: italic;
+    color: rgba(255,255,255,0.5); line-height: 1.7; margin: 20px 0;
+    opacity: 0; transform: translateY(20px); transition: all 0.8s ease;
+  }
+  .promise.visible { opacity: 1; transform: translateY(0); }
+  .promise-divider { width: 40px; height: 1px; background: rgba(255,80,120,0.15); margin: 0 auto; }
+
+  /* ─── SECTION 6: FINALE ─── */
+  #sec6 {
+    background: radial-gradient(ellipse at 50% 50%, rgba(255,80,120,0.06) 0%, #08080e 60%);
+  }
+  .finale-title {
+    font-family: 'Playfair Display', serif; font-size: 2.8rem; font-weight: 700; text-align: center;
+    background: linear-gradient(135deg, #ff5078, #ffb347, #ff5078);
+    background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  .finale-sub { font-family: 'Caveat', cursive; font-size: 1.6rem; color: rgba(255,200,210,0.45); margin-top: 16px; text-align: center; }
+  .finale-particle {
+    position: absolute; pointer-events: none; animation: floatUp linear forwards;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) rotate(0); opacity: 0.7; }
+    100% { transform: translateY(-100vh) rotate(40deg); opacity: 0; }
+  }
+
+  /* ─── AMBIENT PARTICLES (all sections) ─── */
+  .particle {
+    position: absolute; width: 2px; height: 2px; border-radius: 50%;
+    background: rgba(255,80,120,0.15); pointer-events: none;
+    animation: drift linear infinite;
+  }
+  @keyframes drift {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(-200px) translateX(30px); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SECTION 1: HERO -->
+<section id="sec1">
+  <div class="hero-bg"></div>
+  <div class="hero-heart">❤️</div>
+  <div class="hero-title">This Is For You</div>
+  <div class="hero-sub">Erica</div>
+  <div class="hero-days" id="hero-days">19</div>
+  <div class="hero-days-label">days until I'm there</div>
+  <div class="scroll-arrow">scroll down ↓</div>
+</section>
+
+<!-- SECTION 2: REASONS -->
+<section id="sec2">
+  <div class="reasons-title">Reasons I Love You</div>
+  <div class="reason" data-delay="0"><span class="num">01</span>The way you laugh so loud the whole room hears it</div>
+  <div class="reason" data-delay="150"><span class="num">02</span>How you care about everyone around you, even strangers</div>
+  <div class="reason" data-delay="300"><span class="num">03</span>Your stubborn determination when you want something</div>
+  <div class="reason" data-delay="450"><span class="num">04</span>The face you make when you're concentrating on something</div>
+  <div class="reason" data-delay="600"><span class="num">05</span>How safe I feel just hearing your voice</div>
+  <div class="reason" data-delay="750"><span class="num">06</span>The way you say my name</div>
+  <div class="scroll-arrow">↓</div>
+</section>
+
+<!-- SECTION 3: LOVE LETTER -->
+<section id="sec3">
+  <div class="letter-paper">
+    <div class="letter-greeting">My Erica,</div>
+    <div class="letter-body">
+      I just wanted you to know that every single day, even when we're 9 hours apart, you make my world brighter.<br><br>
+      The way you laugh, the way you care about everything so deeply, the way you look at me like I'm someone worth looking at... I carry all of that with me.<br><br>
+      I can't wait to see your face again.<br><br>
+      You're my favorite human on this whole planet.
+    </div>
+    <div class="letter-sign">Forever yours, Tobias ❤️</div>
+  </div>
+  <div class="scroll-arrow">↓</div>
+</section>
+
+<!-- SECTION 4: MEMORIES -->
+<section id="sec4">
+  <div class="memories-title">Our Moments</div>
+  <div class="polaroid" style="--rot:-3deg; --c1:#2a1a3a; --c2:#3a1a2a;">
+    <div class="polaroid-img">🌺</div>
+    <div class="polaroid-caption">Hawaii — where it all started</div>
+  </div>
+  <div class="polaroid" style="--rot:2deg; --c1:#1a2a3a; --c2:#1a3a2a;">
+    <div class="polaroid-img">🏠</div>
+    <div class="polaroid-caption">San Diego — your world became mine</div>
+  </div>
+  <div class="polaroid" style="--rot:-1.5deg; --c1:#3a2a1a; --c2:#2a1a3a;">
+    <div class="polaroid-img">✈️</div>
+    <div class="polaroid-caption">April 9 — the next chapter</div>
+  </div>
+  <div class="scroll-arrow">↓</div>
+</section>
+
+<!-- SECTION 5: PROMISES -->
+<section id="sec5">
+  <div class="promise-container">
+    <div class="promise-icon">🤙</div>
+    <div class="promise">I promise to always make you laugh, even when you're trying to be mad at me</div>
+    <div class="promise-divider"></div>
+    <div class="promise">I promise to cross every ocean and timezone to be with you</div>
+    <div class="promise-divider"></div>
+    <div class="promise">I promise that this distance is temporary, but we are permanent</div>
+    <div class="promise-divider"></div>
+    <div class="promise">I promise to always choose you — every morning, every night, every 9-hour gap in between</div>
+  </div>
+  <div class="scroll-arrow">↓</div>
+</section>
+
+<!-- SECTION 6: FINALE -->
+<section id="sec6">
+  <div class="finale-title">I Love You<br>Erica</div>
+  <div class="finale-sub" id="finale-sub">See you in 19 days 💕</div>
+</section>
+
+<script>
+// Countdown
+const target = new Date('2026-04-09T00:00:00-07:00');
+const days = Math.ceil((target - new Date()) / (1000*60*60*24));
+document.getElementById('hero-days').textContent = days;
+document.getElementById('finale-sub').textContent = 'See you in ' + days + ' days 💕';
+
+// Intersection Observer for scroll animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      const delay = parseInt(el.dataset.delay || 0);
+      setTimeout(() => el.classList.add('visible'), delay);
+    }
+  });
+}, { threshold: 0.3 });
+
+document.querySelectorAll('.reason, .polaroid, .promise').forEach(el => observer.observe(el));
+
+// Finale floating hearts
+const sec6 = document.getElementById('sec6');
+const finaleObserver = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting && !sec6.dataset.started) {
+    sec6.dataset.started = 'true';
+    setInterval(() => {
+      const h = document.createElement('div');
+      h.className = 'finale-particle';
+      h.textContent = ['❤️','💕','💗','💖','✨'][Math.floor(Math.random()*5)];
+      h.style.cssText = `left:${Math.random()*100}%;bottom:-20px;font-size:${12+Math.random()*18}px;animation-duration:${4+Math.random()*4}s;`;
+      sec6.appendChild(h);
+      setTimeout(() => h.remove(), 8000);
+    }, 400);
+  }
+}, { threshold: 0.3 });
+finaleObserver.observe(sec6);
+
+// Ambient particles for sections 2 and 5
+[document.getElementById('sec2'), document.getElementById('sec5')].forEach(sec => {
+  for (let i = 0; i < 8; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `left:${Math.random()*100}%;top:${20+Math.random()*60}%;animation-duration:${6+Math.random()*8}s;animation-delay:${Math.random()*6}s;`;
+    sec.appendChild(p);
+  }
+});
+</script>
+</body>
+</html>
