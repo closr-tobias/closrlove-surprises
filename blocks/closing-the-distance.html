@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Closing the Distance — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    background: hsl(220, 35%, 8%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+    transition: background 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .ambient-orb {
+    position: fixed;
+    width: 60vw; height: 60vw;
+    max-width: 400px; max-height: 400px;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+    transition: background 1.8s;
+    z-index: 1;
+  }
+
+  .mote {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+  }
+
+  .distance-line {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px; height: 1px;
+    z-index: 5;
+    overflow: visible;
+    opacity: 0;
+    transition: opacity 0.8s;
+  }
+
+  .distance-line .line {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    transition: background 1.8s;
+  }
+
+  .distance-line .dot {
+    position: absolute;
+    top: -3px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    transition: background 1.8s, box-shadow 1.8s, left 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), right 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .dot-left { left: 0; }
+  .dot-right { right: 0; left: auto !important; }
+
+  .content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 0 40px;
+    max-width: 360px;
+  }
+
+  .miles {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3.5rem;
+    font-weight: 300;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 12px;
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .stage-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.35rem;
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .final-message {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(15px);
+    display: none;
+  }
+
+  .ripple {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 3;
+    animation: rippleOut 1.2s ease-out forwards;
+  }
+
+  @keyframes rippleOut {
+    0% { width: 0; height: 0; opacity: 1; }
+    100% { width: 200px; height: 200px; opacity: 0; }
+  }
+
+  .warmth-bar {
+    position: fixed;
+    bottom: 44px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 20;
+  }
+
+  .warmth-pip {
+    width: 20px; height: 3px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.06);
+    transition: background 1s, box-shadow 1s;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 22px;
+    text-align: center;
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.06);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 20;
+    transition: opacity 0.8s;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: rgba(255,255,255,0.07); text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: rgba(255,255,255,0.04); letter-spacing: 1px; z-index: 200; }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · closing the distance</div>
+
+<div class="ambient-orb" id="orb"></div>
+
+<div class="distance-line" id="distanceLine">
+  <div class="line" id="theLine"></div>
+  <div class="dot dot-left" id="dotLeft"></div>
+  <div class="dot dot-right" id="dotRight"></div>
+</div>
+
+<div class="content" id="content">
+  <!-- SLOT: distance_miles --><div class="miles" id="miles">5,437 miles</div><!-- /SLOT -->
+  <!-- SLOT: stage_messages --><div class="stage-text" id="stageText">The world is cold without you in it</div><!-- /SLOT -->
+  <!-- SLOT: final_message --><div class="final-message" id="finalMsg">But every mile between us is just proof that something this strong doesn't need proximity to burn</div><!-- /SLOT -->
+</div>
+
+<div class="warmth-bar" id="warmthBar"></div>
+<div class="hint" id="hint">tap anywhere to close the distance</div>
+
+<script>
+(function() {
+  var stages = [
+    { bgH:220, bgS:35, bgL:8, textH:210, textS:20, textL:45, glowH:220, glowS:40, glowL:15, accentH:220, accentS:30, accentL:25,
+      msg: "The world is cold without you in it" },
+    { bgH:230, bgS:25, bgL:10, textH:235, textS:25, textL:52, glowH:250, glowS:35, glowL:18, accentH:260, accentS:35, accentL:35,
+      msg: "I keep looking at the clock in your timezone" },
+    { bgH:270, bgS:20, bgL:11, textH:280, textS:22, textL:55, glowH:280, glowS:30, glowL:20, accentH:290, accentS:30, accentL:38,
+      msg: "Your voice on the phone makes the distance hurt less" },
+    { bgH:320, bgS:18, bgL:11, textH:340, textS:25, textL:58, glowH:340, glowS:28, glowL:22, accentH:345, accentS:35, accentL:40,
+      msg: "Some nights I swear I can feel you next to me" },
+    { bgH:15, bgS:22, bgL:12, textH:25, textS:35, textL:60, glowH:20, glowS:40, glowL:22, accentH:25, accentS:45, accentL:42,
+      msg: "Counting down the days until I\u2019m home" },
+    { bgH:30, bgS:30, bgL:13, textH:35, textS:45, textL:65, glowH:35, glowS:50, glowL:25, accentH:35, accentS:55, accentL:48,
+      msg: null }
+  ];
+
+  var totalStages = stages.length;
+  var currentStage = 0;
+  var animating = false;
+
+  var bar = document.getElementById('warmthBar');
+  for (var i = 0; i < totalStages; i++) {
+    var pip = document.createElement('div');
+    pip.className = 'warmth-pip';
+    bar.appendChild(pip);
+  }
+
+  var motes = [];
+  for (var i = 0; i < 25; i++) {
+    var m = document.createElement('div');
+    m.className = 'mote';
+    var size = Math.random() * 3 + 1;
+    m.style.width = size + 'px';
+    m.style.height = size + 'px';
+    m._x = Math.random() * window.innerWidth;
+    m._y = Math.random() * window.innerHeight;
+    m._vx = (Math.random() - 0.5) * 0.3;
+    m._vy = (Math.random() - 0.5) * 0.3 - 0.15;
+    m._pulse = Math.random() * Math.PI * 2;
+    m._pulseSpeed = Math.random() * 0.02 + 0.005;
+    m.style.left = m._x + 'px';
+    m.style.top = m._y + 'px';
+    document.body.appendChild(m);
+    motes.push(m);
+  }
+
+  function applyStage(s) {
+    document.body.style.background = 'hsl(' + s.bgH + ',' + s.bgS + '%,' + s.bgL + '%)';
+    document.getElementById('orb').style.background = 'radial-gradient(ellipse, hsla(' + s.glowH + ',' + s.glowS + '%,' + s.glowL + '%, 0.15) 0%, hsla(' + s.glowH + ',' + s.glowS + '%,' + s.glowL + '%, 0.05) 40%, transparent 70%)';
+    document.getElementById('theLine').style.background = 'linear-gradient(90deg, hsla(' + s.accentH + ',' + s.accentS + '%,' + s.accentL + '%, 0.2), hsla(' + s.accentH + ',' + s.accentS + '%,' + s.accentL + '%, 0.5), hsla(' + s.accentH + ',' + s.accentS + '%,' + s.accentL + '%, 0.2))';
+    var dotStyle = 'hsla(' + s.accentH + ',' + s.accentS + '%,' + s.accentL + '%, 0.6)';
+    var dotGlow = '0 0 12px hsla(' + s.accentH + ',' + s.accentS + '%,' + s.accentL + '%, 0.3)';
+    document.getElementById('dotLeft').style.background = dotStyle;
+    document.getElementById('dotLeft').style.boxShadow = dotGlow;
+    document.getElementById('dotRight').style.background = dotStyle;
+    document.getElementById('dotRight').style.boxShadow = dotGlow;
+  }
+
+  function updatePips() {
+    var pips = bar.children;
+    for (var i = 0; i < pips.length; i++) {
+      if (i <= currentStage) {
+        var s = stages[i];
+        pips[i].style.background = 'hsla(' + s.accentH + ',' + s.accentS + '%,' + s.accentL + '%, 0.6)';
+        pips[i].style.boxShadow = '0 0 8px hsla(' + s.accentH + ',' + s.accentS + '%,' + s.accentL + '%, 0.3)';
+      }
+    }
+  }
+
+  function closeDots() {
+    var progress = currentStage / (totalStages - 1);
+    var offset = (1 - progress) * 96;
+    document.getElementById('dotLeft').style.left = ((200 - offset) / 2) + 'px';
+    document.getElementById('dotRight').style.right = ((200 - offset) / 2) + 'px';
+  }
+
+  function fadeIn(el, text) {
+    el.style.transition = 'none';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(12px)';
+    if (text) el.textContent = text;
+    requestAnimationFrame(function() {
+      el.style.transition = 'opacity 1.2s 0.3s, transform 1.2s 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    });
+  }
+
+  function spawnRipple(x, y) {
+    var r = document.createElement('div');
+    r.className = 'ripple';
+    var s = stages[currentStage];
+    r.style.borderColor = 'hsla(' + s.accentH + ',' + s.accentS + '%,' + s.accentL + '%, 0.15)';
+    r.style.border = '1px solid hsla(' + s.accentH + ',' + s.accentS + '%,' + s.accentL + '%, 0.15)';
+    r.style.left = x + 'px';
+    r.style.top = y + 'px';
+    r.style.marginLeft = '-100px';
+    r.style.marginTop = '-100px';
+    document.body.appendChild(r);
+    setTimeout(function() { r.remove(); }, 1200);
+  }
+
+  function advance(x, y) {
+    if (animating || currentStage >= totalStages - 1) return;
+    animating = true;
+    currentStage++;
+
+    spawnRipple(x, y);
+
+    var s = stages[currentStage];
+    applyStage(s);
+    updatePips();
+    closeDots();
+
+    var stageText = document.getElementById('stageText');
+    var finalMsg = document.getElementById('finalMsg');
+    var miles = document.getElementById('miles');
+
+    var milesOpacity = Math.max(0.08, 0.25 - currentStage * 0.04);
+    miles.style.transition = 'color 1.8s';
+    miles.style.color = 'hsla(' + s.textH + ',' + s.textS + '%,' + s.textL + '%, ' + milesOpacity + ')';
+
+    if (currentStage < totalStages - 1) {
+      stageText.style.transition = 'opacity 0.5s, transform 0.5s';
+      stageText.style.opacity = '0';
+      stageText.style.transform = 'translateY(-8px)';
+      setTimeout(function() {
+        stageText.style.color = 'hsla(' + s.textH + ',' + s.textS + '%,' + s.textL + '%, 0.6)';
+        fadeIn(stageText, s.msg);
+      }, 500);
+    } else {
+      stageText.style.transition = 'opacity 0.6s';
+      stageText.style.opacity = '0';
+      miles.style.transition = 'opacity 1s';
+      miles.style.opacity = '0';
+      document.getElementById('hint').style.opacity = '0';
+
+      setTimeout(function() {
+        finalMsg.style.display = 'block';
+        finalMsg.style.color = 'hsla(' + s.textH + ',' + s.textS + '%,' + s.textL + '%, 0.85)';
+        requestAnimationFrame(function() {
+          finalMsg.style.transition = 'opacity 2s 0.2s, transform 2s 0.2s cubic-bezier(0.25, 1, 0.5, 1)';
+          finalMsg.style.opacity = '1';
+          finalMsg.style.transform = 'translateY(0)';
+        });
+
+        document.getElementById('dotLeft').style.left = 'calc(50% - 4px)';
+        document.getElementById('dotRight').style.right = 'calc(50% - 4px)';
+      }, 800);
+    }
+
+    setTimeout(function() { animating = false; }, 1200);
+  }
+
+  function animateMotes() {
+    var s = stages[currentStage];
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+
+    for (var i = 0; i < motes.length; i++) {
+      var m = motes[i];
+      m._x += m._vx;
+      m._y += m._vy;
+      m._pulse += m._pulseSpeed;
+
+      if (m._x < -10) m._x = w + 10;
+      if (m._x > w + 10) m._x = -10;
+      if (m._y < -10) m._y = h + 10;
+      if (m._y > h + 10) m._y = -10;
+
+      var opacity = (Math.sin(m._pulse) * 0.3 + 0.4) * (0.15 + currentStage * 0.05);
+      m.style.left = m._x + 'px';
+      m.style.top = m._y + 'px';
+      m.style.opacity = opacity;
+      m.style.background = 'hsla(' + s.accentH + ',' + s.accentS + '%,' + (s.accentL + 15) + '%, 0.6)';
+      m.style.boxShadow = '0 0 ' + (3 + currentStage) + 'px hsla(' + s.accentH + ',' + s.accentS + '%,' + s.accentL + '%, 0.3)';
+    }
+    requestAnimationFrame(animateMotes);
+  }
+
+  // Init
+  applyStage(stages[0]);
+  updatePips();
+
+  setTimeout(function() {
+    var miles = document.getElementById('miles');
+    miles.style.color = 'hsla(210, 20%, 45%, 0.25)';
+    miles.style.transition = 'opacity 1.5s 0.3s, transform 1.5s 0.3s cubic-bezier(0.25,1,0.5,1)';
+    miles.style.opacity = '1';
+    miles.style.transform = 'translateY(0)';
+    document.getElementById('distanceLine').style.opacity = '1';
+  }, 300);
+
+  setTimeout(function() {
+    var st = document.getElementById('stageText');
+    st.style.color = 'hsla(210, 20%, 45%, 0.5)';
+    fadeIn(st);
+  }, 800);
+
+  animateMotes();
+
+  document.body.addEventListener('click', function(e) {
+    if (e.target.closest('.back-link')) return;
+    advance(e.clientX, e.clientY);
+  });
+
+  document.body.addEventListener('touchstart', function(e) {
+    if (e.target.closest('.back-link')) return;
+    e.preventDefault();
+    advance(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+})();
+</script>
+</body>
+</html>
