@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Neon Confession — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #rain-canvas {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .street-glow {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 35%;
+    background: linear-gradient(to top,
+      rgba(255, 60, 120, 0.04) 0%,
+      rgba(255, 60, 120, 0.02) 30%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 2s ease;
+  }
+  .street-glow.on { opacity: 1; }
+
+  .neon-scene {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 0 24px;
+    max-width: 380px;
+  }
+
+  .sign-back {
+    position: absolute;
+    inset: -30px -40px;
+    background: rgba(15, 15, 25, 0.6);
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.03);
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.4);
+    z-index: -1;
+  }
+
+  .neon-line {
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.3;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.1s, transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .neon-line.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .neon-line.pink {
+    font-size: clamp(1.8rem, 7vw, 2.6rem);
+    color: #ff4d8a;
+    text-shadow:
+      0 0 4px #ff4d8a,
+      0 0 11px #ff4d8a,
+      0 0 22px #ff4d8a,
+      0 0 40px #ff1a6e,
+      0 0 80px #ff1a6e44;
+  }
+  .neon-line.blue {
+    font-size: clamp(1.4rem, 5.5vw, 2rem);
+    color: #00d4ff;
+    text-shadow:
+      0 0 4px #00d4ff,
+      0 0 11px #00d4ff,
+      0 0 22px #00d4ff,
+      0 0 40px #0099cc,
+      0 0 80px #0099cc44;
+  }
+  .neon-line.amber {
+    font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+    color: #ffaa33;
+    text-shadow:
+      0 0 4px #ffaa33,
+      0 0 11px #ffaa33,
+      0 0 22px #ffaa33,
+      0 0 40px #ff8800,
+      0 0 60px #ff880033;
+  }
+
+  .neon-char {
+    display: inline-block;
+    opacity: 0;
+    transition: none;
+  }
+  .neon-char.lit { opacity: 1; }
+  .neon-char.flicker {
+    animation: charFlicker 0.4s ease forwards;
+  }
+
+  @keyframes charFlicker {
+    0% { opacity: 0; }
+    15% { opacity: 1; }
+    25% { opacity: 0.3; }
+    40% { opacity: 1; }
+    55% { opacity: 0.15; }
+    70% { opacity: 1; }
+    85% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+
+  @keyframes idleFlicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.7; }
+    94% { opacity: 1; }
+    96% { opacity: 0.85; }
+    97% { opacity: 1; }
+  }
+  .neon-line.idle-flicker {
+    animation: idleFlicker 4s ease-in-out infinite;
+  }
+
+  .neon-from {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 300;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.12);
+    margin-top: 12px;
+    opacity: 0;
+    transition: opacity 1.5s ease 0.5s;
+  }
+  .neon-from.visible { opacity: 1; }
+
+  .hint {
+    position: fixed;
+    bottom: 28px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.5rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 20;
+    transition: opacity 1s;
+  }
+  .hint.hidden { opacity: 0; }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+</style>
+</head>
+<body>
+
+<canvas id="rain-canvas"></canvas>
+<div class="street-glow" id="street-glow"></div>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · neon confession</div>
+
+<div class="neon-scene" id="scene">
+  <div class="sign-back"></div>
+
+  <!-- SLOT: neon_line_1 -->
+  <div class="neon-line pink" data-text="You make the rain beautiful">You make the rain beautiful</div>
+  <!-- /SLOT -->
+
+  <!-- SLOT: neon_line_2 -->
+  <div class="neon-line blue" data-text="every city reminds me of you">every city reminds me of you</div>
+  <!-- /SLOT -->
+
+  <!-- SLOT: neon_line_3 -->
+  <div class="neon-line amber" data-text="and I'd walk through all of them to find you">and I&#x27;d walk through all of them to find you</div>
+  <!-- /SLOT -->
+
+  <!-- SLOT: from_name -->
+  <div class="neon-from" id="from-line">— always, tobias</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="hint" id="hint">tap anywhere</div>
+
+<script>
+(function(){
+  var canvas = document.getElementById('rain-canvas');
+  var ctx = canvas.getContext('2d');
+  var W, H;
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  var drops = [];
+  for (var i = 0; i < 120; i++) {
+    drops.push({
+      x: Math.random() * 2000,
+      y: Math.random() * 2000,
+      len: Math.random() * 18 + 8,
+      speed: Math.random() * 6 + 4,
+      opacity: Math.random() * 0.12 + 0.03,
+      drift: Math.random() * 0.4 - 0.1
+    });
+  }
+
+  var splashes = [];
+
+  function drawRain() {
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < drops.length; i++) {
+      var d = drops[i];
+      ctx.beginPath();
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(d.x + d.drift * d.len * 0.3, d.y + d.len);
+      ctx.strokeStyle = 'rgba(180,200,230,' + d.opacity + ')';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+      d.y += d.speed;
+      d.x += d.drift;
+      if (d.y > H) {
+        if (Math.random() < 0.3) {
+          splashes.push({ x: d.x, y: H - 2, radius: 0, maxRadius: Math.random() * 3 + 1.5, opacity: 0.15, life: 1 });
+        }
+        d.y = -d.len;
+        d.x = Math.random() * W;
+      }
+    }
+    for (var j = splashes.length - 1; j >= 0; j--) {
+      var s = splashes[j];
+      s.radius += 0.15;
+      s.life -= 0.03;
+      if (s.life <= 0) { splashes.splice(j, 1); continue; }
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(180,200,230,' + (s.life * s.opacity) + ')';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+    requestAnimationFrame(drawRain);
+  }
+  drawRain();
+
+  // === NEON REVEAL ===
+  var lines = document.querySelectorAll('.neon-line');
+  var fromLine = document.getElementById('from-line');
+  var streetGlow = document.getElementById('street-glow');
+  var hint = document.getElementById('hint');
+  var currentLine = 0;
+  var revealing = false;
+
+  lines.forEach(function(line) {
+    var text = line.dataset.text;
+    line.innerHTML = '';
+    for (var i = 0; i < text.length; i++) {
+      var span = document.createElement('span');
+      span.className = 'neon-char';
+      span.textContent = text[i] === ' ' ? '\u00A0' : text[i];
+      line.appendChild(span);
+    }
+  });
+
+  function revealLine(lineEl, callback) {
+    if (revealing) return;
+    revealing = true;
+    lineEl.classList.add('visible');
+    var chars = lineEl.querySelectorAll('.neon-char');
+    var i = 0;
+
+    function nextChar() {
+      if (i >= chars.length) {
+        setTimeout(function() {
+          lineEl.classList.add('idle-flicker');
+          lineEl.style.animationDelay = (Math.random() * 2) + 's';
+          revealing = false;
+          if (callback) callback();
+        }, 300);
+        return;
+      }
+      chars[i].classList.add('flicker', 'lit');
+      var delay = 45 + Math.random() * 25;
+      if (Math.random() < 0.08) delay += 200;
+      i++;
+      setTimeout(nextChar, delay);
+    }
+    nextChar();
+  }
+
+  function revealNext() {
+    if (currentLine >= lines.length) {
+      fromLine.classList.add('visible');
+      hint.classList.add('hidden');
+      return;
+    }
+    revealLine(lines[currentLine], function() {
+      currentLine++;
+      if (currentLine === 1) streetGlow.classList.add('on');
+    });
+  }
+
+  function handleTap(e) {
+    if (e.target.closest && e.target.closest('.back-link')) return;
+    if (!revealing) revealNext();
+  }
+
+  document.addEventListener('click', handleTap);
+  document.addEventListener('touchend', function(e) {
+    if (e.target.closest && e.target.closest('.back-link')) return;
+    e.preventDefault();
+    if (!revealing) revealNext();
+  }, { passive: false });
+
+  setTimeout(function() {
+    hint.textContent = 'tap for next line';
+    revealNext();
+  }, 1500);
+})();
+</script>
+</body>
+</html>
