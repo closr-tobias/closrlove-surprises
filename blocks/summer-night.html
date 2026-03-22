@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Summer Night — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #060810;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    position: relative;
+  }
+  .sky {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 120%, rgba(15,25,50,0.6) 0%, transparent 60%),
+      radial-gradient(ellipse at 30% 20%, rgba(20,15,40,0.4) 0%, transparent 50%),
+      linear-gradient(180deg, #060810 0%, #0a0e1a 40%, #0d1220 70%, #0a0f1c 100%);
+  }
+  .stars { position: fixed; inset: 0; pointer-events: none; }
+  .star { position: absolute; border-radius: 50%; background: #fff; }
+  @keyframes twinkle { 0%,100% { opacity: 0.08; } 50% { opacity: 0.3; } }
+  .ground {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 80px;
+    pointer-events: none; z-index: 5;
+  }
+  .ground svg { width: 100%; height: 100%; }
+  .touch-glow {
+    position: fixed; width: 280px; height: 280px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,200,100,0.06) 0%, rgba(255,170,60,0.02) 40%, transparent 70%);
+    pointer-events: none; transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.6s;
+    opacity: 0; z-index: 3;
+  }
+  .touch-glow.active { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  #fireflies { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
+  .content {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 40px 32px;
+    z-index: 10; pointer-events: none;
+  }
+  .text-block { max-width: 320px; text-align: center; }
+  .line {
+    font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic;
+    color: rgba(255, 235, 205, 0); font-size: 1.55rem; line-height: 1.65;
+    letter-spacing: 0.3px; margin-bottom: 20px; transition: color 1.8s ease;
+    text-shadow: 0 0 30px rgba(255,200,100,0);
+  }
+  .line.visible {
+    color: rgba(255, 235, 205, 0.85);
+    text-shadow: 0 0 30px rgba(255,200,100,0.08);
+  }
+  .line-closing {
+    font-family: 'Cormorant Garamond', serif; font-weight: 400;
+    color: rgba(255, 200, 130, 0); font-size: 1.15rem; letter-spacing: 1.5px;
+    margin-top: 16px; transition: color 2.5s ease 0.5s;
+  }
+  .line-closing.visible { color: rgba(255, 200, 130, 0.5); }
+  .hint {
+    position: fixed; bottom: 28px; left: 0; right: 0; text-align: center;
+    font-size: 0.5rem; color: rgba(255,255,255,0.06); letter-spacing: 3px;
+    text-transform: uppercase; pointer-events: none; z-index: 20; transition: opacity 2s;
+  }
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: rgba(255,255,255,0.07); text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: rgba(255,255,255,0.04); letter-spacing: 1px; z-index: 200; }
+</style>
+</head>
+<body>
+<div class="sky"></div>
+<div class="stars" id="stars"></div>
+<div class="ground">
+  <svg viewBox="0 0 400 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,80 L0,55 Q10,48 20,52 Q30,42 45,50 Q55,38 70,46 Q80,40 95,48 Q105,36 120,44 Q130,38 145,46 Q155,34 170,42 Q180,36 195,44 Q205,32 220,40 Q230,34 245,42 Q255,30 270,38 Q280,32 295,40 Q305,28 320,36 Q330,30 345,38 Q355,26 370,34 Q380,28 395,36 L400,32 L400,80 Z" fill="#060810"/>
+    <path d="M0,80 L0,62 Q15,55 30,58 Q45,50 60,56 Q75,48 90,54 Q105,46 120,52 Q135,44 150,50 Q165,42 180,48 Q195,40 210,46 Q225,38 240,44 Q255,36 270,42 Q285,34 300,40 Q315,32 330,38 Q345,30 360,36 Q375,28 390,34 L400,30 L400,80 Z" fill="#080b14" opacity="0.7"/>
+  </svg>
+</div>
+<div class="touch-glow" id="touchGlow"></div>
+<canvas id="fireflies"></canvas>
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · summer night</div>
+<div class="content">
+  <div class="text-block" id="textBlock">
+    <!-- SLOT: comfort_lines -->
+    <div class="line">On the nights when everything feels too heavy</div>
+    <div class="line">I want you to close your eyes</div>
+    <div class="line">and picture us sitting outside somewhere warm</div>
+    <div class="line">watching fireflies blink in the dark</div>
+    <div class="line">not saying anything</div>
+    <div class="line">just being together</div>
+    <!-- /SLOT -->
+    <!-- SLOT: closing -->
+    <div class="line-closing">that's where I'll always be</div>
+    <!-- /SLOT -->
+  </div>
+</div>
+<div class="hint" id="hint">hold anywhere to gather the light</div>
+<script>
+(function(){
+  var starsEl=document.getElementById('stars');
+  for(var i=0;i<60;i++){var s=document.createElement('div');s.className='star';var sz=Math.random()<0.85?(Math.random()*1.2+0.4):(Math.random()*1.8+1);s.style.width=sz+'px';s.style.height=sz+'px';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*70+'%';s.style.opacity=Math.random()*0.25+0.05;s.style.animation='twinkle '+(Math.random()*4+3)+'s ease-in-out infinite '+(Math.random()*5)+'s';starsEl.appendChild(s)}
+
+  var canvas=document.getElementById('fireflies'),ctx=canvas.getContext('2d'),W,H;
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight}
+  resize();window.addEventListener('resize',resize);
+
+  var touchPos=null,isHolding=false,holdStart=0;
+  var fireflies=[],NUM=22;
+  var warmColors=[[255,210,80],[255,190,60],[255,230,120],[240,200,90],[255,180,50],[220,255,120]];
+
+  function createFirefly(){
+    var c=warmColors[Math.floor(Math.random()*warmColors.length)];
+    return{x:Math.random()*W,y:Math.random()*H*0.8+H*0.1,vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.2,radius:Math.random()*2.5+1.5,glowRadius:Math.random()*12+8,phase:Math.random()*Math.PI*2,blinkSpeed:Math.random()*0.008+0.004,driftPhase:Math.random()*Math.PI*2,driftSpeed:Math.random()*0.002+0.001,color:c,brightness:0,targetBrightness:0,blinkTimer:Math.random()*400,blinkOn:Math.random()>0.5}
+  }
+  for(var i=0;i<NUM;i++)fireflies.push(createFirefly());
+
+  function drawFirefly(f){
+    if(f.brightness<0.02)return;
+    var a=f.brightness;
+    var g=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,f.glowRadius*(0.8+a*0.4));
+    g.addColorStop(0,'rgba('+f.color[0]+','+f.color[1]+','+f.color[2]+','+(a*0.35)+')');
+    g.addColorStop(0.4,'rgba('+f.color[0]+','+f.color[1]+','+f.color[2]+','+(a*0.12)+')');
+    g.addColorStop(1,'rgba('+f.color[0]+','+f.color[1]+','+f.color[2]+',0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(f.x,f.y,f.glowRadius*(0.8+a*0.4),0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,240,'+(a*0.9)+')';ctx.beginPath();ctx.arc(f.x,f.y,f.radius*a,0,Math.PI*2);ctx.fill();
+  }
+
+  function updateFirefly(f,dt){
+    f.blinkTimer-=dt;
+    if(f.blinkTimer<=0){f.blinkOn=!f.blinkOn;f.blinkTimer=f.blinkOn?(Math.random()*2000+800):(Math.random()*3000+1500)}
+    f.targetBrightness=f.blinkOn?(0.6+Math.sin(f.phase)*0.35):0;
+    f.brightness+=(f.targetBrightness-f.brightness)*0.03;
+    f.phase+=f.blinkSpeed*dt;
+    f.driftPhase+=f.driftSpeed*dt;
+    f.vx+=Math.sin(f.driftPhase)*0.003;
+    f.vy+=Math.cos(f.driftPhase*0.7)*0.002;
+    if(isHolding&&touchPos){
+      var dx=touchPos.x-f.x,dy=touchPos.y-f.y,dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist>10){var ht=Math.min((Date.now()-holdStart)/2000,1),force=ht*0.015/Math.max(dist*0.01,1);f.vx+=dx*force;f.vy+=dy*force}
+      if(dist<150)f.targetBrightness=Math.max(f.targetBrightness,0.8);
+    }
+    f.vx*=0.995;f.vy*=0.995;
+    var spd=Math.sqrt(f.vx*f.vx+f.vy*f.vy);
+    if(spd>1.2){f.vx*=1.2/spd;f.vy*=1.2/spd}
+    f.x+=f.vx*dt*0.06;f.y+=f.vy*dt*0.06;
+    if(f.x<-20)f.x=W+20;if(f.x>W+20)f.x=-20;
+    if(f.y<H*0.05)f.vy+=0.01;if(f.y>H*0.9)f.vy-=0.01;
+  }
+
+  var lastTime=performance.now();
+  function animate(now){
+    var dt=Math.min(now-lastTime,50);lastTime=now;
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<fireflies.length;i++){updateFirefly(fireflies[i],dt);drawFirefly(fireflies[i])}
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+
+  var glow=document.getElementById('touchGlow');
+  function onDown(x,y){touchPos={x:x,y:y};isHolding=true;holdStart=Date.now();glow.style.left=x+'px';glow.style.top=y+'px';glow.classList.add('active')}
+  function onMove(x,y){if(!isHolding)return;touchPos={x:x,y:y};glow.style.left=x+'px';glow.style.top=y+'px'}
+  function onUp(){isHolding=false;touchPos=null;glow.classList.remove('active')}
+  document.addEventListener('touchstart',function(e){e.preventDefault();onDown(e.touches[0].clientX,e.touches[0].clientY)},{passive:false});
+  document.addEventListener('touchmove',function(e){if(isHolding)onMove(e.touches[0].clientX,e.touches[0].clientY)},{passive:false});
+  document.addEventListener('touchend',onUp);
+  document.addEventListener('mousedown',function(e){onDown(e.clientX,e.clientY)});
+  document.addEventListener('mousemove',function(e){if(isHolding)onMove(e.clientX,e.clientY)});
+  document.addEventListener('mouseup',onUp);
+
+  var lines=document.querySelectorAll('.line, .line-closing');
+  lines.forEach(function(line,i){setTimeout(function(){line.classList.add('visible')},800+i*600)});
+  setTimeout(function(){document.getElementById('hint').style.opacity='0'},6000);
+})();
+</script>
+</body>
+</html>
