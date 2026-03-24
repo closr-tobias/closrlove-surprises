@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Campfire Stories</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Inter:wght@300;400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#0a0610;color:#e0d0c0;height:100vh;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+  canvas#sky{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+  .scene{position:relative;z-index:1;width:100%;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:40px}
+  .fire-container{position:relative;width:200px;height:200px;cursor:pointer;margin-bottom:20px}
+  .fire{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:80px;height:120px}
+  .flame{position:absolute;bottom:0;left:50%;border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;animation:flicker 0.4s ease-in-out infinite alternate}
+  .flame.main{width:40px;height:80px;background:radial-gradient(ellipse at bottom,#ff6600,#ff3300 40%,#cc0000 70%,transparent);transform:translateX(-50%);animation-duration:0.3s}
+  .flame.left{width:24px;height:60px;background:radial-gradient(ellipse at bottom,#ffaa00,#ff6600 50%,transparent);transform:translateX(-80%) rotate(-10deg);animation-duration:0.5s;animation-delay:0.1s}
+  .flame.right{width:24px;height:55px;background:radial-gradient(ellipse at bottom,#ffaa00,#ff6600 50%,transparent);transform:translateX(-20%) rotate(8deg);animation-duration:0.45s;animation-delay:0.15s}
+  .flame.inner{width:20px;height:50px;background:radial-gradient(ellipse at bottom,#ffe066,#ffaa00 50%,transparent);transform:translateX(-50%);animation-duration:0.25s;z-index:1}
+  .glow{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);width:300px;height:150px;background:radial-gradient(ellipse,rgba(255,100,0,.15),rgba(255,60,0,.05) 50%,transparent 70%);pointer-events:none}
+  .logs{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%)}
+  .log{width:60px;height:12px;background:linear-gradient(#5a3a1a,#3d2810);border-radius:6px;position:absolute}
+  .log:nth-child(1){transform:rotate(-20deg);left:-20px}
+  .log:nth-child(2){transform:rotate(25deg);left:0px}
+  .log:nth-child(3){transform:rotate(-5deg);left:-10px;top:8px}
+  .embers{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:100px;height:200px;pointer-events:none}
+  .ember{position:absolute;width:4px;height:4px;background:#ff8833;border-radius:50%;animation:rise linear infinite;opacity:0}
+  @keyframes flicker{0%{height:80px;opacity:.9}100%{height:90px;opacity:1}}
+  @keyframes rise{0%{opacity:0;transform:translateY(0) translateX(0)}10%{opacity:1}90%{opacity:.6}100%{opacity:0;transform:translateY(-200px) translateX(var(--drift))}}
+  .story-bubble{position:absolute;top:15%;left:50%;transform:translateX(-50%);width:85%;max-width:380px;text-align:center;opacity:0;transition:all 0.8s cubic-bezier(0.16,1,0.3,1);pointer-events:none}
+  .story-bubble.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .story-text{font-family:'Caveat',cursive;font-size:1.6rem;line-height:1.5;color:#ffe0b0;text-shadow:0 0 30px rgba(255,150,50,.3)}
+  .story-label{font-size:.65rem;color:rgba(255,200,150,.25);letter-spacing:2px;text-transform:uppercase;margin-top:16px}
+  .tap-hint{font-size:.75rem;color:rgba(255,200,150,.2);position:absolute;bottom:12px;width:100%;text-align:center;animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.2}50%{opacity:.5}}
+  .dots{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+  .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,150,80,.15);transition:all .3s}
+  .dot.active{background:rgba(255,150,80,.7);box-shadow:0 0 8px rgba(255,100,0,.4)}
+  .dot.seen{background:rgba(255,150,80,.35)}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<div class="scene">
+  <div class="story-bubble" id="story">
+    <div class="story-text" id="storyText"></div>
+    <div class="story-label" id="storyLabel"></div>
+  </div>
+  <div class="dots" id="dots"></div>
+  <div class="fire-container" id="fire">
+    <div class="glow"></div>
+    <div class="fire">
+      <div class="flame main"></div>
+      <div class="flame left"></div>
+      <div class="flame right"></div>
+      <div class="flame inner"></div>
+    </div>
+    <div class="logs"><div class="log"></div><div class="log"></div><div class="log"></div></div>
+    <div class="embers" id="embers"></div>
+  </div>
+  <div class="tap-hint">tap the fire</div>
+</div>
+<script>
+const stories = [
+  { text: "Remember the first time we stayed up all night talking? Neither of us wanted to hang up.", label: "THE BEGINNING" },
+  { text: "You make the ordinary feel like magic. A random Tuesday with you is better than anyone else's best day.", label: "THE TRUTH" },
+  { text: "I love how you laugh with your whole body. It's my favorite sound in the universe.", label: "THE DETAILS" },
+  { text: "Distance means nothing when someone means everything. You taught me that.", label: "THE LESSON" },
+  { text: "One day we'll sit by a real fire like this, and I'll tell you all these stories again.", label: "THE PROMISE" },
+];
+let current = -1;
+const storyEl = document.getElementById('story');
+const textEl = document.getElementById('storyText');
+const labelEl = document.getElementById('storyLabel');
+const dotsEl = document.getElementById('dots');
+
+stories.forEach((_,i) => { const d = document.createElement('div'); d.className = 'dot'; dotsEl.appendChild(d); });
+
+// Embers
+const embersEl = document.getElementById('embers');
+for (let i = 0; i < 20; i++) {
+  const e = document.createElement('div');
+  e.className = 'ember';
+  e.style.left = Math.random() * 100 + '%';
+  e.style.animationDuration = (2 + Math.random() * 3) + 's';
+  e.style.animationDelay = Math.random() * 3 + 's';
+  e.style.setProperty('--drift', (Math.random() * 60 - 30) + 'px');
+  e.style.width = e.style.height = (2 + Math.random() * 3) + 'px';
+  embersEl.appendChild(e);
+}
+
+// Stars
+const sky = document.getElementById('sky');
+const sCtx = sky.getContext('2d');
+function drawStars() {
+  sky.width = window.innerWidth * 2; sky.height = window.innerHeight * 2;
+  sky.style.width = '100%'; sky.style.height = '100%';
+  for (let i = 0; i < 150; i++) {
+    sCtx.beginPath();
+    sCtx.arc(Math.random()*sky.width, Math.random()*sky.height*.6, Math.random()*1.5+.5, 0, Math.PI*2);
+    sCtx.fillStyle = `rgba(255,240,200,${Math.random()*.4+.1})`;
+    sCtx.fill();
+  }
+}
+drawStars(); window.addEventListener('resize', drawStars);
+
+document.getElementById('fire').addEventListener('click', () => {
+  current = (current + 1) % stories.length;
+  const s = stories[current];
+  storyEl.classList.remove('show');
+  setTimeout(() => {
+    textEl.textContent = s.text;
+    labelEl.textContent = s.label;
+    storyEl.classList.add('show');
+    document.querySelectorAll('.dot').forEach((d,i) => {
+      d.className = 'dot' + (i === current ? ' active' : i < current ? ' seen' : '');
+    });
+  }, 300);
+});
+</script>
+</body>
+</html>

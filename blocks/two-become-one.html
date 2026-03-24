@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Two Become One — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+  }
+
+  .message-layer {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.8s ease;
+    padding: 40px;
+  }
+  .message-layer.visible { opacity: 1; }
+
+  .message-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: clamp(1.4rem, 5.5vw, 2.2rem);
+    color: rgba(255, 255, 255, 0.92);
+    text-align: center;
+    line-height: 1.55;
+    letter-spacing: 0.02em;
+    max-width: 320px;
+    text-shadow: 0 0 40px rgba(0,0,0,0.8);
+  }
+
+  .message-sub {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.18);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 28px;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 44px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.55rem;
+    color: rgba(255,255,255,0.1);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    z-index: 20;
+    pointer-events: none;
+    animation: pulse 2.5s ease-in-out infinite;
+    transition: opacity 0.6s;
+  }
+  @keyframes pulse { 0%,100% { opacity: 0.08; } 50% { opacity: 0.22; } }
+
+  .phase-label {
+    position: fixed;
+    bottom: 66px;
+    left: 0; right: 0;
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.08);
+    letter-spacing: 2px;
+    z-index: 20;
+    pointer-events: none;
+    transition: opacity 0.8s;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  .heart-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 15;
+    opacity: 0;
+    animation: heartRise 3s ease-out forwards;
+  }
+  @keyframes heartRise {
+    0% { opacity: 0; transform: translateY(0) scale(0.5); }
+    15% { opacity: 0.7; }
+    100% { opacity: 0; transform: translateY(-140px) scale(1.3) rotate(25deg); }
+  }
+
+  /* Floating ambient particles */
+  .particle {
+    position: fixed;
+    width: 2px; height: 2px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · two become one</div>
+
+<canvas id="c"></canvas>
+
+<div class="message-layer" id="msg">
+  <!-- SLOT: merge_message -->
+  <div class="message-text">Two different worlds, one gravity — and somehow we always find our way back to each other</div>
+  <!-- /SLOT -->
+  <!-- SLOT: attribution -->
+  <div class="message-sub">you & me</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="hint" id="hint">tap to draw them closer</div>
+<div class="phase-label" id="phase"></div>
+
+<script>
+(function(){
+  // Ambient particles
+  for (var i = 0; i < 12; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = Math.random() * 100 + 'vh';
+    var s = (Math.random() * 2 + 1) + 'px';
+    p.style.width = s; p.style.height = s;
+    p.style.animationDuration = (Math.random() * 18 + 12) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    document.body.appendChild(p);
+  }
+
+  var canvas = document.getElementById('c');
+  var ctx = canvas.getContext('2d');
+  var msgEl = document.getElementById('msg');
+  var hintEl = document.getElementById('hint');
+  var phaseEl = document.getElementById('phase');
+
+  var W, H, dpr;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Partner colors
+  var cA = { r: 220, g: 80, b: 140 };
+  var cB = { r: 80, g: 140, b: 220 };
+
+  var baseR;
+  var blobs = [
+    { x: 0, y: 0, vx: 0, vy: 0, r: 0, nOff: 0, color: cA },
+    { x: 0, y: 0, vx: 0, vy: 0, r: 0, nOff: 100, color: cB }
+  ];
+
+  function initPos() {
+    baseR = Math.min(W, H) * 0.115;
+    blobs[0].x = W * 0.28; blobs[0].y = H * 0.42; blobs[0].r = baseR;
+    blobs[1].x = W * 0.72; blobs[1].y = H * 0.58; blobs[1].r = baseR;
+  }
+  initPos();
+
+  function noise(a, t, o) {
+    return Math.sin(a*3 + t*0.8 + o)*0.14 + Math.sin(a*5 - t*1.1 + o*1.3)*0.07 + Math.sin(a*7 + t*0.5 + o*0.7)*0.04;
+  }
+
+  var state = 'wander', stTime = 0, tapCount = 0, attrF = 0, time = 0, merged = false, mergeP = 0;
+
+  function drawBlob(b, t, alpha) {
+    var segs = 60;
+    ctx.beginPath();
+    for (var i = 0; i <= segs; i++) {
+      var ang = (i / segs) * Math.PI * 2;
+      var n = noise(ang, t, b.nOff);
+      var rr = b.r * (1 + n);
+      var px = b.x + Math.cos(ang) * rr;
+      var py = b.y + Math.sin(ang) * rr;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+
+    var c = b.color;
+    var grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * 1.5);
+    grad.addColorStop(0, 'rgba('+c.r+','+c.g+','+c.b+','+(0.85*alpha)+')');
+    grad.addColorStop(0.55, 'rgba('+c.r+','+c.g+','+c.b+','+(0.5*alpha)+')');
+    grad.addColorStop(1, 'rgba('+c.r+','+c.g+','+c.b+',0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Soft inner glow
+    var ig = ctx.createRadialGradient(b.x - b.r*0.2, b.y - b.r*0.2, 0, b.x, b.y, b.r*0.7);
+    ig.addColorStop(0, 'rgba(255,255,255,'+(0.06*alpha)+')');
+    ig.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fill(); // reuse path
+    ctx.fillStyle = ig;
+    ctx.fill();
+  }
+
+  function drawBridge(t) {
+    var dx = blobs[1].x - blobs[0].x;
+    var dy = blobs[1].y - blobs[0].y;
+    var dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    var touch = blobs[0].r + blobs[1].r;
+    if (dist > touch * 2.5) return;
+
+    var str = Math.max(0, 1 - dist / (touch * 2.5));
+    str = str * str; // ease
+    var mx = (blobs[0].x + blobs[1].x) / 2;
+    var my = (blobs[0].y + blobs[1].y) / 2;
+    var mr = (cA.r+cB.r)/2, mg = (cA.g+cB.g)/2, mb = (cA.b+cB.b)/2;
+
+    // Soft connection glow
+    var br = Math.min(blobs[0].r, blobs[1].r) * str;
+    var grad = ctx.createRadialGradient(mx, my, 0, mx, my, br * 3);
+    grad.addColorStop(0, 'rgba('+mr+','+mg+','+mb+','+(str*0.4)+')');
+    grad.addColorStop(1, 'rgba('+mr+','+mg+','+mb+',0)');
+    ctx.beginPath();
+    ctx.arc(mx, my, br * 3, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Organic bridge shape
+    if (str > 0.15) {
+      var nx = dx/dist, ny = dy/dist;
+      var px = -ny, py = nx;
+      var w = br * 0.7;
+      ctx.beginPath();
+      ctx.moveTo(blobs[0].x + px*w, blobs[0].y + py*w);
+      ctx.quadraticCurveTo(mx + px*w*1.3 + Math.sin(t*2)*5, my + py*w*1.3 + Math.cos(t*1.7)*5,
+        blobs[1].x + px*w, blobs[1].y + py*w);
+      ctx.quadraticCurveTo(mx - px*w*1.3 + Math.sin(t*2.3)*5, my - py*w*1.3 + Math.cos(t*1.9)*5,
+        blobs[0].x - px*w, blobs[0].y - py*w);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba('+mr+','+mg+','+mb+','+(str*0.2)+')';
+      ctx.fill();
+    }
+  }
+
+  function drawMerged(t) {
+    var cx = W/2, cy = H/2;
+    var r = baseR * 1.55;
+    var breathe = 1 + Math.sin(t*1.2)*0.025;
+    var segs = 64;
+
+    ctx.beginPath();
+    for (var i = 0; i <= segs; i++) {
+      var ang = (i/segs) * Math.PI * 2;
+      var n = noise(ang, t, 50) + noise(ang, t*0.7, 200)*0.5;
+      var rr = r * breathe * (1 + n*0.16);
+      var px = cx + Math.cos(ang)*rr;
+      var py = cy + Math.sin(ang)*rr;
+      if (i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+
+    // Blended gradient spinning slowly
+    var a1 = t * 0.2;
+    var gx = cx + Math.cos(a1) * r * 0.3;
+    var gy = cy + Math.sin(a1) * r * 0.3;
+    var grad = ctx.createRadialGradient(gx, gy, 0, cx, cy, r * 1.8 * breathe);
+    grad.addColorStop(0, 'rgba('+(cA.r*0.6+cB.r*0.4|0)+','+(cA.g*0.6+cB.g*0.4|0)+','+(cA.b*0.6+cB.b*0.4|0)+',0.85)');
+    grad.addColorStop(0.4, 'rgba('+(cA.r*0.4+cB.r*0.6|0)+','+(cA.g*0.4+cB.g*0.6|0)+','+(cA.b*0.4+cB.b*0.6|0)+',0.6)');
+    grad.addColorStop(0.75, 'rgba('+(cB.r*0.7+cA.r*0.3|0)+','+(cB.g*0.7+cA.g*0.3|0)+','+(cB.b*0.7+cA.b*0.3|0)+',0.25)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Warm inner glow
+    var ig = ctx.createRadialGradient(cx, cy, 0, cx, cy, r*0.6*breathe);
+    ig.addColorStop(0, 'rgba(255,230,245,'+(0.1 + Math.sin(t*0.8)*0.03)+')');
+    ig.addColorStop(1, 'rgba(255,230,245,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, r*0.6*breathe, 0, Math.PI*2);
+    ctx.fillStyle = ig;
+    ctx.fill();
+
+    // Outer ambient
+    var og = ctx.createRadialGradient(cx, cy, r*breathe, cx, cy, r*2.5*breathe);
+    og.addColorStop(0, 'rgba(150,110,180,0.04)');
+    og.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, r*2.5*breathe, 0, Math.PI*2);
+    ctx.fillStyle = og;
+    ctx.fill();
+  }
+
+  function spawnHeart(x, y) {
+    var el = document.createElement('div');
+    el.className = 'heart-particle';
+    el.textContent = ['💜','✨','💫','🤍'][Math.random()*4|0];
+    el.style.left = (x + (Math.random()-0.5)*80) + 'px';
+    el.style.top = (y + (Math.random()-0.5)*60) + 'px';
+    el.style.fontSize = (10 + Math.random()*10) + 'px';
+    document.body.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 3000);
+  }
+
+  function haptic(type) {
+    if (navigator.vibrate) navigator.vibrate(type === 'merge' ? [15,30,15,30,50] : 12);
+  }
+
+  function onTap() {
+    if (state === 'reveal' || state === 'merged') return;
+    tapCount++;
+    haptic('tap');
+
+    if (state === 'wander') {
+      state = 'attracting'; stTime = 0;
+      hintEl.style.opacity = '0';
+      phaseEl.textContent = 'drawing closer';
+    }
+
+    attrF = Math.min(attrF + 0.5, 3.5);
+    var mx = (blobs[0].x + blobs[1].x)/2;
+    var my = (blobs[0].y + blobs[1].y)/2;
+    if (tapCount % 2 === 0) spawnHeart(mx, my);
+  }
+
+  canvas.addEventListener('click', onTap);
+  canvas.addEventListener('touchstart', function(e){ e.preventDefault(); onTap(); }, {passive:false});
+
+  var last = performance.now();
+
+  function loop(now) {
+    var dt = Math.min((now - last) / 1000, 0.05);
+    last = now; time += dt; stTime += dt;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Ambient
+    var ag = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*0.5);
+    ag.addColorStop(0, 'rgba(140,100,170,0.012)');
+    ag.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = ag;
+    ctx.fillRect(0, 0, W, H);
+
+    if (state === 'wander') {
+      blobs.forEach(function(b) {
+        b.vx += (Math.sin(time*0.3 + b.nOff)*8 - b.vx*2) * dt;
+        b.vy += (Math.cos(time*0.25 + b.nOff*1.2)*8 - b.vy*2) * dt;
+        var m = b.r + 20;
+        if (b.x < m) b.vx += 15*dt; if (b.x > W-m) b.vx -= 15*dt;
+        if (b.y < m) b.vy += 15*dt; if (b.y > H-m) b.vy -= 15*dt;
+        b.x += b.vx*dt; b.y += b.vy*dt;
+      });
+      drawBlob(blobs[0], time, 1);
+      drawBridge(time);
+      drawBlob(blobs[1], time, 1);
+    }
+    else if (state === 'attracting') {
+      attrF *= 0.997;
+      if (attrF < 0.08) attrF = 0.08;
+
+      var dx = blobs[1].x - blobs[0].x;
+      var dy = blobs[1].y - blobs[0].y;
+      var dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      var nx = dx/dist, ny = dy/dist;
+      var f = attrF * 55;
+      blobs[0].vx += nx*f*dt; blobs[0].vy += ny*f*dt;
+      blobs[1].vx -= nx*f*dt; blobs[1].vy -= ny*f*dt;
+
+      blobs.forEach(function(b) {
+        b.vx *= 0.97; b.vy *= 0.97;
+        b.x += b.vx*dt; b.y += b.vy*dt;
+      });
+
+      if (dist < blobs[0].r * 0.7) {
+        state = 'merging'; stTime = 0; mergeP = 0;
+        haptic('merge');
+        phaseEl.textContent = 'becoming one';
+        for (var i = 0; i < 10; i++) {
+          (function(j){ setTimeout(function(){ spawnHeart(W/2, H/2); }, j*100); })(i);
+        }
+      }
+
+      drawBlob(blobs[0], time, 1);
+      drawBridge(time);
+      drawBlob(blobs[1], time, 1);
+    }
+    else if (state === 'merging') {
+      mergeP = Math.min(stTime / 2.2, 1);
+      var ease = 1 - Math.pow(1 - mergeP, 3);
+
+      blobs[0].x += (W/2 - blobs[0].x) * ease * dt * 3;
+      blobs[0].y += (H/2 - blobs[0].y) * ease * dt * 3;
+      blobs[1].x += (W/2 - blobs[1].x) * ease * dt * 3;
+      blobs[1].y += (H/2 - blobs[1].y) * ease * dt * 3;
+      blobs[0].r = baseR * (1 + ease*0.3);
+      blobs[1].r = baseR * (1 + ease*0.3);
+
+      if (mergeP < 0.75) {
+        drawBlob(blobs[0], time, 1);
+        drawBridge(time);
+        drawBlob(blobs[1], time, 1);
+      } else {
+        var fade = (mergeP - 0.75) / 0.25;
+        ctx.globalAlpha = 1 - fade;
+        drawBlob(blobs[0], time, 1);
+        drawBridge(time);
+        drawBlob(blobs[1], time, 1);
+        ctx.globalAlpha = fade;
+        drawMerged(time);
+        ctx.globalAlpha = 1;
+      }
+
+      if (mergeP >= 1) { state = 'merged'; stTime = 0; phaseEl.textContent = ''; }
+    }
+    else if (state === 'merged') {
+      drawMerged(time);
+      if (stTime > 1.5 && !merged) {
+        merged = true; state = 'reveal';
+        msgEl.classList.add('visible');
+        phaseEl.textContent = '';
+      }
+    }
+    else if (state === 'reveal') {
+      drawMerged(time);
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
