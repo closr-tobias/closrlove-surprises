@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bloom Vine Letter — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Caveat:wght@400;600;700&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; font-family: sans-serif; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; font-family: sans-serif; }
+
+  canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  
+  svg#vine-svg {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .message-container {
+    position: fixed;
+    top: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 82vw;
+    max-width: 320px;
+    text-align: center;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1.5s ease;
+  }
+  .message-container.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .flower-frame {
+    position: relative;
+    margin: 0 auto 20px;
+    width: 120px;
+    height: 120px;
+  }
+
+  .petal {
+    position: absolute;
+    width: 38px;
+    height: 54px;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    opacity: 0;
+    transform-origin: 50% 100%;
+  }
+  .petal.open { opacity: 1; }
+
+  .flower-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #f5d76e 30%, #e8b84b 70%, #c9943a);
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 20px rgba(245, 215, 110, 0.4), 0 0 40px rgba(245, 215, 110, 0.15);
+  }
+  .flower-center.open { transform: translate(-50%, -50%) scale(1); }
+
+  .msg-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.75;
+    letter-spacing: 0.3px;
+    margin-bottom: 20px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 1s ease 0.3s, transform 1s ease 0.3s;
+  }
+  .msg-text.visible { opacity: 1; transform: translateY(0); }
+
+  .msg-sign {
+    font-family: 'Caveat', cursive;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: rgba(160, 210, 140, 0.55);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 1s ease 0.6s, transform 1s ease 0.6s;
+  }
+  .msg-sign.visible { opacity: 1; transform: translateY(0); }
+
+  .hint {
+    position: fixed;
+    bottom: 22px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.5rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+    font-family: sans-serif;
+    z-index: 20;
+    transition: opacity 0.8s;
+  }
+
+  .soil {
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    height: 50px;
+    background: linear-gradient(to top, rgba(40, 28, 18, 0.5) 0%, rgba(30, 22, 14, 0.2) 50%, transparent 100%);
+    z-index: 2;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · bloom vine letter</div>
+
+<canvas id="bg"></canvas>
+<svg id="vine-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+<div class="soil"></div>
+
+<div class="message-container" id="msg">
+  <div class="flower-frame" id="flower"></div>
+  <!-- SLOT: message -->
+  <div class="msg-text" id="msgText">Every day with you feels like watching something beautiful grow — slowly, patiently, and more stunning than I ever imagined.</div>
+  <!-- /SLOT -->
+  <!-- SLOT: signature -->
+  <div class="msg-sign" id="msgSign">— forever yours, T ♡</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="hint" id="hint">tap to grow</div>
+
+<script>
+(function(){
+  var bgCanvas = document.getElementById('bg');
+  var ctx = bgCanvas.getContext('2d');
+  var W, H;
+  function resize() {
+    W = bgCanvas.width = window.innerWidth;
+    H = bgCanvas.height = window.innerHeight;
+    // Recreate vine points on resize
+    buildVine();
+  }
+
+  // Background particles
+  var particles = [];
+  function initParticles() {
+    particles = [];
+    for (var i = 0; i < 35; i++) {
+      particles.push({
+        x: Math.random() * (W || 400),
+        y: Math.random() * (H || 800),
+        r: Math.random() * 1.5 + 0.5,
+        vx: (Math.random() - 0.5) * 0.12,
+        vy: -Math.random() * 0.25 - 0.04,
+        alpha: Math.random() * 0.05 + 0.015,
+        g: Math.random() > 0.5
+      });
+    }
+  }
+
+  function drawBg() {
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
+      if (p.x < -10) p.x = W + 10;
+      if (p.x > W + 10) p.x = -10;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.g ? 'rgba(160,210,140,' + p.alpha + ')' : 'rgba(180,230,160,' + p.alpha + ')';
+      ctx.fill();
+    }
+    requestAnimationFrame(drawBg);
+  }
+
+  // === SVG Vine ===
+  var svg = document.getElementById('vine-svg');
+  var ns = 'http://www.w3.org/2000/svg';
+  var started = false, grown = false;
+  var vinePoints = [];
+  var totalPts = 22;
+  var vinePath, vineGlow, leafEls = [];
+  var vineLen = 2400;
+
+  function buildVine() {
+    // Clear old
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    leafEls = [];
+
+    var startY = H;
+    var endY = H * 0.16;
+    var cx = W / 2;
+    vinePoints = [];
+    for (var i = 0; i <= totalPts; i++) {
+      var t = i / totalPts;
+      var y = startY + (endY - startY) * t;
+      var sway = Math.sin(t * Math.PI * 2.8 + 0.5) * (18 + t * 18);
+      vinePoints.push({ x: cx + sway, y: y });
+    }
+
+    // Defs
+    var defs = document.createElementNS(ns, 'defs');
+
+    var grad = document.createElementNS(ns, 'linearGradient');
+    grad.setAttribute('id', 'vg');
+    grad.setAttribute('x1','0'); grad.setAttribute('y1','1');
+    grad.setAttribute('x2','0'); grad.setAttribute('y2','0');
+    var s1 = document.createElementNS(ns, 'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#2d5a28');
+    var s2 = document.createElementNS(ns, 'stop'); s2.setAttribute('offset','55%'); s2.setAttribute('stop-color','#4a8f3f');
+    var s3 = document.createElementNS(ns, 'stop'); s3.setAttribute('offset','100%'); s3.setAttribute('stop-color','#6bb85a');
+    grad.append(s1, s2, s3);
+
+    var filt = document.createElementNS(ns, 'filter');
+    filt.setAttribute('id','glo');
+    filt.setAttribute('x','-30%'); filt.setAttribute('y','-30%');
+    filt.setAttribute('width','160%'); filt.setAttribute('height','160%');
+    var fb = document.createElementNS(ns, 'feGaussianBlur');
+    fb.setAttribute('in','SourceGraphic'); fb.setAttribute('stdDeviation','4'); fb.setAttribute('result','b');
+    var fm = document.createElementNS(ns, 'feMerge');
+    var m1 = document.createElementNS(ns, 'feMergeNode'); m1.setAttribute('in','b');
+    var m2 = document.createElementNS(ns, 'feMergeNode'); m2.setAttribute('in','SourceGraphic');
+    fm.append(m1, m2); filt.append(fb, fm);
+    defs.append(grad, filt);
+    svg.appendChild(defs);
+
+    var d = ptsToPath(vinePoints);
+
+    // Glow layer
+    vineGlow = document.createElementNS(ns, 'path');
+    vineGlow.setAttribute('d', d);
+    vineGlow.setAttribute('fill','none');
+    vineGlow.setAttribute('stroke','rgba(100,180,80,0.12)');
+    vineGlow.setAttribute('stroke-width','10');
+    vineGlow.setAttribute('stroke-linecap','round');
+    vineGlow.setAttribute('filter','url(#glo)');
+    vineGlow.style.strokeDasharray = vineLen;
+    vineGlow.style.strokeDashoffset = vineLen;
+    svg.appendChild(vineGlow);
+
+    // Main vine
+    vinePath = document.createElementNS(ns, 'path');
+    vinePath.setAttribute('d', d);
+    vinePath.setAttribute('fill','none');
+    vinePath.setAttribute('stroke','url(#vg)');
+    vinePath.setAttribute('stroke-width','2.5');
+    vinePath.setAttribute('stroke-linecap','round');
+    vinePath.style.strokeDasharray = vineLen;
+    vinePath.style.strokeDashoffset = vineLen;
+    svg.appendChild(vinePath);
+
+    // Leaves
+    var leafTs = [0.12, 0.22, 0.32, 0.42, 0.52, 0.62, 0.72, 0.82, 0.9];
+    leafTs.forEach(function(lt, idx) {
+      var pi = Math.floor(lt * totalPts);
+      var pt = vinePoints[pi];
+      var side = idx % 2 === 0 ? 1 : -1;
+      var g = document.createElementNS(ns, 'g');
+      g.style.opacity = '0';
+      g.style.transformOrigin = pt.x + 'px ' + pt.y + 'px';
+      g.style.transform = 'scale(0) rotate(' + (side * 40) + 'deg)';
+      g.style.transition = 'opacity 0.6s ease, transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)';
+
+      var lf = document.createElementNS(ns, 'path');
+      var lx = pt.x + side * 2;
+      var ly = pt.y;
+      var tx = lx + side * 24;
+      var ty = ly - 12;
+      var gr = 130 + idx * 8;
+      lf.setAttribute('d', 'M ' + lx + ' ' + ly + ' Q ' + (lx + side * 15) + ' ' + (ly - 18) + ', ' + tx + ' ' + ty + ' Q ' + (lx + side * 15) + ' ' + (ly + 5) + ', ' + lx + ' ' + ly);
+      lf.setAttribute('fill', 'rgba(' + (75 + idx * 7) + ',' + Math.min(gr, 190) + ',' + (60 + idx * 5) + ',0.65)');
+      lf.setAttribute('stroke', 'rgba(' + (60 + idx * 5) + ',' + Math.min(gr - 20, 170) + ',' + (50 + idx * 4) + ',0.3)');
+      lf.setAttribute('stroke-width', '0.5');
+
+      // Leaf vein
+      var vein = document.createElementNS(ns, 'path');
+      vein.setAttribute('d', 'M ' + lx + ' ' + ly + ' Q ' + (lx + side * 10) + ' ' + (ly - 8) + ', ' + (lx + side * 18) + ' ' + (ly - 9));
+      vein.setAttribute('fill', 'none');
+      vein.setAttribute('stroke', 'rgba(255,255,255,0.06)');
+      vein.setAttribute('stroke-width', '0.4');
+
+      g.append(lf, vein);
+      svg.appendChild(g);
+      leafEls.push({ el: g, t: lt, side: side, idx: idx });
+    });
+
+    // Small curly tendrils
+    [0.28, 0.5, 0.7].forEach(function(tt, ti) {
+      var pi = Math.floor(tt * totalPts);
+      var pt = vinePoints[pi];
+      var s = ti % 2 === 0 ? 1 : -1;
+      var tend = document.createElementNS(ns, 'path');
+      var sx = pt.x; var sy = pt.y;
+      tend.setAttribute('d', 'M ' + sx + ' ' + sy +
+        ' C ' + (sx + s * 12) + ' ' + (sy - 8) + ', ' + (sx + s * 18) + ' ' + (sy - 3) + ', ' + (sx + s * 14) + ' ' + (sy + 4) +
+        ' C ' + (sx + s * 10) + ' ' + (sy + 10) + ', ' + (sx + s * 20) + ' ' + (sy + 8) + ', ' + (sx + s * 16) + ' ' + (sy + 2));
+      tend.setAttribute('fill', 'none');
+      tend.setAttribute('stroke', 'rgba(100,170,80,0.25)');
+      tend.setAttribute('stroke-width', '1');
+      tend.setAttribute('stroke-linecap', 'round');
+      var tLen = 80;
+      tend.style.strokeDasharray = tLen;
+      tend.style.strokeDashoffset = tLen;
+      tend.style.transition = 'stroke-dashoffset 1.2s ease';
+      tend.dataset.showAt = tt;
+      svg.appendChild(tend);
+      leafEls.push({ el: tend, t: tt, isTendril: true });
+    });
+  }
+
+  function ptsToPath(pts) {
+    var d = 'M ' + pts[0].x + ' ' + pts[0].y;
+    for (var i = 1; i < pts.length; i++) {
+      var p = pts[i - 1], c = pts[i];
+      var cpy = p.y + (c.y - p.y) * 0.5;
+      d += ' C ' + p.x + ' ' + cpy + ', ' + c.x + ' ' + cpy + ', ' + c.x + ' ' + c.y;
+    }
+    return d;
+  }
+
+  resize();
+  initParticles();
+  drawBg();
+  window.addEventListener('resize', function() { resize(); initParticles(); });
+
+  // === Growth ===
+  var GROW_DUR = 4200;
+  var growStart = null;
+
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function animateGrowth(ts) {
+    if (!growStart) growStart = ts;
+    var elapsed = ts - growStart;
+    var t = Math.min(elapsed / GROW_DUR, 1);
+    var e = easeOut(t);
+
+    var off = vineLen * (1 - e);
+    vinePath.style.strokeDashoffset = off;
+    vineGlow.style.strokeDashoffset = off;
+
+    leafEls.forEach(function(leaf) {
+      if (e >= leaf.t + 0.04) {
+        if (leaf.isTendril) {
+          leaf.el.style.strokeDashoffset = '0';
+        } else {
+          leaf.el.style.opacity = '1';
+          var sw = leaf.side * (6 + Math.sin(Date.now() / 1100 + leaf.idx) * 3);
+          leaf.el.style.transform = 'scale(1) rotate(' + sw + 'deg)';
+        }
+      }
+    });
+
+    if (t < 1) {
+      requestAnimationFrame(animateGrowth);
+    } else {
+      setTimeout(bloomFlower, 350);
+    }
+  }
+
+  // === Flower ===
+  var flowerEl = document.getElementById('flower');
+  var petalCount = 8;
+  var petalColors = [
+    [220,120,160], [232,145,175], [210,108,148], [240,155,185],
+    [200,98,138], [228,135,168], [215,112,152], [236,148,178]
+  ];
+  var petals = [];
+  for (var i = 0; i < petalCount; i++) {
+    var p = document.createElement('div');
+    p.className = 'petal';
+    var angle = (360 / petalCount) * i;
+    var rad = angle * Math.PI / 180;
+    var dist = 30;
+    var px = 60 - 19 + Math.cos(rad) * dist;
+    var py = 60 - 27 + Math.sin(rad) * dist;
+    p.style.left = px + 'px';
+    p.style.top = py + 'px';
+    var c = petalColors[i];
+    p.style.background = 'linear-gradient(to bottom, rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.8), rgba(' + (c[0]-40) + ',' + (c[1]-40) + ',' + (c[2]-40) + ',0.45))';
+    p.style.transform = 'rotate(' + (angle + 90) + 'deg) scale(0)';
+    p.style.transition = 'opacity 0.7s ease, transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    p.style.boxShadow = '0 0 14px rgba(220,120,160,0.15)';
+    p.dataset.angle = angle + 90;
+    flowerEl.appendChild(p);
+    petals.push(p);
+  }
+  var centerEl = document.createElement('div');
+  centerEl.className = 'flower-center';
+  flowerEl.appendChild(centerEl);
+
+  function bloomFlower() {
+    document.getElementById('msg').classList.add('visible');
+
+    petals.forEach(function(p, i) {
+      setTimeout(function() {
+        p.classList.add('open');
+        p.style.transform = 'rotate(' + p.dataset.angle + 'deg) scale(1)';
+      }, i * 90);
+    });
+
+    setTimeout(function() { centerEl.classList.add('open'); }, petalCount * 90 + 120);
+    setTimeout(function() { document.getElementById('msgText').classList.add('visible'); }, petalCount * 90 + 500);
+    setTimeout(function() {
+      document.getElementById('msgSign').classList.add('visible');
+      grown = true;
+    }, petalCount * 90 + 800);
+
+    if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
+  }
+
+  // === Interaction ===
+  function startGrowth() {
+    if (started) return;
+    started = true;
+    document.getElementById('hint').style.opacity = '0';
+    requestAnimationFrame(animateGrowth);
+  }
+  document.addEventListener('click', startGrowth);
+  document.addEventListener('touchstart', startGrowth, { passive: true });
+
+  // Leaf sway loop
+  function sway() {
+    leafEls.forEach(function(leaf) {
+      if (!leaf.isTendril && leaf.el.style.opacity === '1') {
+        var a = leaf.side * (5 + Math.sin(Date.now() / 1300 + leaf.idx * 0.8) * 3.5);
+        leaf.el.style.transform = 'scale(1) rotate(' + a + 'deg)';
+        leaf.el.style.transition = 'transform 1.8s ease';
+      }
+    });
+    requestAnimationFrame(sway);
+  }
+  sway();
+
+  // Double-tap replay
+  document.addEventListener('dblclick', function() {
+    if (!grown) return;
+    grown = false; started = false; growStart = null;
+    vinePath.style.strokeDashoffset = vineLen;
+    vineGlow.style.strokeDashoffset = vineLen;
+    leafEls.forEach(function(l) {
+      if (l.isTendril) { l.el.style.strokeDashoffset = '80'; }
+      else { l.el.style.opacity = '0'; l.el.style.transform = 'scale(0) rotate(' + (l.side * 40) + 'deg)'; }
+    });
+    petals.forEach(function(p) { p.classList.remove('open'); p.style.transform = 'rotate(' + p.dataset.angle + 'deg) scale(0)'; });
+    centerEl.classList.remove('open');
+    document.getElementById('msg').classList.remove('visible');
+    document.getElementById('msgText').classList.remove('visible');
+    document.getElementById('msgSign').classList.remove('visible');
+    var h = document.getElementById('hint');
+    h.style.opacity = '1'; h.textContent = 'tap to grow again';
+  });
+
+})();
+</script>
+</body>
+</html>
