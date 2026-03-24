@@ -26,7 +26,14 @@
 <div class="grid" id="grid"></div>
 <div class="count" id="count"></div>
 <script>
-const blocks = [];
+const blocks = [
+  { emoji:'🏮', name:'Campfire Stories', type:'narrative · warmth', desc:'Crackling campfire with floating embers. Tap the flames to reveal stories and memories.', file:'campfire-stories.html' },
+  { emoji:'🥠', name:'Fortune Cookie', type:'reveal · playful', desc:'Crack open golden fortune cookies. Each holds a personalized love fortune.', file:'fortune-cookie.html' },
+  { emoji:'🫧', name:'Water Ripple', type:'reveal · calm', desc:'Drop pebbles into still water. Ripples expand outward revealing words on the surface.', file:'water-ripple.html' },
+  { emoji:'🎈', name:'Hot Air Balloon', type:'journey · wonder', desc:'Rise through layered clouds. Each cloud you pass reveals a message as the sky shifts.', file:'hot-air-balloon.html' },
+  { emoji:'🦋', name:'Butterfly Release', type:'transformation · magical', desc:'Tap the glowing cocoon to release butterflies that carry messages into the sky.', file:'butterfly-release.html' },
+  { emoji:'🎞️', name:'Film Strip', type:'gallery · nostalgic', desc:'Old 16mm film reel. Swipe through frames, each holding a moment and a feeling.', file:'film-strip.html' },
+];
 const grid = document.getElementById('grid');
 blocks.forEach(b => {
   const card = document.createElement('div');
