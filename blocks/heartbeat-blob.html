@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Heartbeat Blob — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  canvas { position: fixed; inset: 0; z-index: 1; }
+
+  .message-layer {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 10; pointer-events: none;
+    opacity: 0; transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 40px;
+  }
+  .message-layer.visible { opacity: 1; }
+
+  .message-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.4rem, 5vw, 2.2rem);
+    font-weight: 300;
+    font-style: italic;
+    color: #fff;
+    text-align: center;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+    max-width: 320px;
+    text-shadow: 0 0 40px rgba(200, 80, 120, 0.3), 0 0 80px rgba(200, 80, 120, 0.1);
+  }
+
+  .message-from {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 300;
+    color: rgba(255,255,255,0.2);
+    margin-top: 28px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 28px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.5rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 20;
+    transition: opacity 0.8s;
+  }
+  .hint.hidden { opacity: 0; }
+
+  .particle {
+    position: fixed;
+    width: 2px; height: 2px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · heartbeat blob</div>
+
+<canvas id="canvas"></canvas>
+
+<div class="message-layer" id="messageLayer">
+  <!-- SLOT: message -->
+  <div class="message-text">You make the chaos quiet. You make the ordinary feel like it matters. I didn't know I was waiting for you until you arrived.</div>
+  <!-- /SLOT -->
+  <!-- SLOT: from -->
+  <div class="message-from">— with all my heart</div>
+  <!-- /SLOT -->
+</div>
+
+<div class="hint" id="hint">hold to feel it</div>
+
+<script>
+(function(){
+  for (var i = 0; i < 12; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = Math.random() * 100 + 'vh';
+    p.style.width = (Math.random() * 2 + 1) + 'px';
+    p.style.height = p.style.width;
+    p.style.animationDuration = (Math.random() * 18 + 12) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    document.body.appendChild(p);
+  }
+
+  var canvas = document.getElementById('canvas');
+  var ctx = canvas.getContext('2d');
+  var messageLayer = document.getElementById('messageLayer');
+  var hintEl = document.getElementById('hint');
+  var W, H, cx, cy;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    cx = W / 2;
+    cy = H / 2;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  var phase = 'breathing';
+  var holdStart = 0;
+  var holdDuration = 0;
+  var morphProgress = 0;
+  var revealProgress = 0;
+  var isHolding = false;
+  var time = 0;
+  var hintHidden = false;
+
+  function heartbeatScale(t) {
+    var cycle = (t * 1.1) % (Math.PI * 2);
+    var lub = Math.exp(-Math.pow((cycle - 1.0), 2) * 8) * 0.12;
+    var dub = Math.exp(-Math.pow((cycle - 1.6), 2) * 12) * 0.07;
+    return 1.0 + lub + dub;
+  }
+
+  function blobRadius(angle, t, baseR) {
+    var n = Math.sin(angle * 3 + t * 0.7) * 0.12
+          + Math.sin(angle * 5 - t * 1.1) * 0.08
+          + Math.sin(angle * 7 + t * 0.5) * 0.05
+          + Math.sin(angle * 2 - t * 1.5) * 0.06;
+    return baseR * (1 + n);
+  }
+
+  function heartPoint(angle, size) {
+    var x = size * 16 * Math.pow(Math.sin(angle), 3) / 16;
+    var y = -size * (13 * Math.cos(angle) - 5 * Math.cos(2*angle) - 2 * Math.cos(3*angle) - Math.cos(4*angle)) / 16;
+    return { x: x, y: y };
+  }
+
+  function drawShape(t, morph) {
+    var baseR = Math.min(W, H) * 0.22;
+    var hbScale = heartbeatScale(t);
+    var points = 120;
+    var holdScale = 1 + (isHolding ? Math.min(holdDuration / 2000, 0.15) : 0);
+    var totalScale = hbScale * holdScale;
+
+    var glowIntensity = 0.15 + morph * 0.3 + (isHolding ? 0.15 : 0);
+    var gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseR * 2.5);
+    gradient.addColorStop(0, 'rgba(200, 70, 110, ' + (glowIntensity * 0.4) + ')');
+    gradient.addColorStop(0.4, 'rgba(160, 50, 90, ' + (glowIntensity * 0.2) + ')');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    ctx.beginPath();
+    for (var i = 0; i <= points; i++) {
+      var angle = (i / points) * Math.PI * 2;
+      var blobR = blobRadius(angle, t, baseR) * totalScale;
+      var bx = Math.cos(angle) * blobR;
+      var by = Math.sin(angle) * blobR;
+      var hp = heartPoint(angle, baseR * totalScale * 0.9);
+      hp.y += baseR * 0.08;
+      var px = bx + (hp.x - bx) * morph;
+      var py = by + (hp.y - by) * morph;
+      if (morph > 0.5) {
+        var wobble = (1 - morph) * 2;
+        px += Math.sin(angle * 4 + t * 2) * 3 * wobble;
+        py += Math.cos(angle * 3 + t * 1.5) * 3 * wobble;
+      }
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+
+    var shapeGrad = ctx.createRadialGradient(0, -baseR * 0.3, 0, 0, baseR * 0.2, baseR * 1.2);
+    var hue1 = 340 + morph * 5;
+    var hue2 = 320 - morph * 10;
+    var sat = 60 + morph * 15;
+    var light1 = 45 + morph * 10;
+    var light2 = 25 + morph * 5;
+    shapeGrad.addColorStop(0, 'hsla(' + hue1 + ', ' + sat + '%, ' + light1 + '%, 0.9)');
+    shapeGrad.addColorStop(0.6, 'hsla(' + hue2 + ', ' + (sat - 10) + '%, ' + light2 + '%, 0.85)');
+    shapeGrad.addColorStop(1, 'hsla(310, 40%, 15%, 0.8)');
+    ctx.fillStyle = shapeGrad;
+    ctx.fill();
+
+    ctx.beginPath();
+    for (var i = 0; i <= points; i++) {
+      var angle = (i / points) * Math.PI * 2;
+      var blobR2 = blobRadius(angle, t + 0.5, baseR * 0.6) * totalScale;
+      var bx2 = Math.cos(angle) * blobR2;
+      var by2 = Math.sin(angle) * blobR2;
+      var hp2 = heartPoint(angle, baseR * totalScale * 0.5);
+      hp2.y += baseR * 0.08;
+      var px2 = bx2 + (hp2.x - bx2) * morph;
+      var py2 = by2 + (hp2.y - by2) * morph;
+      if (i === 0) ctx.moveTo(px2, py2);
+      else ctx.lineTo(px2, py2);
+    }
+    ctx.closePath();
+    var innerGrad = ctx.createRadialGradient(0, -baseR * 0.2, 0, 0, 0, baseR * 0.7);
+    innerGrad.addColorStop(0, 'rgba(255, 150, 180, 0.12)');
+    innerGrad.addColorStop(1, 'rgba(255, 100, 140, 0)');
+    ctx.fillStyle = innerGrad;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function vibrate(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+
+  var heartbeatInterval = null;
+  function startHeartbeatHaptic() {
+    if (heartbeatInterval) return;
+    heartbeatInterval = setInterval(function() {
+      if (isHolding || phase === 'morphing') vibrate([40, 80, 25]);
+    }, 900);
+  }
+  function stopHeartbeatHaptic() {
+    if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+  }
+
+  function onDown(e) {
+    e.preventDefault();
+    if (phase === 'revealed') return;
+    isHolding = true;
+    holdStart = performance.now();
+    if (!hintHidden) { hintEl.classList.add('hidden'); hintHidden = true; }
+    startHeartbeatHaptic();
+  }
+
+  function onUp() {
+    if (!isHolding) return;
+    isHolding = false;
+    holdDuration = 0;
+    stopHeartbeatHaptic();
+    if (phase === 'breathing' && morphProgress > 0.7) {
+      phase = 'morphing';
+    }
+  }
+
+  canvas.addEventListener('mousedown', onDown);
+  canvas.addEventListener('touchstart', onDown, { passive: false });
+  window.addEventListener('mouseup', onUp);
+  window.addEventListener('touchend', onUp);
+
+  var lastTime = 0;
+  function frame(ts) {
+    var dt = ts - lastTime;
+    lastTime = ts;
+    time = ts / 1000;
+
+    ctx.clearRect(0, 0, W, H);
+
+    if (isHolding) {
+      holdDuration = ts - holdStart;
+      morphProgress = Math.min(morphProgress + dt * 0.0005, 1);
+      if (morphProgress >= 0.95 && phase === 'breathing') {
+        phase = 'morphing';
+        vibrate([60, 50, 60, 50, 80]);
+      }
+    } else if (phase === 'breathing') {
+      morphProgress = Math.max(morphProgress - dt * 0.001, 0);
+    }
+
+    if (phase === 'morphing') {
+      morphProgress = Math.min(morphProgress + dt * 0.002, 1);
+      if (morphProgress >= 1) {
+        phase = 'revealed';
+        vibrate([30, 40, 30, 40, 30, 40, 80]);
+        stopHeartbeatHaptic();
+      }
+    }
+
+    if (phase === 'revealed') {
+      revealProgress = Math.min(revealProgress + dt * 0.0015, 1);
+      if (revealProgress > 0.1) messageLayer.classList.add('visible');
+    }
+
+    var easedMorph = morphProgress < 0.5
+      ? 2 * morphProgress * morphProgress
+      : 1 - Math.pow(-2 * morphProgress + 2, 2) / 2;
+
+    drawShape(time, easedMorph);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
