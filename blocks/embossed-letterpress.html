@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Embossed Letterpress — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Caveat:wght@400;500&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  .paper {
+    position: relative;
+    width: min(88vw, 380px);
+    padding: 48px 32px 56px;
+    border-radius: 3px;
+    background: #f0ebe0;
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.08),
+      0 8px 32px rgba(0,0,0,0.3),
+      0 24px 80px rgba(0,0,0,0.25),
+      inset 0 0 0 1px rgba(255,255,255,0.15);
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  .paper::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: 3px;
+  }
+
+  .paper::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.02 0.08' numOctaves='2' seed='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23f)' opacity='0.02'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: 3px;
+  }
+
+  .foxing {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(180,155,110,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .embossed-line {
+    position: relative;
+    text-align: center;
+    margin: 0;
+    line-height: 1.15;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .embossed-line.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .embossed-main {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: clamp(1.8rem, 6.5vw, 2.6rem);
+    color: transparent;
+    letter-spacing: 0.02em;
+  }
+
+  .embossed-accent {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: clamp(1.1rem, 4vw, 1.5rem);
+    color: transparent;
+    letter-spacing: 0.06em;
+    margin-top: 6px;
+  }
+
+  .embossed-small {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: clamp(0.55rem, 2vw, 0.7rem);
+    color: transparent;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-top: 20px;
+  }
+
+  .divider {
+    width: 48px;
+    height: 1px;
+    margin: 20px auto;
+    background: transparent;
+    position: relative;
+    opacity: 0;
+    transition: opacity 1s ease 0.6s;
+  }
+  .divider.visible { opacity: 1; }
+
+  .handwritten {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(0.85rem, 3vw, 1rem);
+    color: rgba(120,100,70,0.35);
+    text-align: center;
+    margin-top: 24px;
+    opacity: 0;
+    transition: opacity 1.2s ease 1.4s;
+  }
+  .handwritten.visible { opacity: 1; }
+
+  .dust {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: dustFloat linear infinite;
+    background: rgba(255,255,255,0.04);
+  }
+  @keyframes dustFloat {
+    0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { transform: translateY(-80vh) translateX(20px) scale(0.5); opacity: 0; }
+  }
+
+  .glow {
+    position: fixed;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(220,190,140,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    filter: blur(50px);
+    z-index: 1;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 28px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.5rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 2s ease 4s;
+  }
+  .hint.hide { opacity: 0; }
+
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(180,160,120,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    animation: rippleOut 1s ease forwards;
+  }
+  @keyframes rippleOut {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(4); opacity: 0; }
+  }
+
+  .seal {
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    width: 36px; height: 36px;
+    border: 1.5px solid rgba(160,120,80,0.15);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: transparent;
+    opacity: 0;
+    transform: scale(0.8) rotate(-15deg);
+    transition: opacity 1s ease 2s, transform 1s ease 2s;
+  }
+  .seal.visible {
+    opacity: 1;
+    transform: scale(1) rotate(-15deg);
+  }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · embossed letterpress</div>
+
+<div class="glow"></div>
+
+<div class="paper" id="paper">
+  <!-- Foxing spots -->
+  <div class="foxing" style="width:60px;height:50px;top:12%;left:8%"></div>
+  <div class="foxing" style="width:45px;height:40px;top:70%;right:5%"></div>
+  <div class="foxing" style="width:35px;height:35px;bottom:15%;left:20%"></div>
+
+  <!-- SLOT: headline -->
+  <div class="embossed-line embossed-main" data-depth="deep" id="line1">You are the answer</div>
+  <!-- /SLOT -->
+
+  <!-- SLOT: headline_2 -->
+  <div class="embossed-line embossed-main" data-depth="deep" id="line2" style="margin-top: 2px;">to every question</div>
+  <!-- /SLOT -->
+
+  <!-- SLOT: accent -->
+  <div class="embossed-line embossed-accent" data-depth="medium" id="line3" style="margin-top: 4px;">I never thought to ask</div>
+  <!-- /SLOT -->
+
+  <div class="divider" id="divider"></div>
+
+  <!-- SLOT: detail -->
+  <div class="embossed-line embossed-small" data-depth="shallow" id="line4">Since the day we met · September 2025</div>
+  <!-- /SLOT -->
+
+  <!-- SLOT: note -->
+  <div class="handwritten" id="note">— written in the quiet hours, thinking of you</div>
+  <!-- /SLOT -->
+
+  <div class="seal" data-depth="shallow" id="seal">C</div>
+</div>
+
+<div class="hint" id="hint">tilt your phone</div>
+
+<script>
+(function(){
+  for (var i = 0; i < 12; i++) {
+    var d = document.createElement('div');
+    d.className = 'dust';
+    d.style.left = Math.random() * 100 + 'vw';
+    d.style.top = (60 + Math.random() * 40) + 'vh';
+    d.style.width = (Math.random() * 2 + 1) + 'px';
+    d.style.height = d.style.width;
+    d.style.animationDuration = (Math.random() * 18 + 12) + 's';
+    d.style.animationDelay = (Math.random() * 8) + 's';
+    document.body.appendChild(d);
+  }
+
+  var paper = document.getElementById('paper');
+  var lines = document.querySelectorAll('.embossed-line');
+  var divider = document.getElementById('divider');
+  var note = document.getElementById('note');
+  var seal = document.getElementById('seal');
+  var hint = document.getElementById('hint');
+  var allEmbossed = document.querySelectorAll('[data-depth]');
+
+  var lightX = 0.3, lightY = -0.4;
+  var targetLX = 0.3, targetLY = -0.4;
+  var hasGyro = false;
+  var isDebossed = false;
+
+  function applyEmboss(lx, ly) {
+    if (isDebossed) { lx = -lx; ly = -ly; }
+    allEmbossed.forEach(function(el) {
+      var depth = el.dataset.depth;
+      var mult = depth === 'deep' ? 1.8 : depth === 'medium' ? 1.2 : 0.7;
+      var dx = lx * mult;
+      var dy = ly * mult;
+      var hlx = -dx * 1.2, hly = -dy * 1.2;
+      var shx = dx * 1.0, shy = dy * 1.0;
+      var pc = [240, 235, 224];
+      var lightColor = 'rgba(' + Math.min(255, pc[0]+18) + ',' + Math.min(255, pc[1]+18) + ',' + Math.min(255, pc[2]+14) + ',0.9)';
+      var darkColor = 'rgba(' + Math.max(0, pc[0]-30) + ',' + Math.max(0, pc[1]-32) + ',' + Math.max(0, pc[2]-28) + ',0.7)';
+      el.style.textShadow = hlx.toFixed(1) + 'px ' + hly.toFixed(1) + 'px 0.5px ' + lightColor + ', '
+                          + shx.toFixed(1) + 'px ' + shy.toFixed(1) + 'px 1px ' + darkColor;
+    });
+    var dmx = lx * 0.5, dmy = ly * 0.5;
+    divider.style.boxShadow = (-dmx).toFixed(1) + 'px ' + (-dmy).toFixed(1) + 'px 0px rgba(255,250,240,0.5), '
+                            + dmx.toFixed(1) + 'px ' + dmy.toFixed(1) + 'px 0.5px rgba(180,170,150,0.5)';
+  }
+
+  function handleOrientation(e) {
+    if (!hasGyro) { hasGyro = true; hint.classList.add('hide'); }
+    var g = e.gamma || 0, b = e.beta || 0;
+    targetLX = Math.max(-1, Math.min(1, g / 30));
+    targetLY = Math.max(-1, Math.min(1, (b - 45) / 30));
+  }
+
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    paper.addEventListener('click', function iosGyro() {
+      DeviceOrientationEvent.requestPermission().then(function(state) {
+        if (state === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+      }).catch(function(){});
+      paper.removeEventListener('click', iosGyro);
+    });
+  } else if ('DeviceOrientationEvent' in window) {
+    window.addEventListener('deviceorientation', handleOrientation);
+  }
+
+  document.addEventListener('mousemove', function(e) {
+    if (hasGyro) return;
+    targetLX = (e.clientX / window.innerWidth - 0.5) * 2;
+    targetLY = (e.clientY / window.innerHeight - 0.5) * 2;
+    hint.classList.add('hide');
+  });
+
+  function tick() {
+    lightX += (targetLX - lightX) * 0.08;
+    lightY += (targetLY - lightY) * 0.08;
+    applyEmboss(lightX, lightY);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  setTimeout(function(){ lines[0].classList.add('visible'); }, 300);
+  setTimeout(function(){ lines[1].classList.add('visible'); }, 600);
+  setTimeout(function(){ lines[2].classList.add('visible'); }, 1000);
+  setTimeout(function(){ divider.classList.add('visible'); }, 1200);
+  setTimeout(function(){ lines[3].classList.add('visible'); }, 1600);
+  setTimeout(function(){ note.classList.add('visible'); }, 2000);
+  setTimeout(function(){ seal.classList.add('visible'); }, 2400);
+
+  paper.addEventListener('click', function(e) {
+    var rect = paper.getBoundingClientRect();
+    var ripple = document.createElement('div');
+    ripple.className = 'ripple';
+    ripple.style.width = '60px'; ripple.style.height = '60px';
+    ripple.style.left = (e.clientX - rect.left - 30) + 'px';
+    ripple.style.top = (e.clientY - rect.top - 30) + 'px';
+    paper.appendChild(ripple);
+    if (navigator.vibrate) navigator.vibrate(10);
+    setTimeout(function(){ ripple.remove(); }, 1000);
+  });
+
+  var pressTimer = null;
+  paper.addEventListener('touchstart', function() {
+    pressTimer = setTimeout(function() {
+      isDebossed = !isDebossed;
+      if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
+    }, 500);
+  });
+  paper.addEventListener('touchend', function() { clearTimeout(pressTimer); });
+  paper.addEventListener('touchmove', function() { clearTimeout(pressTimer); });
+})();
+</script>
+</body>
+</html>
