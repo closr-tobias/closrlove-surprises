@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stitch & Thread — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;700&family=Inter:wght@300;400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #08080e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+  }
+
+  .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
+  .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  .fabric-frame {
+    position: relative;
+    width: min(86vw, 340px);
+    aspect-ratio: 3/4;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow:
+      0 4px 12px rgba(0,0,0,0.3),
+      0 16px 48px rgba(0,0,0,0.4),
+      inset 0 0 60px rgba(0,0,0,0.08);
+  }
+
+  .fabric-frame::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: #e8dcc8;
+    z-index: 0;
+  }
+
+  .fabric-texture {
+    position: absolute; inset: 0;
+    z-index: 1;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .hoop {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 16px solid transparent;
+    background: linear-gradient(135deg, #c4a060, #a07840, #c4a060, #8a6830) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    z-index: 5;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .hoop-shadow {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    box-shadow: inset 0 3px 8px rgba(0,0,0,0.25), inset 0 -2px 4px rgba(255,255,255,0.08);
+    z-index: 6;
+    pointer-events: none;
+  }
+
+  .hoop-clasp {
+    position: absolute;
+    top: -14px; left: 50%; transform: translateX(-50%);
+    width: 30px; height: 22px;
+    background: linear-gradient(180deg, #b8935a, #8a6830);
+    border-radius: 4px 4px 2px 2px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+    z-index: 7;
+  }
+  .hoop-clasp::after {
+    content: '';
+    position: absolute;
+    top: 4px; left: 50%; transform: translateX(-50%);
+    width: 10px; height: 6px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-radius: 2px;
+  }
+
+  canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    width: 100%;
+    height: 100%;
+  }
+
+  .needle {
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+  }
+
+  .subtitle {
+    position: fixed;
+    bottom: 56px;
+    left: 0; right: 0;
+    text-align: center;
+    font-family: 'Caveat', cursive;
+    font-size: 1.15rem;
+    color: rgba(255,255,255,0.06);
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 2s;
+  }
+  .subtitle.visible { opacity: 1; }
+
+  .hint {
+    position: fixed;
+    bottom: 28px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.5rem;
+    color: #ffffff0d;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+    transition: opacity 0.6s;
+  }
+
+  .thread-swatch {
+    position: fixed;
+    bottom: 96px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 0.8s;
+  }
+  .thread-swatch.visible { opacity: 1; }
+  .thread-swatch .swatch {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .thread-swatch .swatch.active {
+    transform: scale(1.5);
+    box-shadow: 0 0 8px rgba(255,255,255,0.1);
+  }
+
+  .fiber {
+    position: fixed;
+    width: 1px;
+    pointer-events: none;
+    animation: fiberDrift linear infinite;
+    border-radius: 1px;
+  }
+  @keyframes fiberDrift {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { transform: translateY(-50vh) rotate(120deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<a href="../building-blocks.html" class="back-link">← blocks</a>
+<div class="block-label">closr · stitch & thread</div>
+
+<div class="fabric-frame" id="frame">
+  <svg class="fabric-texture" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+    <defs>
+      <filter id="weave">
+        <feTurbulence type="fractalNoise" baseFrequency="1.2 1.2" numOctaves="4" stitchTiles="stitch" result="n"/>
+        <feColorMatrix type="saturate" values="0" in="n"/>
+      </filter>
+    </defs>
+    <rect width="100%" height="100%" filter="url(#weave)"/>
+  </svg>
+  <div class="hoop"></div>
+  <div class="hoop-shadow"></div>
+  <div class="hoop-clasp"></div>
+  <canvas id="canvas"></canvas>
+  <svg class="needle" id="needle" width="8" height="36" viewBox="0 0 8 36">
+    <ellipse cx="4" cy="3" rx="2" ry="2.5" fill="none" stroke="#a0a0a0" stroke-width="0.8"/>
+    <line x1="4" y1="5.5" x2="4" y2="30" stroke="url(#needleGrad)" stroke-width="2" stroke-linecap="round"/>
+    <polygon points="3,30 5,30 4,36" fill="#b0b0b0"/>
+    <defs><linearGradient id="needleGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d0d0d0"/><stop offset="100%" stop-color="#808080"/></linearGradient></defs>
+  </svg>
+</div>
+
+<!-- SLOT: subtitle -->
+<div class="subtitle" id="subtitle">stitched with love, one thread at a time</div>
+<!-- /SLOT -->
+
+<div class="thread-swatch" id="swatches"></div>
+<div class="hint" id="hint">tap to begin stitching</div>
+
+<script>
+(function(){
+  var GRID = 32;
+  var STITCH_MS = 38;
+  var COLORS = ['#c0394f','#d4556b','#e88a9a','#f2c4cb','#8b2942'];
+  var BG_THREAD = '#cec0a6';
+
+  // 5x7 pixel font
+  var F = {
+    'A':'01110,10001,10001,11111,10001,10001,10001',
+    'B':'11110,10001,10001,11110,10001,10001,11110',
+    'C':'01110,10001,10000,10000,10000,10001,01110',
+    'D':'11100,10010,10001,10001,10001,10010,11100',
+    'E':'11111,10000,10000,11110,10000,10000,11111',
+    'F':'11111,10000,10000,11110,10000,10000,10000',
+    'G':'01110,10001,10000,10111,10001,10001,01110',
+    'H':'10001,10001,10001,11111,10001,10001,10001',
+    'I':'01110,00100,00100,00100,00100,00100,01110',
+    'J':'00111,00010,00010,00010,00010,10010,01100',
+    'K':'10001,10010,10100,11000,10100,10010,10001',
+    'L':'10000,10000,10000,10000,10000,10000,11111',
+    'M':'10001,11011,10101,10101,10001,10001,10001',
+    'N':'10001,11001,10101,10011,10001,10001,10001',
+    'O':'01110,10001,10001,10001,10001,10001,01110',
+    'P':'11110,10001,10001,11110,10000,10000,10000',
+    'R':'11110,10001,10001,11110,10100,10010,10001',
+    'S':'01110,10001,10000,01110,00001,10001,01110',
+    'T':'11111,00100,00100,00100,00100,00100,00100',
+    'U':'10001,10001,10001,10001,10001,10001,01110',
+    'V':'10001,10001,10001,10001,01010,01010,00100',
+    'W':'10001,10001,10001,10101,10101,11011,10001',
+    'Y':'10001,10001,01010,00100,00100,00100,00100',
+    ' ':'00000,00000,00000,00000,00000,00000,00000',
+    '&':'01100,10010,01010,00100,01011,10001,01110',
+    '.':'00000,00000,00000,00000,00000,00000,00100',
+    '!':'00100,00100,00100,00100,00100,00000,00100'
+  };
+  // Heart shape (7x7 for bigger impact)
+  var HEART = [
+    [0,1,1,0,1,1,0],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,0],
+    [0,0,1,1,1,0,0],
+    [0,0,0,1,0,0,0]
+  ];
+
+  function parseFont(ch) {
+    var s = F[ch] || F[' '];
+    return s.split(',').map(function(r){ return r.split('').map(Number); });
+  }
+
+  function textToGrid(text) {
+    var rows = []; for(var i=0;i<7;i++) rows[i]=[];
+    text.split('').forEach(function(ch,ci){
+      var g = parseFont(ch);
+      for(var r=0;r<7;r++){
+        for(var c=0;c<5;c++) rows[r].push(g[r][c]);
+        if(ci < text.length-1) rows[r].push(0);
+      }
+    });
+    return rows;
+  }
+
+  // SLOT: message_line1
+  var LINE1 = "ERICA & TOBIAS";
+  // /SLOT
+  // SLOT: message_line2
+  var LINE2 = "ALWAYS FOREVER";
+  // /SLOT
+
+  var canvas = document.getElementById('canvas');
+  var ctx = canvas.getContext('2d');
+  var frameEl = document.getElementById('frame');
+  var needleEl = document.getElementById('needle');
+  var hintEl = document.getElementById('hint');
+  var subtitleEl = document.getElementById('subtitle');
+  var swatchEl = document.getElementById('swatches');
+
+  var W, H, cellSize;
+  var allStitches = [];
+  var current = 0;
+  var started = false;
+  var timer = null;
+
+  function resize(){
+    var r = frameEl.getBoundingClientRect();
+    var dpr = window.devicePixelRatio||1;
+    canvas.width = r.width*dpr;
+    canvas.height = r.height*dpr;
+    W = r.width; H = r.height;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    cellSize = W / GRID;
+    buildMap();
+    drawAll();
+  }
+
+  function buildMap(){
+    allStitches = [];
+    var gH = Math.floor(H/cellSize);
+
+    // Decorative border
+    var bi = 3;
+    for(var x=bi;x<GRID-bi;x++){
+      allStitches.push({x:x,y:bi,c:BG_THREAD,phase:0});
+      allStitches.push({x:x,y:gH-bi-1,c:BG_THREAD,phase:0});
+    }
+    for(var y=bi;y<gH-bi;y++){
+      allStitches.push({x:bi,y:y,c:BG_THREAD,phase:0});
+      allStitches.push({x:GRID-bi-1,y:y,c:BG_THREAD,phase:0});
+    }
+
+    // Heart (centered, upper area, scaled 2x)
+    var scale = 2;
+    var hw = 7*scale, hh = 7*scale;
+    var hx = Math.floor((GRID-hw)/2);
+    var hy = Math.floor(gH*0.18);
+    for(var r=0;r<7;r++){
+      for(var c=0;c<7;c++){
+        if(HEART[r][c]){
+          for(var sr=0;sr<scale;sr++){
+            for(var sc=0;sc<scale;sc++){
+              allStitches.push({
+                x: hx+c*scale+sc,
+                y: hy+r*scale+sr,
+                c: COLORS[Math.floor(Math.random()*2)],
+                phase: 1
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Text lines
+    var g1 = textToGrid(LINE1);
+    var g2 = textToGrid(LINE2);
+    var tw1 = g1[0].length, tw2 = g2[0].length;
+    var y1 = Math.floor(gH*0.52);
+    var y2 = Math.floor(gH*0.67);
+    var x1 = Math.floor((GRID-tw1)/2);
+    var x2 = Math.floor((GRID-tw2)/2);
+
+    function addText(grid,sx,sy,cols,phase){
+      for(var r=0;r<7;r++){
+        for(var c=0;c<grid[r].length;c++){
+          if(grid[r][c]) allStitches.push({x:sx+c,y:sy+r,c:cols[Math.floor(Math.random()*cols.length)],phase:phase});
+        }
+      }
+    }
+
+    addText(g1,x1,y1,[COLORS[0],COLORS[1],COLORS[4]],2);
+    addText(g2,x2,y2,[COLORS[2],COLORS[3]],3);
+
+    // Decorative dots below
+    var dy = Math.floor(gH*0.82);
+    [COLORS[3],COLORS[2],COLORS[0],COLORS[2],COLORS[3]].forEach(function(col,i){
+      allStitches.push({x:Math.floor(GRID/2)-4+i*2,y:dy,c:col,phase:4});
+    });
+  }
+
+  function drawX(x,y,sz,color,alpha){
+    ctx.save();
+    ctx.globalAlpha = alpha||1;
+    var p = sz*0.12;
+    var lw = Math.max(1.2, sz*0.18);
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round';
+
+    // Shadow under thread
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.beginPath();
+    ctx.moveTo(x+p+0.5, y+p+0.8);
+    ctx.lineTo(x+sz-p+0.5, y+sz-p+0.8);
+    ctx.moveTo(x+sz-p+0.5, y+p+0.8);
+    ctx.lineTo(x+p+0.5, y+sz-p+0.8);
+    ctx.stroke();
+
+    // Main thread
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x+p, y+p);
+    ctx.lineTo(x+sz-p, y+sz-p);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x+sz-p, y+p);
+    ctx.lineTo(x+p, y+sz-p);
+    ctx.stroke();
+
+    // Highlight
+    ctx.globalAlpha = (alpha||1)*0.18;
+    ctx.lineWidth = Math.max(0.5, sz*0.07);
+    ctx.strokeStyle = '#fff';
+    ctx.beginPath();
+    ctx.moveTo(x+p+0.3, y+p);
+    ctx.lineTo(x+sz-p+0.3, y+sz-p);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawAll(){
+    ctx.clearRect(0,0,W,H);
+    // Grid dots
+    ctx.fillStyle = 'rgba(0,0,0,0.035)';
+    var gH = Math.floor(H/cellSize);
+    for(var gx=0;gx<GRID;gx++){
+      for(var gy=0;gy<gH;gy++){
+        ctx.beginPath();
+        ctx.arc(gx*cellSize+cellSize/2, gy*cellSize+cellSize/2, 0.4, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+    // Completed stitches
+    for(var i=0;i<current;i++){
+      var s = allStitches[i];
+      drawX(s.x*cellSize, s.y*cellSize, cellSize, s.c, 1);
+    }
+  }
+
+  function moveNeedle(s){
+    var px = s.x*cellSize + cellSize/2;
+    var py = s.y*cellSize;
+    needleEl.style.left = (px - 4) + 'px';
+    needleEl.style.top = (py - 32) + 'px';
+    needleEl.style.transform = 'rotate('+(Math.random()*8-4)+'deg)';
+  }
+
+  function doStitch(){
+    if(current >= allStitches.length){
+      clearInterval(timer);
+      needleEl.style.opacity = '0';
+      subtitleEl.classList.add('visible');
+      if(navigator.vibrate) navigator.vibrate([30,60,30]);
+      return;
+    }
+    var s = allStitches[current];
+    drawX(s.x*cellSize, s.y*cellSize, cellSize, s.c, 1);
+    moveNeedle(s);
+    if(current%6===0 && navigator.vibrate) navigator.vibrate(10);
+
+    // Update active swatch
+    var sw = swatchEl.children;
+    for(var i=0;i<sw.length;i++) sw[i].classList.toggle('active', sw[i].dataset.c===s.c);
+
+    current++;
+  }
+
+  function start(){
+    if(started) return;
+    started = true;
+    hintEl.style.opacity = '0';
+    needleEl.style.opacity = '1';
+    swatchEl.classList.add('visible');
+    timer = setInterval(doStitch, STITCH_MS);
+  }
+
+  // Build swatches
+  COLORS.forEach(function(c){
+    var d = document.createElement('div');
+    d.className = 'swatch';
+    d.style.background = c;
+    d.dataset.c = c;
+    swatchEl.appendChild(d);
+  });
+
+  // Fibers
+  for(var i=0;i<8;i++){
+    var f = document.createElement('div');
+    f.className = 'fiber';
+    f.style.left = Math.random()*100+'vw';
+    f.style.top = (50+Math.random()*50)+'vh';
+    f.style.height = (2+Math.random()*5)+'px';
+    f.style.animationDuration = (12+Math.random()*10)+'s';
+    f.style.animationDelay = (Math.random()*8)+'s';
+    f.style.background = 'rgba('+(170+Math.floor(Math.random()*60))+','+(150+Math.floor(Math.random()*50))+','+(130+Math.floor(Math.random()*40))+',0.04)';
+    document.body.appendChild(f);
+  }
+
+  frameEl.addEventListener('click', start);
+  frameEl.addEventListener('touchstart', function(e){ e.preventDefault(); start(); }, {passive:false});
+  window.addEventListener('resize', resize);
+  resize();
+})();
+</script>
+</body>
+</html>
