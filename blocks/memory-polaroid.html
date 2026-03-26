@@ -19,29 +19,22 @@
     overflow: hidden;
   }
 
-  /* Subtle ambient glow behind the stack */
   .ambient {
     position: fixed;
     width: 340px; height: 420px;
     border-radius: 50%;
     background: radial-gradient(ellipse, rgba(255,105,180,0.04) 0%, rgba(122,175,204,0.02) 40%, transparent 70%);
-    pointer-events: none;
-    filter: blur(40px);
+    pointer-events: none; filter: blur(40px);
   }
 
-  /* Floating particles */
   .particle {
-    position: fixed;
-    width: 2px; height: 2px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 50%;
-    pointer-events: none;
-    animation: floatUp linear infinite;
+    position: fixed; width: 2px; height: 2px;
+    background: rgba(255,255,255,0.06); border-radius: 50%;
+    pointer-events: none; animation: floatUp linear infinite;
   }
   @keyframes floatUp {
     0% { transform: translateY(0) translateX(0); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
+    10% { opacity: 1; } 90% { opacity: 1; }
     100% { transform: translateY(-100vh) translateX(30px); opacity: 0; }
   }
 
@@ -52,89 +45,84 @@
     background: linear-gradient(175deg, #f8f4ec, #f0eade, #ebe5d8);
     padding: 14px 14px 52px 14px;
     border-radius: 2px;
-    box-shadow:
-      0 2px 4px rgba(0,0,0,0.15),
-      0 8px 24px rgba(0,0,0,0.35),
-      0 20px 60px rgba(0,0,0,0.25),
-      inset 0 0 0 1px rgba(255,255,255,0.08);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.35), 0 20px 60px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.08);
     display: flex; flex-direction: column;
     will-change: transform; cursor: grab;
   }
   .polaroid:active { cursor: grabbing; }
-
-  /* Subtle paper texture overlay */
   .polaroid::before {
-    content: '';
-    position: absolute; inset: 0;
+    content: ''; position: absolute; inset: 0;
     background: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    border-radius: 2px;
+    pointer-events: none; border-radius: 2px;
   }
 
   .polaroid-img {
-    flex: 1;
-    border-radius: 1px;
+    flex: 1; border-radius: 1px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 3.5rem;
-    overflow: hidden;
-    position: relative;
-    /* Photo-like gradient placeholder */
-    background: linear-gradient(145deg, #d4c5a9 0%, #c2b393 30%, #b8a888 50%, #c8b898 70%, #d0c4a8 100%);
+    font-size: 3.5rem; overflow: hidden; position: relative;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
   }
 
-  .polaroid-caption {
-    font-family: 'Caveat', cursive;
-    font-size: 1.05rem;
-    font-weight: 500;
-    color: #4a4035;
-    text-align: center;
-    margin-top: 12px;
-    line-height: 1.4;
-    letter-spacing: 0.2px;
+  /* Photo tone set via inline style on init — not nth-child (DOM reorders during swipes) */
+
+  /* Film grain overlay */
+  .polaroid-img::before {
+    content: ''; position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='150' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23g)' opacity='0.07'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 1;
+  }
+  /* Vignette + light leak */
+  .polaroid-img::after {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.15) 100%),
+      radial-gradient(ellipse at 85% 15%, rgba(255,200,140,0.12) 0%, transparent 50%);
+    pointer-events: none; z-index: 2;
   }
 
-  /* Dots indicator */
-  .dots {
-    position: fixed;
-    bottom: 48px;
-    left: 0; right: 0;
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    pointer-events: none;
+  .polaroid-caption {
+    font-family: 'Playfair Display', serif; font-size: 0.82rem; font-weight: 400;
+    font-style: italic; color: #3a3028; text-align: center; margin-top: 12px;
+    line-height: 1.5; letter-spacing: 0.1px; min-height: 2.8em;
   }
+  .polaroid-caption .caption-char { opacity: 0; display: inline; }
+  .polaroid-caption .caption-char.show { opacity: 1; }
+
+  .dots {
+    position: fixed; bottom: 48px; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 8px;
+    pointer-events: none; transition: opacity 0.5s ease;
+  }
+  .dots.hidden { opacity: 0; }
   .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
+    width: 6px; height: 6px; border-radius: 50%;
     background: rgba(255,255,255,0.08);
     transition: background 0.4s, transform 0.4s;
   }
-  .dot.active {
-    background: rgba(255,105,180,0.4);
-    transform: scale(1.3);
-  }
+  .dot.active { background: rgba(255,105,180,0.4); transform: scale(1.3); }
 
   .hint {
-    position: fixed;
-    bottom: 24px;
-    left: 0; right: 0;
-    text-align: center;
-    font-size: 0.5rem;
-    color: #ffffff0d;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    pointer-events: none;
+    position: fixed; bottom: 24px; left: 0; right: 0; text-align: center;
+    font-size: 0.5rem; color: #ffffff0d; letter-spacing: 3px;
+    text-transform: uppercase; pointer-events: none; transition: opacity 0.5s ease;
   }
+  .hint.hidden { opacity: 0; }
 
   .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; }
   .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; }
+
+  .fan-hint {
+    position: fixed; bottom: 24px; left: 0; right: 0; text-align: center;
+    font-size: 0.5rem; color: rgba(255,255,255,0.12); letter-spacing: 3px;
+    text-transform: uppercase; pointer-events: none;
+    opacity: 0; transition: opacity 0.8s ease;
+  }
+  .fan-hint.visible { opacity: 1; }
 </style>
 </head>
 <body>
 
 <div class="ambient"></div>
-
 <a href="../building-blocks.html" class="back-link">← blocks</a>
 <div class="block-label">closr · memory polaroid</div>
 
@@ -146,11 +134,11 @@
 </div>
 
 <div class="dots" id="dots"></div>
-<div class="hint">swipe or tap</div>
+<div class="hint" id="hint">swipe or tap</div>
+<div class="fan-hint" id="fanHint">tap a memory to revisit</div>
 
 <script>
 (function(){
-  // Spawn floating particles
   for (var i = 0; i < 15; i++) {
     var p = document.createElement('div');
     p.className = 'particle';
@@ -165,14 +153,80 @@
 
   var stack = document.getElementById('stack');
   var dotsEl = document.getElementById('dots');
+  var hintEl = document.getElementById('hint');
+  var fanHintEl = document.getElementById('fanHint');
   var total = stack.children.length;
   var startX = 0, deltaX = 0, isDragging = false, animating = false, hasMoved = false;
   var threshold = 60;
+  var swipeCount = 0;
+  var isFannedOut = false;
+  var isZoomedIn = false;
+  var zoomedCard = null;
 
+  var fanAngles = [-18, -6, 6, 18];
+  var fanYOffsets = [10, -5, -5, 10];
+  var fanXOffsets = [-90, -30, 30, 90];
+
+  function haptic(ms){try{navigator.vibrate(ms||10)}catch(e){}}
   function getCards() { return Array.from(stack.children); }
   getCards().forEach(function(c, i){ c.dataset.origIndex = i; });
 
-  // Create dots
+  // Set fixed photo tones per card (by origIndex, won't change when DOM reorders)
+  var photoTones = [
+    'linear-gradient(145deg, #c9a87c 0%, #d4b896 25%, #c2a47a 50%, #dac4a0 75%, #c8b08a 100%)',
+    'linear-gradient(160deg, #b8a8c0 0%, #c4b0c8 30%, #a898b0 55%, #d0c0d4 80%, #baacc2 100%)',
+    'linear-gradient(135deg, #a8c0b0 0%, #b4ccbc 25%, #9cb8a8 50%, #c0d4c4 75%, #aac4b4 100%)',
+    'linear-gradient(150deg, #d4b0a0 0%, #dcc0b0 30%, #c8a494 55%, #e0ccc0 80%, #d0b4a4 100%)'
+  ];
+  getCards().forEach(function(c) {
+    var idx = parseInt(c.dataset.origIndex);
+    c.querySelector('.polaroid-img').style.background = photoTones[idx];
+  });
+
+  // --- Caption handwriting system ---
+  var captionTimers = [];
+  function prepCaptions() {
+    getCards().forEach(function(card) {
+      var cap = card.querySelector('.polaroid-caption');
+      var text = cap.textContent;
+      cap.dataset.text = text;
+      cap.innerHTML = '';
+      for (var i = 0; i < text.length; i++) {
+        var span = document.createElement('span');
+        span.className = 'caption-char';
+        span.textContent = text[i];
+        cap.appendChild(span);
+      }
+    });
+  }
+
+  function clearCaptionTimers() {
+    captionTimers.forEach(function(t){ clearTimeout(t); });
+    captionTimers = [];
+  }
+
+  function showTopCaption() {
+    var top = getTopCard();
+    if (!top) return;
+    clearCaptionTimers();
+    getCards().forEach(function(c) { hideCaption(c); });
+    var chars = top.querySelectorAll('.caption-char');
+    for (var i = 0; i < chars.length; i++) {
+      (function(ch, d) {
+        captionTimers.push(setTimeout(function() { ch.classList.add('show'); }, d));
+      })(chars[i], 100 + i * 28);
+    }
+  }
+
+  function showCaptionInstant(card) {
+    card.querySelectorAll('.caption-char').forEach(function(ch) { ch.classList.add('show'); });
+  }
+
+  function hideCaption(card) {
+    card.querySelectorAll('.caption-char').forEach(function(ch) { ch.classList.remove('show'); });
+  }
+
+  // --- Dots ---
   for (var i = 0; i < total; i++) {
     var d = document.createElement('div');
     d.className = 'dot';
@@ -188,6 +242,7 @@
     }
   }
 
+  // --- Stack positioning ---
   function backPos(depth) {
     return { s: 1 - depth * 0.022, y: depth * 5, rot: depth % 2 === 0 ? 1.2 : -0.8 };
   }
@@ -213,10 +268,151 @@
 
   function getTopCard() { return getCards().slice(-1)[0]; }
 
+  function getSortedByIndex() {
+    return getCards().slice().sort(function(a, b) {
+      return parseInt(a.dataset.origIndex) - parseInt(b.dataset.origIndex);
+    });
+  }
+
+  // --- Fan out ---
+  function fanOut() {
+    isFannedOut = true;
+    animating = true;
+    hintEl.classList.add('hidden');
+    dotsEl.classList.add('hidden');
+
+    var sorted = getSortedByIndex();
+    sorted.forEach(function(card, i) {
+      card.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.6s ease, opacity 0.4s ease';
+      card.style.opacity = '1';
+      card.style.zIndex = 10 + i;
+      card.style.pointerEvents = 'auto';
+      card.style.cursor = 'pointer';
+      card.style.transform = 'translateX('+fanXOffsets[i]+'px) translateY('+fanYOffsets[i]+'px) rotate('+fanAngles[i]+'deg) scale(0.72)';
+      card.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.3)';
+      showCaptionInstant(card);
+    });
+
+    setTimeout(function(){
+      fanHintEl.classList.add('visible');
+      animating = false;
+    }, 900);
+  }
+
+  // Compressed fan positions when one card is pulled out
+  function getCompressedFanPositions(excludeIdx) {
+    var remaining = [];
+    for (var i = 0; i < total; i++) {
+      if (i !== excludeIdx) remaining.push(i);
+    }
+    var count = remaining.length;
+    var positions = {};
+    remaining.forEach(function(origIdx, slot) {
+      var t = count === 1 ? 0.5 : slot / (count - 1);
+      positions[origIdx] = {
+        x: (t - 0.5) * 140,
+        y: Math.abs(t - 0.5) * 12,
+        rot: (t - 0.5) * 36
+      };
+    });
+    return positions;
+  }
+
+  // All cards exit left except the last (rightmost/front) card which exits right
+  function getExitSide(idx) {
+    return idx === total - 1 ? 1 : -1;
+  }
+
+  // --- Zoom in: pull card out to its side, others compress ---
+  function zoomIn(card) {
+    if (animating) return;
+    isZoomedIn = true;
+    zoomedCard = card;
+    animating = true;
+    haptic(12);
+
+    var cardIdx = parseInt(card.dataset.origIndex);
+    var side = getExitSide(cardIdx);
+    var sorted = getSortedByIndex();
+    var compressed = getCompressedFanPositions(cardIdx);
+
+    sorted.forEach(function(c, i) {
+      var idx = parseInt(c.dataset.origIndex);
+      if (c === card) {
+        c.style.zIndex = 50;
+        c.style.transition = 'transform 0.55s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.5s ease';
+        // Pull card out to its side and scale up
+        c.style.transform = 'translateX('+(side * 20)+'px) translateY(-30px) rotate('+(side * -2)+'deg) scale(0.95)';
+        c.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2), 0 16px 40px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.3)';
+      } else {
+        var pos = compressed[idx];
+        c.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+        c.style.transform = 'translateX('+pos.x+'px) translateY('+pos.y+'px) rotate('+pos.rot+'deg) scale(0.65)';
+        c.style.zIndex = 10 + i;
+        c.style.pointerEvents = 'none';
+      }
+    });
+
+    fanHintEl.classList.remove('visible');
+    setTimeout(function(){ animating = false; }, 600);
+  }
+
+  // --- Zoom out: card slides to the side, then into the fan from outside ---
+  function zoomOut() {
+    if (animating) return;
+    isZoomedIn = false;
+    animating = true;
+    haptic(8);
+
+    var returningCard = zoomedCard;
+    var returningIdx = returningCard ? parseInt(returningCard.dataset.origIndex) : 0;
+    var side = getExitSide(returningIdx);
+    var sorted = getSortedByIndex();
+    zoomedCard = null;
+
+    if (!returningCard) { animating = false; return; }
+
+    // Phase 1: Slide card OUT to the side (outside the fan entirely)
+    var exitX = side * 250;
+    returningCard.style.zIndex = 50;
+    returningCard.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 1, 1)';
+    returningCard.style.transform = 'translateX('+exitX+'px) translateY(0px) rotate('+(side * 15)+'deg) scale(0.68)';
+
+    // Phase 2: Set correct z-index and slide INTO the fan from the outside
+    setTimeout(function() {
+      // Correct z-index so it layers properly as it enters
+      returningCard.style.zIndex = 10 + returningIdx;
+      returningCard.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease';
+      returningCard.style.transform = 'translateX('+fanXOffsets[returningIdx]+'px) translateY('+fanYOffsets[returningIdx]+'px) rotate('+fanAngles[returningIdx]+'deg) scale(0.72)';
+      returningCard.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.3)';
+      returningCard.style.pointerEvents = 'auto';
+      returningCard.style.cursor = 'pointer';
+
+      // Spread other cards back to full fan positions
+      sorted.forEach(function(card, i) {
+        if (card === returningCard) return;
+        card.style.transition = 'transform 0.45s cubic-bezier(0.25, 1, 0.5, 1)';
+        card.style.transform = 'translateX('+fanXOffsets[i]+'px) translateY('+fanYOffsets[i]+'px) rotate('+fanAngles[i]+'deg) scale(0.72)';
+        card.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.3)';
+        card.style.zIndex = 10 + i;
+        card.style.pointerEvents = 'auto';
+        card.style.cursor = 'pointer';
+      });
+    }, 370);
+
+    setTimeout(function() {
+      fanHintEl.classList.add('visible');
+      animating = false;
+    }, 920);
+  }
+
+  // --- Swipe animation ---
   function animateToBack(card, dir) {
     animating = true;
     card.style.pointerEvents = 'none';
     card.style.transition = 'none';
+    hideCaption(card);
+    clearCaptionTimers();
 
     var cs = getComputedStyle(card);
     var m = new DOMMatrix(cs.transform);
@@ -225,18 +421,18 @@
     var curRot = Math.atan2(m.b, m.a) * (180 / Math.PI);
     var curScale = Math.sqrt(m.a * m.a + m.b * m.b);
 
+    var isLastSwipe = (swipeCount + 1) >= total;
     var targetDepth = total - 1;
     var tp = backPos(targetDepth);
 
     var stackRect = stack.getBoundingClientRect();
     var clearX = dir * (stackRect.width + 25);
-    var clearY = 0;
     var clearRot = dir * 6;
     var clearScale = 0.96;
 
-    var duration = 1000;
-    var p1End = 0.3;
-    var p2End = 0.35;
+    var duration = isLastSwipe ? 500 : 1000;
+    var p1End = isLastSwipe ? 1.0 : 0.3;
+    var p2End = isLastSwipe ? 1.0 : 0.35;
     var startTime = null;
     var zSwapped = false;
 
@@ -248,46 +444,71 @@
       var t = Math.min((ts - startTime) / duration, 1);
       var x, y, rot, scale;
 
-      if (t <= p1End) {
+      if (isLastSwipe) {
+        // Last swipe: just fly off screen, don't return
+        var p = easeInOut(t);
+        x = lerp(curX, clearX, p);
+        y = lerp(curY, 0, p);
+        rot = lerp(curRot, clearRot, p);
+        scale = lerp(curScale, clearScale, p);
+        // Fade out as it leaves
+        card.style.opacity = String(1 - t * 0.5);
+      } else if (t <= p1End) {
         var p = easeInOut(t / p1End);
         x = lerp(curX, clearX, p);
-        y = lerp(curY, clearY, p);
+        y = lerp(curY, 0, p);
         rot = lerp(curRot, clearRot, p);
         scale = lerp(curScale, clearScale, p);
       } else if (t <= p2End) {
-        x = clearX; y = clearY; rot = clearRot; scale = clearScale;
+        x = clearX; y = 0; rot = clearRot; scale = clearScale;
         if (!zSwapped) {
           zSwapped = true;
           stack.insertBefore(card, stack.firstChild);
           card.style.zIndex = 0;
           getCards().forEach(function(c, i) { if (c !== card) c.style.zIndex = i; });
+          swipeCount++;
           layoutRest(card);
           updateDots();
         }
       } else {
         var p = easeInOut((t - p2End) / (1 - p2End));
         x = lerp(clearX, 0, p);
-        y = lerp(clearY, tp.y, p);
+        y = lerp(0, tp.y, p);
         rot = lerp(clearRot, tp.rot, p);
         scale = lerp(clearScale, tp.s, p);
       }
 
       card.style.transform = 'translateX('+x+'px) translateY('+y+'px) rotate('+rot+'deg) scale('+scale+')';
-      // Shadow fades down when going to back
-      var shadowAlpha = t > p2End ? lerp(0.35, 0.15, (t-p2End)/(1-p2End)) : 0.35;
-      card.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,'+shadowAlpha+')';
+      if (!isLastSwipe) {
+        var shadowAlpha = t > p2End ? lerp(0.35, 0.15, (t-p2End)/(1-p2End)) : 0.35;
+        card.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,'+shadowAlpha+')';
+      }
 
       if (t < 1) {
         requestAnimationFrame(frame);
       } else {
-        animating = false;
+        if (isLastSwipe) {
+          swipeCount++;
+          // Reset card state for fan
+          card.style.transition = 'none';
+          card.style.opacity = '1';
+          // Go straight to fan-out
+          animating = false;
+          haptic(10);
+          fanOut();
+        } else {
+          animating = false;
+          haptic(10);
+          showTopCaption();
+        }
       }
     }
     requestAnimationFrame(frame);
   }
 
+  // --- Drag handlers ---
   function onStart(cx) {
-    if (animating) return;
+    if (animating || isFannedOut) return;
     isDragging = true; hasMoved = false;
     startX = cx; deltaX = 0;
     getTopCard().style.transition = 'none';
@@ -298,12 +519,9 @@
     if (Math.abs(deltaX) > 5) hasMoved = true;
     var top = getTopCard();
     var rot = -1.5 + deltaX * 0.08;
-    // Shadow lifts as you drag
     var lift = Math.min(Math.abs(deltaX) / 100, 1);
-    var sy = 20 + lift * 15;
-    var sb = 60 + lift * 20;
     top.style.transform = 'translateX('+deltaX+'px) rotate('+rot+'deg) scale('+(1 + lift*0.02)+')';
-    top.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15), 0 '+sy+'px '+sb+'px rgba(0,0,0,'+(0.25 + lift*0.1)+')';
+    top.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15), 0 '+(20+lift*15)+'px '+(60+lift*20)+'px rgba(0,0,0,'+(0.25+lift*0.1)+')';
   }
   function onEnd() {
     if (!isDragging) return;
@@ -319,15 +537,35 @@
     }
   }
 
-  stack.addEventListener('mousedown', function(e){ e.preventDefault(); onStart(e.clientX); });
+  // --- Events ---
+  stack.addEventListener('mousedown', function(e){ e.preventDefault(); if(!isFannedOut) onStart(e.clientX); });
   window.addEventListener('mousemove', function(e){ onMove(e.clientX); });
   window.addEventListener('mouseup', function(){ onEnd(); });
-  stack.addEventListener('touchstart', function(e){ e.preventDefault(); onStart(e.touches[0].clientX); }, {passive:false});
+  stack.addEventListener('touchstart', function(e){ e.preventDefault(); if(!isFannedOut) onStart(e.touches[0].clientX); }, {passive:false});
   window.addEventListener('touchmove', function(e){ if(isDragging) onMove(e.touches[0].clientX); }, {passive:false});
   window.addEventListener('touchend', function(){ onEnd(); });
 
+  // Fan-mode click: zoom in or out
+  stack.addEventListener('click', function(e){
+    if (!isFannedOut) return;
+    var card = e.target.closest('.polaroid');
+    if (!card) return;
+    if (isZoomedIn && card === zoomedCard) { zoomOut(); }
+    else if (!isZoomedIn) { zoomIn(card); }
+  });
+
+  // Tap background to zoom out
+  document.body.addEventListener('click', function(e){
+    if (!isZoomedIn) return;
+    if (e.target.closest('.polaroid')) return;
+    zoomOut();
+  });
+
+  // --- Init ---
+  prepCaptions();
   layoutRest();
   updateDots();
+  setTimeout(showTopCaption, 400);
 })();
 </script>
 </body>
