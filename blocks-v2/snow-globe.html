@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Snow Globe</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a12;font-family:'Georgia','Times New Roman',serif;color:#e8e0d4;touch-action:none;user-select:none}
+.scene{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.globe-wrap{position:relative;width:min(80vw,360px);height:min(80vw,360px)}
+.globe{width:100%;height:100%;border-radius:50%;background:radial-gradient(ellipse at 30% 25%,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.03) 40%,transparent 70%),radial-gradient(circle,#0d1020 0%,#0a0b18 100%);border:2px solid rgba(255,255,255,0.08);box-shadow:0 0 60px rgba(100,140,255,0.08),inset 0 0 80px rgba(30,40,80,0.4);overflow:hidden;position:relative}
+.globe::before{content:'';position:absolute;top:8%;left:12%;width:35%;height:20%;background:radial-gradient(ellipse,rgba(255,255,255,0.15),transparent);border-radius:50%;transform:rotate(-20deg);pointer-events:none;z-index:20}
+.globe::after{content:'';position:absolute;bottom:0;left:0;right:0;height:30%;background:linear-gradient(to top,rgba(255,255,255,0.03),transparent);pointer-events:none;z-index:20}
+.base{width:55%;height:28px;margin:-6px auto 0;background:linear-gradient(to bottom,#3a2a1a,#2a1c10);border-radius:0 0 12px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.5);position:relative}
+.base::before{content:'';position:absolute;top:-4px;left:-8%;width:116%;height:10px;background:linear-gradient(to bottom,#c9a84c,#a07830);border-radius:4px 4px 0 0}
+#snowCanvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;border-radius:50%}
+.globe-message{position:absolute;bottom:22%;left:50%;transform:translateX(-50%);z-index:15;text-align:center;opacity:0;transition:opacity 1.2s ease;pointer-events:none;width:80%}
+.globe-message.visible{opacity:1}
+.globe-message p{font-size:clamp(13px,3.5vw,18px);color:#f0e6d6;text-shadow:0 0 20px rgba(200,180,140,0.5);line-height:1.5;letter-spacing:0.3px}
+.globe-message .label{font-size:clamp(9px,2.2vw,11px);text-transform:uppercase;letter-spacing:3px;color:rgba(200,180,160,0.5);margin-top:8px}
+.inner-scene{position:absolute;bottom:0;left:0;right:0;height:40%;z-index:5;pointer-events:none}
+.ground{position:absolute;bottom:0;left:-10%;right:-10%;height:60%;background:radial-gradient(ellipse at 50% 100%,rgba(220,230,255,0.15),transparent 70%);border-radius:50%}
+.tree{position:absolute;bottom:20%}
+.tree::before{content:'';display:block;width:0;height:0;border-left:solid transparent;border-right:solid transparent;border-bottom:solid #1a3a2a}
+.tree::after{content:'';display:block;width:4px;height:8px;background:#3a2a18;margin:0 auto}
+.tree.t1{left:20%}.tree.t1::before{border-left-width:10px;border-right-width:10px;border-bottom-width:22px}
+.tree.t2{left:72%}.tree.t2::before{border-left-width:7px;border-right-width:7px;border-bottom-width:16px}
+.tree.t3{left:45%}.tree.t3::before{border-left-width:12px;border-right-width:12px;border-bottom-width:26px}
+.hint{position:absolute;bottom:12%;text-align:center;opacity:0.4;font-size:12px;letter-spacing:2px;text-transform:uppercase;animation:pulse 2.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:0.25}50%{opacity:0.5}}
+.counter{position:absolute;top:5%;right:6%;font-size:11px;letter-spacing:1px;color:rgba(255,255,255,0.25)}
+.sparkle{position:absolute;width:4px;height:4px;background:#fff;border-radius:50%;pointer-events:none;z-index:25;opacity:0}
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="counter"><span id="msgIdx">0</span> / <span id="msgTotal">0</span></div>
+  <div class="globe-wrap">
+    <div class="globe" id="globe">
+      <canvas id="snowCanvas"></canvas>
+      <div class="inner-scene">
+        <div class="ground"></div>
+        <div class="tree t1"></div>
+        <div class="tree t2"></div>
+        <div class="tree t3"></div>
+      </div>
+      <div class="globe-message" id="message">
+        <p id="msgText"></p>
+        <div class="label" id="msgLabel"></div>
+      </div>
+    </div>
+    <div class="base"></div>
+  </div>
+  <div class="hint" id="hint">shake or tap the globe</div>
+</div>
+<script>
+const messages = [
+  { text: "The first time I saw you, the whole room went quiet.", label: "the beginning" },
+  { text: "You make ordinary days feel like something worth remembering.", label: "every day" },
+  { text: "I didn't know what I was looking for until I found you.", label: "realization" },
+  { text: "Home isn't a place anymore. It's wherever you are.", label: "home" },
+  { text: "You are my favorite notification.", label: "modern love" },
+  { text: "I love you more than yesterday, but less than tomorrow.", label: "always" }
+];
+let msgIndex = -1, lastShakeTime = 0;
+const globe = document.getElementById('globe');
+const msgEl = document.getElementById('message');
+const msgText = document.getElementById('msgText');
+const msgLabel = document.getElementById('msgLabel');
+const hint = document.getElementById('hint');
+document.getElementById('msgTotal').textContent = messages.length;
+const idxEl = document.getElementById('msgIdx');
+
+const canvas = document.getElementById('snowCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+
+function resize() {
+  const r = globe.getBoundingClientRect();
+  canvas.width = W = r.width; canvas.height = H = r.height;
+}
+resize(); window.addEventListener('resize', resize);
+
+class Snow {
+  constructor(burst) { this.reset(burst); }
+  reset(burst) {
+    this.x = Math.random() * W; this.y = burst ? Math.random() * H : -5;
+    this.r = Math.random() * 2.5 + 0.8;
+    this.vx = (Math.random() - 0.5) * (burst ? 4 : 0.5);
+    this.vy = burst ? (Math.random() - 0.5) * 5 : Math.random() * 0.8 + 0.3;
+    this.opacity = Math.random() * 0.6 + 0.3; this.life = 1;
+    this.decay = burst ? 0.003 : 0.001;
+  }
+  update() {
+    this.x += this.vx; this.vy += 0.02; this.vx *= 0.995; this.y += this.vy;
+    this.life -= this.decay;
+    const cx = W/2, cy = H/2, rad = W/2 - 4;
+    const dx = this.x - cx, dy = this.y - cy, dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist > rad) { this.x = cx + dx/dist*rad; this.y = cy + dy/dist*rad; this.vx *= -0.3; this.vy *= -0.3; }
+    return this.life > 0;
+  }
+  draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fillStyle = `rgba(255,255,255,${this.opacity * this.life})`; ctx.fill(); }
+}
+
+for (let i = 0; i < 30; i++) particles.push(new Snow(false));
+
+function animate() {
+  ctx.clearRect(0, 0, W, H);
+  if (particles.length < 35 && Math.random() < 0.15) particles.push(new Snow(false));
+  particles = particles.filter(p => p.update());
+  particles.forEach(p => p.draw());
+  requestAnimationFrame(animate);
+}
+animate();
+
+function triggerShake() {
+  const now = Date.now();
+  if (now - lastShakeTime < 1800) return;
+  lastShakeTime = now; hint.style.display = 'none';
+  const count = Math.min(120 - particles.length, 60);
+  for (let i = 0; i < count; i++) particles.push(new Snow(true));
+  for (let i = 0; i < 8; i++) {
+    const sp = document.createElement('div'); sp.className = 'sparkle';
+    const angle = Math.random() * Math.PI * 2, r = W * 0.38;
+    sp.style.left = (W/2 + Math.cos(angle)*r) + 'px';
+    sp.style.top = (H/2 + Math.sin(angle)*r) + 'px';
+    globe.parentElement.appendChild(sp);
+    sp.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:`scale(0) translate(${Math.cos(angle)*20}px,${Math.sin(angle)*20}px)`}],{duration:600+Math.random()*400,easing:'ease-out'});
+    setTimeout(() => sp.remove(), 1100);
+  }
+  globe.parentElement.animate([{transform:'rotate(0deg)'},{transform:'rotate(-3deg)'},{transform:'rotate(3deg)'},{transform:'rotate(-1.5deg)'},{transform:'rotate(0deg)'}],{duration:500,easing:'ease-out'});
+  msgEl.classList.remove('visible');
+  setTimeout(() => {
+    msgIndex = (msgIndex + 1) % messages.length;
+    msgText.textContent = messages[msgIndex].text;
+    msgLabel.textContent = messages[msgIndex].label;
+    idxEl.textContent = msgIndex + 1;
+    msgEl.classList.add('visible');
+  }, 500);
+}
+
+globe.addEventListener('click', triggerShake);
+let lastAcc = {x:0,y:0,z:0};
+window.addEventListener('devicemotion', e => {
+  const a = e.accelerationIncludingGravity; if (!a) return;
+  const delta = Math.abs(a.x-lastAcc.x)+Math.abs(a.y-lastAcc.y)+Math.abs(a.z-lastAcc.z);
+  lastAcc = {x:a.x,y:a.y,z:a.z};
+  if (delta > 25) triggerShake();
+});
+</script>
+</body>
+</html>
