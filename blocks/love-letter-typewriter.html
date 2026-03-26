@@ -5,36 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Love Letter — Closr Building Block</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400&family=Caveat:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@300;400&family=Caveat:wght@400;500&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; overflow: hidden; }
   body {
     background: #08080e;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
+    align-items: center; justify-content: flex-end;
     min-height: 100dvh;
     user-select: none; -webkit-user-select: none;
     touch-action: manipulation;
     overflow: hidden;
   }
-  .scanlines {
-    position: fixed; inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-    pointer-events: none; z-index: 100;
-  }
-  .ambient {
-    position: fixed; width: 500px; height: 500px; border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(255,180,120,0.04) 0%, rgba(232,164,184,0.02) 40%, transparent 70%);
-    pointer-events: none; filter: blur(60px); z-index: 0;
-    transition: all 1.5s ease;
-  }
-  .ambient.warm {
-    background: radial-gradient(ellipse, rgba(255,180,120,0.08) 0%, rgba(232,164,184,0.04) 40%, transparent 70%);
-    width: 600px; height: 600px;
-  }
   .particle {
     position: fixed; width: 1.5px; height: 1.5px;
-    background: rgba(255,220,180,0.06); border-radius: 50%;
+    background: rgba(255,220,180,0.05); border-radius: 50%;
     pointer-events: none; animation: floatUp linear infinite;
   }
   @keyframes floatUp {
@@ -45,64 +30,126 @@
   .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; font-family: 'Inter', sans-serif; }
   .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; font-family: 'Inter', sans-serif; }
 
+  /* === WHITE PAPER — always visible above typewriter === */
   .paper {
-    width: min(90vw, 380px); min-height: 420px;
-    background: linear-gradient(175deg, #faf6ee, #f5f0e6, #ede7d9);
-    border-radius: 2px; padding: 36px 28px 40px;
-    position: relative; z-index: 10;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 8px 30px rgba(0,0,0,0.3), 0 30px 80px rgba(0,0,0,0.25), inset 0 0 80px rgba(0,0,0,0.02);
-    background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
-    opacity: 0; transform: scale(0.96);
-    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 1.5s ease;
+    width: min(70vw, 280px);
+    height: min(50vh, 360px);
+    background: #ffffff;
+    padding: 22px 22px 28px;
+    position: relative; z-index: 20;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 8px 30px rgba(0,0,0,0.2);
+    margin-bottom: 0;
+    overflow: hidden;
+    transform: translateY(60px);
+    opacity: 0;
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease;
   }
-  .paper.visible {
-    opacity: 1; transform: scale(1);
+  .paper.feeding {
+    opacity: 1;
+    transform: translateY(0);
   }
-  .paper.finished {
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 8px 30px rgba(0,0,0,0.3), 0 30px 80px rgba(0,0,0,0.25), inset 0 0 80px rgba(0,0,0,0.02), 0 0 60px rgba(255,200,150,0.06);
+  /* Popped out to center */
+  .paper.popped {
+    position: fixed !important;
+    left: 50% !important; top: 50% !important;
+    width: min(70vw, 280px) !important;
+    height: auto !important;
+    max-height: 75vh;
+    transform: translate(-50%, -50%) !important;
+    z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 20px 60px rgba(0,0,0,0.3), 0 40px 100px rgba(0,0,0,0.2);
+    transition: all 0.9s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    overflow-y: auto;
+    margin-bottom: 0;
   }
-  .paper::before {
-    content: ''; position: absolute; inset: 0; border-radius: 2px;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); pointer-events: none;
-  }
-  .paper::after {
-    content: ''; position: absolute; top: 70px; left: 28px; right: 28px; bottom: 40px;
-    background: repeating-linear-gradient(0deg, transparent, transparent 30px, rgba(180,170,155,0.18) 30px, rgba(180,170,155,0.18) 31px);
-    pointer-events: none;
-  }
-  .margin-line { position: absolute; top: 0; bottom: 0; left: 58px; width: 1px; background: rgba(200,80,80,0.12); }
-  .letter-date { font-family: 'Caveat', cursive; font-size: 0.85rem; color: rgba(80,65,50,0.4); margin-bottom: 20px; text-align: right; }
-  .greeting { font-family: 'Caveat', cursive; font-size: 1.35rem; color: #3a3028; margin-bottom: 16px; opacity: 0; transition: opacity 0.6s ease; }
+
+  .letter-date { font-family: 'Special Elite', monospace; font-size: 0.6rem; color: #aaa; margin-bottom: 12px; text-align: right; }
+  .greeting { font-family: 'Special Elite', monospace; font-size: 0.82rem; color: #222; margin-bottom: 10px; opacity: 0; transition: opacity 0.5s ease; }
   .greeting.visible { opacity: 1; }
-  .typing-area { font-family: 'Special Elite', monospace; font-size: 0.92rem; line-height: 1.95; color: #2a2420; letter-spacing: 0.02em; min-height: 200px; position: relative; }
-  .cursor { display: inline-block; width: 2px; height: 1.1em; background: #2a2420; margin-left: 1px; vertical-align: text-bottom; animation: blink 530ms step-end infinite; }
+  .typing-area { font-family: 'Special Elite', monospace; font-size: 0.72rem; line-height: 22px; color: #222; letter-spacing: 0.02em; }
+  .cursor { display: inline-block; width: 6px; height: 1.5px; background: #222; margin-left: 1px; vertical-align: middle; animation: blink 530ms step-end infinite; }
   @keyframes blink { 50% { opacity: 0; } }
-  .struck { color: rgba(42,36,32,0.3); text-decoration: line-through; text-decoration-color: rgba(42,36,32,0.25); }
-  .em-word { color: #6b3a4a; text-shadow: 0 0 12px rgba(200,100,120,0.1); }
-  .signoff-line { font-family: 'Caveat', cursive; font-size: 1.2rem; color: #3a3028; margin-top: 20px; opacity: 0; transition: opacity 0.8s ease; }
+  .em-word { color: #222; font-style: italic; }
+  .signoff-line { font-family: 'Special Elite', monospace; font-size: 0.72rem; color: #222; margin-top: 18px; opacity: 0; transition: opacity 0.8s ease; }
   .signoff-line.visible { opacity: 1; }
-  .signature { font-family: 'Caveat', cursive; font-size: 1.2rem; color: #3a3028; margin-top: 4px; opacity: 0; transition: opacity 0.8s ease; }
+  .signature { font-family: 'Caveat', cursive; font-size: 1.1rem; color: #222; margin-top: 4px; opacity: 0; transition: opacity 0.8s ease; }
   .signature.visible { opacity: 1; }
+
+  /* === TYPEWRITER BELOW THE PAPER === */
+  .typewriter {
+    width: min(92vw, 370px);
+    z-index: 10;
+    transition: opacity 0.6s ease;
+  }
+  .typewriter.dimmed { opacity: 0.15; }
+  .tw-platen {
+    width: 100%; height: 18px;
+    background: linear-gradient(180deg, #1a1816, #0e0d0b, #1a1816, #0a0908);
+    border-radius: 9px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.5), inset 0 2px 3px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .tw-knob {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #4a4540, #2a2520);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .tw-knob.l { left: -6px; }
+  .tw-knob.r { right: -6px; }
+  .tw-slot {
+    width: 90%; height: 4px; margin: 2px auto 0;
+    background: #000; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+  }
+  .tw-body {
+    width: 100%; padding: 12px 10px 20px;
+    background: linear-gradient(180deg, #1a1816, #121010, #0e0c0b);
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.5);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .tw-row { display: flex; gap: 4px; }
+  .tw-row:nth-child(2) { padding: 0 6px; }
+  .tw-row:nth-child(3) { padding: 0 14px; }
+  .tw-key {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: radial-gradient(circle at 38% 34%, #302e2a, #1e1c1a);
+    box-shadow: 0 2px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    transition: transform 0.04s, box-shadow 0.04s;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif; font-size: 0.25rem; color: rgba(255,255,255,0.07);
+  }
+  .tw-key.pressed {
+    transform: translateY(2px) scale(0.93);
+    box-shadow: 0 0 1px rgba(0,0,0,0.5);
+  }
+  .tw-space {
+    width: 80px; height: 10px; border-radius: 5px; margin-top: 4px;
+    background: linear-gradient(180deg, #2a2826, #1e1c1a);
+    box-shadow: 0 2px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+    transition: transform 0.04s;
+  }
+  .tw-space.pressed { transform: translateY(1px); }
+
+  /* Dark overlay behind popped paper */
+  .overlay {
+    position: fixed; inset: 0; z-index: 150;
+    background: rgba(8,8,14,0); pointer-events: none;
+    transition: background 0.8s ease;
+  }
+  .overlay.visible { background: rgba(8,8,14,0.8); }
+
   .hint {
-    position: fixed; bottom: 24px;
+    position: fixed; bottom: 14px;
     font-family: 'Inter', sans-serif; font-size: 0.6rem;
     color: rgba(255,255,255,0.15); letter-spacing: 1px;
     z-index: 200; transition: opacity 0.5s ease;
     cursor: pointer; padding: 12px 24px;
   }
   .hint.hidden { opacity: 0; pointer-events: none; }
-  .hint.tap-prompt {
-    color: rgba(255,255,255,0.25);
-    animation: hintPulse 2.5s ease-in-out infinite;
-  }
-  @keyframes hintPulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
-  }
-  .ink-smudge { position: absolute; bottom: 30px; right: 25px; width: 40px; height: 20px; background: radial-gradient(ellipse, rgba(42,36,32,0.04), transparent); border-radius: 50%; transform: rotate(-15deg); }
-  .coffee-ring { position: absolute; top: -15px; right: 20px; width: 70px; height: 70px; border-radius: 50%; border: 2px solid rgba(140,100,60,0.06); background: radial-gradient(ellipse, rgba(140,100,60,0.015), transparent 70%); transform: rotate(8deg); }
-  .fold { position: absolute; top: 0; left: 50%; right: 0; bottom: 0; background: linear-gradient(90deg, rgba(0,0,0,0.008), transparent 30%); pointer-events: none; }
-  .restart { position: fixed; bottom: 50px; font-family: 'Inter', sans-serif; font-size: 0.6rem; color: rgba(255,255,255,0.12); background: none; border: none; cursor: pointer; letter-spacing: 1px; z-index: 200; opacity: 0; transition: opacity 0.5s ease; padding: 8px 16px; }
+  .hint.tap-prompt { color: rgba(255,255,255,0.25); animation: hintPulse 2.5s ease-in-out infinite; }
+  @keyframes hintPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+  .restart { position: fixed; bottom: 14px; font-family: 'Inter', sans-serif; font-size: 0.6rem; color: rgba(255,255,255,0.12); background: none; border: none; cursor: pointer; letter-spacing: 1px; z-index: 250; opacity: 0; transition: opacity 0.5s ease; padding: 8px 16px; }
   .restart.visible { opacity: 1; }
   .restart:hover { color: rgba(255,255,255,0.25); }
 </style>
@@ -110,58 +157,66 @@
 <body>
 <a class="back-link" href="../building-blocks.html">← blocks</a>
 <span class="block-label">LOVE LETTER</span>
-<div class="scanlines"></div>
-<div class="ambient" id="ambient"></div>
+
+<!-- Paper — sits above the typewriter, always visible during typing -->
 <div class="paper" id="paper">
-  <div class="coffee-ring"></div>
-  <div class="margin-line"></div>
-  <div class="fold"></div>
-  <!-- SLOT: date --> <div class="letter-date">March 8th, tonight</div> <!-- /SLOT -->
-  <!-- SLOT: greeting --> <div class="greeting" id="greeting">My Erica,</div> <!-- /SLOT -->
+  <div class="letter-date">March 8th, tonight</div>
+  <div class="greeting" id="greeting">My Erica,</div>
   <div class="typing-area" id="typeArea"></div>
-  <!-- SLOT: signoff -->
   <div class="signoff-line" id="signoffLine">Forever yours,</div>
   <div class="signature" id="signature">— T</div>
-  <!-- /SLOT -->
-  <div class="ink-smudge"></div>
 </div>
+
+<!-- Typewriter below -->
+<div class="typewriter" id="typewriter">
+  <div class="tw-platen"><div class="tw-knob l"></div><div class="tw-knob r"></div></div>
+  <div class="tw-slot"></div>
+  <div class="tw-body">
+    <div class="tw-row" id="kr1"></div>
+    <div class="tw-row" id="kr2"></div>
+    <div class="tw-row" id="kr3"></div>
+    <div class="tw-space" id="twSpace"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
 <div class="hint tap-prompt" id="hint">tap to open</div>
 <button class="restart" id="restartBtn" onclick="restart()">↻ replay</button>
+
 <script>
-for(let i=0;i<25;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.top=Math.random()*100+'%';p.style.animationDuration=(8+Math.random()*14)+'s';p.style.animationDelay=Math.random()*10+'s';document.body.appendChild(p)}
-/* <!-- SLOT: letter_body --> */
+for(let i=0;i<15;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.top=Math.random()*100+'%';p.style.animationDuration=(8+Math.random()*14)+'s';p.style.animationDelay=Math.random()*10+'s';document.body.appendChild(p)}
+
+// Keys
+const keyRows=[['kr1','QWERTYUIOP'],['kr2','ASDFGHJKL'],['kr3','ZXCVBNM']];
+const keyMap={};
+keyRows.forEach(function(r){
+  const el=document.getElementById(r[0]);
+  for(let i=0;i<r[1].length;i++){
+    const k=document.createElement('div');k.className='tw-key';k.textContent=r[1][i];
+    k.dataset.k=r[1][i];el.appendChild(k);keyMap[r[1][i]]=k;
+  }
+});
+
 const segments=[
-{text:"I've been thinking about "},
-{text:"how to say this",struck:true},
-{text:"how lucky I ",struck:true},
-{text:"what you mean to me, and honestly "},
-{text:"every version sounds too small.\n\n"},
-{text:"When you laugh — that "},
-{text:"ridiculous, ",struck:true},
+{text:"I've been thinking about what you mean to me, and every version sounds too small.\n\n"},
 {pause:300},
-{text:"uncontrollable, ",em:true},
-{text:"completely contagious laugh — I forget that there are "},
+{text:"When you laugh — that "},
+{text:"completely contagious ",em:true},
+{text:"laugh — I forget the "},
 {text:"3,847 miles",em:true},
-{text:" between us. For a second, you're right here.\n\n"},
+{text:" between us.\n\n"},
 {pause:400},
-{text:"I know the distance is "},
-{text:"hard",struck:true},
-{text:"brutal",struck:true},
+{text:"The distance is "},
 {text:"temporary.",em:true},
-{text:" That's what I hold onto. Every call, every terrible joke about Kiru judging me, every time you fall asleep on FaceTime — "},
-{text:"it's all building something.\n\n"},
+{text:" Every call, every time you fall asleep on FaceTime — it's all building something.\n\n"},
 {pause:500},
-{text:"You make me want to be "},
-{text:"better",struck:true},
-{text:"the kind of person who deserves someone like you.\n\n"},
-{pause:600},
 {text:"I ",em:true},
 {text:"love",em:true},
 {text:" ",em:true},
 {text:"you.",em:true},
-{text:" Not the easy, surface kind. The kind that rewires you."}
+{text:" The kind that rewires you."}
 ];
-/* <!-- /SLOT --> */
+
 const area=document.getElementById('typeArea'),
       hint=document.getElementById('hint'),
       restartBtn=document.getElementById('restartBtn'),
@@ -169,14 +224,23 @@ const area=document.getElementById('typeArea'),
       signoffLine=document.getElementById('signoffLine'),
       signature=document.getElementById('signature'),
       paper=document.getElementById('paper'),
-      ambient=document.getElementById('ambient');
+      typewriterEl=document.getElementById('typewriter'),
+      overlay=document.getElementById('overlay'),
+      twSpace=document.getElementById('twSpace'),
+      allKeys=document.querySelectorAll('.tw-key');
 
-const TYPE_SPEED=55,DELETE_SPEED=30,PAUSE_AFTER_STRUCK=400,PAUSE_AFTER_DELETE=300,PAUSE_NEWLINE=500;
+const TYPE_SPEED=50,PAUSE_NEWLINE=400;
 let cursor,running=false,started=false,cancelToken={cancelled:false};
 
 function createCursor(){cursor=document.createElement('span');cursor.className='cursor';return cursor}
 function sleep(ms,token){return new Promise((r,j)=>{const id=setTimeout(r,ms);if(token){const check=setInterval(()=>{if(token.cancelled){clearTimeout(id);clearInterval(check);j('cancelled')}},50)}})}
 function haptic(ms){try{navigator.vibrate(ms||10)}catch(e){}}
+
+function pressKey(ch){
+  if(ch===' '){twSpace.classList.add('pressed');setTimeout(()=>twSpace.classList.remove('pressed'),60);return}
+  const k=keyMap[ch.toUpperCase()]||allKeys[Math.floor(Math.random()*allKeys.length)];
+  k.classList.add('pressed');setTimeout(()=>k.classList.remove('pressed'),60);
+}
 
 async function typeText(text,className,token){
   const span=document.createElement('span');
@@ -185,22 +249,19 @@ async function typeText(text,className,token){
   for(let i=0;i<text.length;i++){
     if(token.cancelled)return span;
     const ch=text[i];
-    if(ch==='\n'){span.appendChild(document.createElement('br'));await sleep(PAUSE_NEWLINE,token)}
-    else{span.textContent+=ch;await sleep(TYPE_SPEED+(Math.random()*30-15),token)}
+    if(ch==='\n'){
+      span.appendChild(document.createElement('br'));
+      await sleep(PAUSE_NEWLINE,token);
+    } else {
+      span.textContent+=ch;
+      pressKey(ch);
+      haptic(3);
+      await sleep(TYPE_SPEED+(Math.random()*24-12),token);
+    }
   }
   return span
 }
-async function deleteSpan(span,token){
-  const text=span.textContent;
-  for(let i=text.length;i>0;i--){
-    if(token.cancelled)return;
-    span.textContent=text.substring(0,i-1);
-    await sleep(DELETE_SPEED,token)
-  }
-  span.textContent=text;span.className='struck';
-  const space=document.createTextNode(' ');
-  area.insertBefore(space,cursor)
-}
+
 async function play(){
   if(running)return;running=true;
   cancelToken={cancelled:false};
@@ -209,30 +270,35 @@ async function play(){
   signoffLine.classList.remove('visible');
   signature.classList.remove('visible');
   restartBtn.classList.remove('visible');
-  paper.classList.remove('finished');
-  ambient.classList.remove('warm');
+  paper.classList.remove('popped');
+  paper.classList.remove('feeding');
+  overlay.classList.remove('visible');
+  typewriterEl.classList.remove('dimmed');
   area.appendChild(createCursor());
+
   try{
+    await sleep(400,cancelToken);
+    // Paper feeds up from typewriter
+    paper.classList.add('feeding');
     await sleep(600,cancelToken);
     greeting.classList.add('visible');
     haptic(8);
-    await sleep(1200,cancelToken);
+    await sleep(800,cancelToken);
+
+    // Type the letter — visible on the white paper, keys press below
     for(const seg of segments){
       if(cancelToken.cancelled)return;
       if(seg.pause){
         await sleep(seg.pause,cancelToken)
-      } else if(seg.struck){
-        const span=await typeText(seg.text,null,cancelToken);
-        await sleep(PAUSE_AFTER_STRUCK,cancelToken);
-        await deleteSpan(span,cancelToken);
-        await sleep(PAUSE_AFTER_DELETE,cancelToken)
       } else if(seg.em){
-        await sleep(80,cancelToken);
+        await sleep(60,cancelToken);
         await typeText(seg.text,'em-word',cancelToken)
       } else {
         await typeText(seg.text,null,cancelToken)
       }
     }
+
+    // Done typing
     await sleep(800,cancelToken);
     signoffLine.classList.add('visible');
     haptic(8);
@@ -240,17 +306,29 @@ async function play(){
     signature.classList.add('visible');
     await sleep(1500,cancelToken);
     if(cursor)cursor.style.opacity='0';
-    paper.classList.add('finished');
-    ambient.classList.add('warm');
-    await sleep(600,cancelToken);
+    await sleep(800,cancelToken);
+
+    // Pull paper out — dim typewriter, overlay, pop paper to center
+    typewriterEl.classList.add('dimmed');
+    overlay.classList.add('visible');
+    await sleep(500,cancelToken);
+    paper.classList.add('popped');
+    haptic(12);
+    await sleep(1200,cancelToken);
     restartBtn.classList.add('visible')
   }catch(e){}
   running=false
 }
-function restart(){cancelToken.cancelled=true;running=false;hint.classList.add('hidden');setTimeout(play,100)}
 
-// Show paper entrance after brief delay, wait for tap to start typing
-setTimeout(()=>{paper.classList.add('visible')},400);
+function restart(){
+  cancelToken.cancelled=true;running=false;
+  hint.classList.add('hidden');
+  paper.classList.remove('popped');
+  paper.classList.remove('feeding');
+  overlay.classList.remove('visible');
+  typewriterEl.classList.remove('dimmed');
+  setTimeout(play,200);
+}
 
 function onFirstInteraction(){
   if(started)return;
