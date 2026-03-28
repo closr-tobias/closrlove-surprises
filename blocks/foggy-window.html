@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Foggy Window — Closr Building Block</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; overflow: hidden; }
   body {
@@ -15,353 +15,401 @@
     touch-action: none;
     user-select: none; -webkit-user-select: none;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
   }
 
   .back-link {
     position: fixed; top: 16px; left: 16px; z-index: 100;
-    color: rgba(255,255,255,0.3); text-decoration: none;
-    font-size: 0.8rem; font-weight: 300; letter-spacing: 0.05em;
-    transition: color 0.3s;
+    color: rgba(255,255,255,0.15); text-decoration: none;
+    font-size: 0.7rem;
   }
-  .back-link:hover { color: rgba(255,255,255,0.6); }
 
+  /* Dark rainy scene */
   .scene {
     position: fixed; inset: 0;
-    background: linear-gradient(180deg, #0a0c14 0%, #111525 30%, #151a2e 60%, #0d1020 100%);
+    background: linear-gradient(180deg, #0a0d18 0%, #0e1222 30%, #121830 50%, #0c1020 70%, #080c16 100%);
   }
 
-  .bokeh {
-    position: fixed;
-    border-radius: 50%;
-    pointer-events: none;
-    filter: blur(1px);
+  /* Rain — lots of it */
+  .rain {
+    position: fixed; width: 1px; pointer-events: none;
+    background: linear-gradient(180deg, rgba(140,170,210,0.0), rgba(140,170,210,0.15), rgba(140,170,210,0.0));
+    animation: fall linear infinite; z-index: 2;
   }
-
-  .raindrop {
-    position: fixed;
+  .rain.heavy {
     width: 2px;
-    background: linear-gradient(180deg, rgba(150,180,220,0.0), rgba(150,180,220,0.12), rgba(150,180,220,0.0));
-    pointer-events: none;
-    animation: rain linear infinite;
-    z-index: 2;
+    background: linear-gradient(180deg, rgba(140,170,210,0.0), rgba(140,170,210,0.22), rgba(140,170,210,0.0));
   }
-  @keyframes rain {
-    0% { transform: translateY(-20px); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateY(100vh); opacity: 0; }
+  @keyframes fall {
+    0% { transform: translateY(-30px) translateX(0); opacity: 0; }
+    5% { opacity: 1; }
+    95% { opacity: 1; }
+    100% { transform: translateY(105vh) translateX(-8px); opacity: 0; }
   }
 
+  /* Water beads on glass */
   .bead {
-    position: fixed;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, rgba(180,200,230,0.25), rgba(120,150,190,0.08));
-    box-shadow: inset 0 0 2px rgba(255,255,255,0.1), 0 0 1px rgba(0,0,0,0.3);
-    pointer-events: none;
-    z-index: 2;
+    position: fixed; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(180,200,230,0.22), rgba(120,150,190,0.06));
+    box-shadow: inset 0 0 2px rgba(255,255,255,0.08);
+    pointer-events: none; z-index: 3;
   }
 
-  .content-layer {
+  /* Bokeh city lights behind the glass */
+  .bokeh {
+    position: fixed; border-radius: 50%; pointer-events: none; z-index: 1;
+    animation: drift ease-in-out infinite alternate;
+  }
+  @keyframes drift {
+    0% { transform: translate(0,0) scale(1); }
+    100% { transform: translate(6px,-4px) scale(0.92); }
+  }
+
+  /* Message — centered, behind fog */
+  .msg-layer {
     position: fixed; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    z-index: 5;
-    padding: 40px 30px;
-    pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 5; pointer-events: none;
   }
-
-  .content-inner {
-    max-width: 320px;
-    text-align: center;
+  .msg-box {
+    text-align: center; padding: 40px 30px;
+    max-width: 340px;
+    transform: scale(0.94);
+    opacity: 0.8;
+    transition: transform 1.4s cubic-bezier(0.25,1,0.5,1), opacity 1s ease;
   }
-
-  .message-label {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.65rem;
-    font-weight: 500;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: rgba(255,200,180,0.5);
-    margin-bottom: 24px;
+  .msg-box.revealed {
+    transform: scale(1.06);
+    opacity: 1;
   }
-
-  .message-text {
+  .msg-label {
+    font-size: 0.55rem; font-weight: 500;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(255,200,180,0.45);
+    margin-bottom: 20px;
+  }
+  .msg-text {
     font-family: 'Caveat', cursive;
-    font-size: 2rem;
-    font-weight: 500;
-    line-height: 1.4;
-    color: rgba(255,245,235,0.85);
-    text-shadow: 0 0 30px rgba(255,180,130,0.15);
+    font-size: 1.9rem; font-weight: 500;
+    line-height: 1.35;
+    color: rgba(255,245,235,0.88);
+    text-shadow: 0 0 30px rgba(255,180,130,0.12);
   }
-
-  .message-sign {
+  .msg-sign {
     font-family: 'Caveat', cursive;
-    font-size: 1.3rem;
-    color: rgba(255,200,170,0.5);
-    margin-top: 32px;
+    font-size: 1.15rem;
+    color: rgba(255,200,170,0.45);
+    margin-top: 28px;
   }
 
-  .drawn-heart {
-    margin-top: 20px;
-    opacity: 0.4;
-  }
-  .drawn-heart svg {
-    width: 40px; height: 36px;
-  }
-
+  /* Fog canvas — full screen */
   #fogCanvas {
     position: fixed; inset: 0;
-    z-index: 10;
-    cursor: pointer;
+    z-index: 10; cursor: pointer;
   }
 
+  /* Glow when revealed */
+  .glow {
+    position: fixed; inset: 0; z-index: 4;
+    background: radial-gradient(ellipse at center, rgba(255,150,100,0.07) 0%, transparent 65%);
+    opacity: 0; transition: opacity 2s ease;
+    pointer-events: none;
+  }
+  .glow.active { opacity: 1; }
+
   .prompt {
-    position: fixed;
-    bottom: 80px;
+    position: fixed; bottom: 60px;
     left: 50%; transform: translateX(-50%);
-    z-index: 20;
-    text-align: center;
+    z-index: 20; text-align: center;
     transition: opacity 0.8s ease;
     pointer-events: none;
   }
   .prompt.hidden { opacity: 0; }
-
   .prompt-text {
     font-family: 'Caveat', cursive;
-    font-size: 1.2rem;
-    color: rgba(255,255,255,0.5);
-    animation: promptPulse 2.5s ease-in-out infinite;
+    font-size: 1.15rem;
+    color: rgba(255,255,255,0.4);
+    animation: pulse 2.5s ease-in-out infinite;
   }
-
-  .prompt-hand {
-    font-size: 1.6rem;
-    margin-top: 8px;
-    animation: promptSwipe 2s ease-in-out infinite;
-    display: inline-block;
-  }
-
-  @keyframes promptPulse {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 0.9; }
-  }
-  @keyframes promptSwipe {
-    0%, 100% { transform: translateX(-10px) rotate(-10deg); }
-    50% { transform: translateX(10px) rotate(10deg); }
-  }
-
-  .revealed-glow {
-    position: fixed; inset: 0;
-    background: radial-gradient(ellipse at center, rgba(255,150,100,0.06) 0%, transparent 70%);
-    z-index: 4;
-    opacity: 0;
-    transition: opacity 1.5s ease;
-    pointer-events: none;
-  }
-  .revealed-glow.active { opacity: 1; }
-
-  .trail-canvas {
-    position: fixed; inset: 0;
-    z-index: 11;
-    pointer-events: none;
-  }
-
-  @keyframes bokehDrift {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(8px, -5px) scale(0.9); }
-  }
+  @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.8; } }
 </style>
 </head>
 <body>
 <a class="back-link" href="../building-blocks.html">← blocks</a>
-
 <div class="scene" id="scene"></div>
-<div class="revealed-glow" id="revealGlow"></div>
+<div class="glow" id="glow"></div>
 
-<div class="content-layer">
-  <div class="content-inner">
-    <div class="message-label">
-      <!-- SLOT: label -->a message written on the glass<!-- /SLOT -->
-    </div>
-    <div class="message-text">
-      <!-- SLOT: message -->I think about you every time it rains. The way the world gets quiet and soft — that's what you feel like to me.<!-- /SLOT -->
-    </div>
-    <div class="message-sign">
-      <!-- SLOT: signature -->— always yours<!-- /SLOT -->
-    </div>
-    <div class="drawn-heart">
-      <svg viewBox="0 0 40 36" fill="none" stroke="rgba(255,180,150,0.6)" stroke-width="1.5" stroke-linecap="round">
-        <path d="M20 33 C20 33 3 22 3 12 C3 6 8 2 14 2 C17 2 19 4 20 7 C21 4 23 2 26 2 C32 2 37 6 37 12 C37 22 20 33 20 33Z" stroke-dasharray="100" stroke-dashoffset="100" id="heartPath">
-          <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" begin="indefinite" fill="freeze" id="heartAnim" />
-        </path>
-      </svg>
-    </div>
+<div class="msg-layer">
+  <div class="msg-box" id="msgBox">
+    <div class="msg-label">a message written on the glass</div>
+    <div class="msg-text" id="msgText">I think about you every time it rains. The way the world gets quiet and soft — that's what you feel like to me.</div>
+    <div class="msg-sign">— always yours</div>
   </div>
 </div>
 
 <canvas id="fogCanvas"></canvas>
-<canvas class="trail-canvas" id="trailCanvas"></canvas>
 
 <div class="prompt" id="prompt">
   <div class="prompt-text">wipe the glass...</div>
-  <div class="prompt-hand">👆</div>
 </div>
 
 <script>
 (() => {
-  const fogCanvas = document.getElementById('fogCanvas');
-  const fogCtx = fogCanvas.getContext('2d');
-  const trailCanvas = document.getElementById('trailCanvas');
-  const trailCtx = trailCanvas.getContext('2d');
+  const canvas = document.getElementById('fogCanvas');
+  const ctx = canvas.getContext('2d');
   const prompt = document.getElementById('prompt');
-  const revealGlow = document.getElementById('revealGlow');
+  const glow = document.getElementById('glow');
+  const msgBox = document.getElementById('msgBox');
+  const msgText = document.getElementById('msgText');
   const scene = document.getElementById('scene');
 
   let W, H, dpr;
-  let wipedPixels = 0;
-  let totalPixels = 0;
-  let revealed = false;
-  let hasStarted = false;
-  let lastPos = null;
+  let revealed = false, started = false, lastPos = null, wipeCount = 0;
+  const RADIUS = 50;
 
-  function resize() {
+  // Text area bounding box (where 80% matters)
+  let textRect = null;
+
+  function getTextRect() {
+    const r = msgText.getBoundingClientRect();
+    // Expand slightly around the text
+    return {
+      x: Math.max(0, r.left - 30),
+      y: Math.max(0, r.top - 50),
+      w: r.width + 60,
+      h: r.height + 100
+    };
+  }
+
+  function setup() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = window.innerWidth;
     H = window.innerHeight;
-    fogCanvas.width = trailCanvas.width = W * dpr;
-    fogCanvas.height = trailCanvas.height = H * dpr;
-    fogCanvas.style.width = trailCanvas.style.width = W + 'px';
-    fogCanvas.style.height = trailCanvas.style.height = H + 'px';
-    fogCtx.scale(dpr, dpr);
-    trailCtx.scale(dpr, dpr);
-    totalPixels = W * H;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    textRect = getTextRect();
     drawFog();
   }
 
   function drawFog() {
-    fogCtx.fillStyle = 'rgba(180,195,210,0.88)';
-    fogCtx.fillRect(0, 0, W, H);
-    const imgData = fogCtx.getImageData(0, 0, W * dpr, H * dpr);
-    const d = imgData.data;
-    for (let i = 0; i < d.length; i += 16) {
-      const noise = (Math.random() - 0.5) * 15;
-      d[i] += noise; d[i+1] += noise; d[i+2] += noise;
-    }
-    fogCtx.putImageData(imgData, 0, 0);
-    for (let i = 0; i < 8; i++) {
-      const x = Math.random() * W, y = Math.random() * H, r = 60 + Math.random() * 120;
-      const grad = fogCtx.createRadialGradient(x, y, 0, x, y, r);
-      grad.addColorStop(0, 'rgba(200,210,220,' + (0.15 + Math.random() * 0.1) + ')');
+    // Milky condensation
+    ctx.fillStyle = 'rgba(190,200,212,0.92)';
+    ctx.fillRect(0, 0, W, H);
+    // Density patches
+    for (let i = 0; i < 15; i++) {
+      const x = Math.random() * W, y = Math.random() * H;
+      const r = 60 + Math.random() * 120;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+      grad.addColorStop(0, 'rgba(200,210,220,' + (0.04 + Math.random() * 0.04) + ')');
       grad.addColorStop(1, 'rgba(200,210,220,0)');
-      fogCtx.fillStyle = grad;
-      fogCtx.fillRect(x - r, y - r, r * 2, r * 2);
+      ctx.fillStyle = grad;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
   }
 
   function wipe(x, y) {
-    if (!hasStarted) { hasStarted = true; prompt.classList.add('hidden'); }
-    const radius = 28;
-    fogCtx.save();
-    fogCtx.globalCompositeOperation = 'destination-out';
-    const grad = fogCtx.createRadialGradient(x, y, 0, x, y, radius);
-    grad.addColorStop(0, 'rgba(0,0,0,1)');
-    grad.addColorStop(0.6, 'rgba(0,0,0,0.8)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    fogCtx.fillStyle = grad;
-    fogCtx.beginPath();
-    fogCtx.arc(x, y, radius, 0, Math.PI * 2);
-    fogCtx.fill();
-    fogCtx.restore();
+    if (!started) { started = true; prompt.classList.add('hidden'); }
 
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
     if (lastPos) {
-      trailCtx.save();
-      trailCtx.strokeStyle = 'rgba(150,180,220,0.06)';
-      trailCtx.lineWidth = radius * 1.2;
-      trailCtx.lineCap = 'round';
-      trailCtx.beginPath();
-      trailCtx.moveTo(lastPos.x, lastPos.y);
-      trailCtx.lineTo(x, y);
-      trailCtx.stroke();
-      if (Math.random() < 0.3) {
-        const dx = x + (Math.random() - 0.5) * radius;
-        const dy = y + (Math.random() - 0.5) * radius;
-        trailCtx.fillStyle = 'rgba(160,190,220,' + (0.08 + Math.random() * 0.06) + ')';
-        trailCtx.beginPath();
-        trailCtx.arc(dx, dy, 1 + Math.random() * 2, 0, Math.PI * 2);
-        trailCtx.fill();
-      }
-      trailCtx.restore();
+      ctx.strokeStyle = 'rgba(0,0,0,1)';
+      ctx.lineWidth = RADIUS * 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(lastPos.x, lastPos.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,1)';
+      ctx.beginPath();
+      ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
+      ctx.fill();
     }
+    ctx.restore();
+
     lastPos = { x, y };
-    wipedPixels += Math.PI * radius * radius * 0.5;
-    if (wipedPixels / totalPixels > 0.35 && !revealed) {
-      revealed = true;
-      revealGlow.classList.add('active');
-      fogCanvas.style.transition = 'opacity 2s ease';
-      fogCanvas.style.opacity = '0';
-      trailCanvas.style.transition = 'opacity 3s ease';
-      trailCanvas.style.opacity = '0';
-      document.getElementById('heartAnim').beginElement();
+    wipeCount++;
+
+    // Check cleared percentage ONLY in the text area
+    if (wipeCount % 8 === 0 && !revealed && textRect) {
+      const sx = Math.floor(textRect.x * dpr);
+      const sy = Math.floor(textRect.y * dpr);
+      const sw = Math.floor(textRect.w * dpr);
+      const sh = Math.floor(textRect.h * dpr);
+      // Clamp to canvas bounds
+      const cx = Math.max(0, Math.min(sx, canvas.width - 1));
+      const cy = Math.max(0, Math.min(sy, canvas.height - 1));
+      const cw = Math.min(sw, canvas.width - cx);
+      const ch = Math.min(sh, canvas.height - cy);
+      if (cw > 0 && ch > 0) {
+        const sample = ctx.getImageData(cx, cy, cw, ch);
+        const d = sample.data;
+        let cleared = 0, total = 0;
+        for (let i = 3; i < d.length; i += 32) {
+          total++;
+          if (d[i] < 40) cleared++;
+        }
+        if (total > 0 && cleared / total > 0.80) {
+          revealed = true;
+          glow.classList.add('active');
+          canvas.style.transition = 'opacity 2s ease';
+          canvas.style.opacity = '0';
+          msgBox.classList.add('revealed');
+          try { navigator.vibrate(15); } catch(e) {}
+        }
+      }
     }
   }
 
-  fogCanvas.addEventListener('touchstart', e => { e.preventDefault(); wipe(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-  fogCanvas.addEventListener('touchmove', e => { e.preventDefault(); wipe(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-  fogCanvas.addEventListener('touchend', () => { lastPos = null; });
+  // Touch
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); lastPos = null; wipe(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+  canvas.addEventListener('touchmove', e => { e.preventDefault(); wipe(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+  canvas.addEventListener('touchend', () => { lastPos = null; });
 
-  let mouseDown = false;
-  fogCanvas.addEventListener('mousedown', e => { mouseDown = true; wipe(e.clientX, e.clientY); });
-  fogCanvas.addEventListener('mousemove', e => { if (mouseDown) wipe(e.clientX, e.clientY); });
-  fogCanvas.addEventListener('mouseup', () => { mouseDown = false; lastPos = null; });
-  fogCanvas.addEventListener('mouseleave', () => { mouseDown = false; lastPos = null; });
+  // Mouse
+  let md = false;
+  canvas.addEventListener('mousedown', e => { md = true; lastPos = null; wipe(e.clientX, e.clientY); });
+  canvas.addEventListener('mousemove', e => { if (md) wipe(e.clientX, e.clientY); });
+  canvas.addEventListener('mouseup', () => { md = false; lastPos = null; });
+  canvas.addEventListener('mouseleave', () => { md = false; lastPos = null; });
 
-  function createBokeh() {
-    const colors = ['rgba(255,180,100,0.12)','rgba(100,180,255,0.08)','rgba(255,120,150,0.1)','rgba(180,255,180,0.06)','rgba(255,220,100,0.1)','rgba(200,150,255,0.08)'];
-    for (let i = 0; i < 18; i++) {
-      const el = document.createElement('div');
-      el.className = 'bokeh';
-      const size = 4 + Math.random() * 20;
-      el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;left:' + (Math.random()*100) + '%;top:' + (10+Math.random()*80) + '%;background:' + colors[Math.floor(Math.random()*colors.length)] + ';z-index:1;animation:bokehDrift ' + (8+Math.random()*12) + 's ease-in-out infinite alternate;animation-delay:' + (-Math.random()*10) + 's;';
-      scene.appendChild(el);
-    }
-  }
-
-  function createRain() {
-    for (let i = 0; i < 40; i++) {
+  // Create rain
+  function makeRain() {
+    for (let i = 0; i < 70; i++) {
       const drop = document.createElement('div');
-      drop.className = 'raindrop';
-      drop.style.cssText = 'left:' + (Math.random()*100) + '%;height:' + (15+Math.random()*30) + 'px;animation-duration:' + (0.6+Math.random()*0.8) + 's;animation-delay:' + (-Math.random()*2) + 's;opacity:' + (0.15+Math.random()*0.2) + ';';
+      const heavy = Math.random() < 0.2;
+      drop.className = 'rain' + (heavy ? ' heavy' : '');
+      const h = heavy ? (25 + Math.random() * 40) : (10 + Math.random() * 25);
+      const dur = heavy ? (0.4 + Math.random() * 0.5) : (0.5 + Math.random() * 0.8);
+      drop.style.cssText = 'left:' + (Math.random() * 100) + '%;height:' + h + 'px;animation-duration:' + dur + 's;animation-delay:' + (-Math.random() * 3) + 's;';
       scene.appendChild(drop);
     }
   }
 
-  function createBeads() {
-    for (let i = 0; i < 25; i++) {
-      const bead = document.createElement('div');
-      bead.className = 'bead';
-      const size = 3 + Math.random() * 8;
-      bead.style.cssText = 'width:' + size + 'px;height:' + (size*(1+Math.random()*0.3)) + 'px;left:' + (Math.random()*100) + '%;top:' + (Math.random()*100) + '%;';
-      scene.appendChild(bead);
+  // Water beads on glass
+  function makeBeads() {
+    for (let i = 0; i < 35; i++) {
+      const b = document.createElement('div');
+      b.className = 'bead';
+      const s = 2 + Math.random() * 7;
+      b.style.cssText = 'width:' + s + 'px;height:' + (s * (1 + Math.random() * 0.4)) + 'px;left:' + (Math.random() * 100) + '%;top:' + (Math.random() * 100) + '%;';
+      scene.appendChild(b);
     }
   }
 
-  setInterval(() => {
-    if (revealed || !hasStarted) return;
-    fogCtx.save();
-    fogCtx.globalCompositeOperation = 'source-over';
-    fogCtx.fillStyle = 'rgba(180,195,210,0.008)';
-    fogCtx.fillRect(0, 0, W, H);
-    fogCtx.restore();
-  }, 200);
+  // Bokeh lights
+  function makeBokeh() {
+    const colors = ['rgba(255,180,100,0.1)', 'rgba(100,170,255,0.06)', 'rgba(255,120,150,0.08)', 'rgba(255,220,100,0.07)', 'rgba(180,140,255,0.06)'];
+    for (let i = 0; i < 20; i++) {
+      const el = document.createElement('div');
+      el.className = 'bokeh';
+      const s = 4 + Math.random() * 22;
+      el.style.cssText = 'width:' + s + 'px;height:' + s + 'px;left:' + (Math.random() * 100) + '%;top:' + (5 + Math.random() * 90) + '%;background:' + colors[Math.floor(Math.random() * colors.length)] + ';animation-duration:' + (6 + Math.random() * 10) + 's;animation-delay:' + (-Math.random() * 8) + 's;';
+      scene.appendChild(el);
+    }
+  }
 
-  window.addEventListener('resize', () => { if (!revealed) resize(); });
-  resize();
-  createBokeh();
-  createRain();
-  createBeads();
+  window.addEventListener('resize', () => { if (!revealed) { setup(); } });
+  // Water drops that drip down the foggy glass, leaving clear trails
+  function startDrips() {
+    const drips = [];
+    const maxDrips = 6;
+
+    function spawnDrip() {
+      if (revealed) return;
+      drips.push({
+        x: 30 + Math.random() * (W - 60),
+        y: -5,
+        speed: 0.3 + Math.random() * 0.8,
+        size: 3 + Math.random() * 4,
+        wobble: (Math.random() - 0.5) * 0.3,
+        trail: []
+      });
+      // Keep drip count limited
+      if (drips.length > maxDrips) drips.shift();
+    }
+
+    function updateDrips() {
+      if (revealed) return;
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+
+      for (let i = drips.length - 1; i >= 0; i--) {
+        const d = drips[i];
+        d.y += d.speed;
+        d.x += d.wobble + (Math.random() - 0.5) * 0.4;
+
+        // Occasionally slow down or speed up (water tension)
+        if (Math.random() < 0.02) d.speed = 0.2 + Math.random() * 0.6;
+        if (Math.random() < 0.01) d.speed = 1 + Math.random() * 1.5;
+
+        // Draw clear trail behind the drop
+        const grad = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.size * 1.5);
+        grad.addColorStop(0, 'rgba(0,0,0,0.5)');
+        grad.addColorStop(0.5, 'rgba(0,0,0,0.2)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Thin trail line
+        if (d.trail.length > 0) {
+          const last = d.trail[d.trail.length - 1];
+          ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+          ctx.lineWidth = d.size * 0.5;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(last.x, last.y);
+          ctx.lineTo(d.x, d.y);
+          ctx.stroke();
+        }
+
+        d.trail.push({ x: d.x, y: d.y });
+        if (d.trail.length > 80) d.trail.shift();
+
+        // Remove if off screen
+        if (d.y > H + 10) {
+          drips.splice(i, 1);
+        }
+      }
+      ctx.restore();
+
+      // Draw the drop itself (on top of the fog, as a visible bead)
+      for (const d of drips) {
+        // Tiny clear circle with a bright highlight — looks like a water drop
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      requestAnimationFrame(updateDrips);
+    }
+
+    // Spawn drips periodically
+    function spawnLoop() {
+      if (revealed) return;
+      spawnDrip();
+      setTimeout(spawnLoop, 1500 + Math.random() * 3000);
+    }
+
+    spawnLoop();
+    updateDrips();
+  }
+
+  setup();
+  makeRain();
+  makeBeads();
+  makeBokeh();
+  startDrips();
 })();
 </script>
 </body>

@@ -30,108 +30,119 @@
   .back-link { position: fixed; top: 14px; left: 14px; font-size: 0.65rem; color: #ffffff12; text-decoration: none; z-index: 200; font-family: 'Inter', sans-serif; }
   .block-label { position: fixed; top: 14px; right: 14px; font-size: 0.5rem; color: #ffffff0a; letter-spacing: 1px; z-index: 200; font-family: 'Inter', sans-serif; }
 
-  /* === WHITE PAPER — always visible above typewriter === */
-  .paper {
-    width: min(70vw, 280px);
-    height: min(50vh, 360px);
-    background: #ffffff;
-    padding: 22px 22px 28px;
-    position: relative; z-index: 20;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 8px 30px rgba(0,0,0,0.2);
-    margin-bottom: 0;
+  .scene {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    margin-bottom: 20px;
+  }
+
+  /* Paper clip area — fixed height, clips paper below the platen */
+  .paper-clip {
+    width: min(62vw, 248px);
+    height: min(45vh, 320px);
     overflow: hidden;
-    transform: translateY(60px);
-    opacity: 0;
-    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease;
+    position: relative;
+    z-index: 5;
   }
-  .paper.feeding {
-    opacity: 1;
-    transform: translateY(0);
+
+  .paper {
+    width: 100%;
+    min-height: 100%;
+    background: #f5f2eb;
+    padding: 18px 20px 24px;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
   }
-  /* Popped out to center */
   .paper.popped {
     position: fixed !important;
     left: 50% !important; top: 50% !important;
-    width: min(70vw, 280px) !important;
-    height: auto !important;
+    bottom: auto !important;
+    width: min(62vw, 248px) !important;
+    min-height: min(45vh, 320px) !important;
     max-height: 75vh;
     transform: translate(-50%, -50%) !important;
-    z-index: 200;
+    z-index: 200 !important;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 20px 60px rgba(0,0,0,0.3), 0 40px 100px rgba(0,0,0,0.2);
     transition: all 0.9s cubic-bezier(0.25, 1, 0.5, 1) !important;
     overflow-y: auto;
-    margin-bottom: 0;
   }
 
-  .letter-date { font-family: 'Special Elite', monospace; font-size: 0.6rem; color: #aaa; margin-bottom: 12px; text-align: right; }
-  .greeting { font-family: 'Special Elite', monospace; font-size: 0.82rem; color: #222; margin-bottom: 10px; opacity: 0; transition: opacity 0.5s ease; }
+  .letter-date { font-family: 'Special Elite', monospace; font-size: 0.55rem; color: rgba(80,70,50,0.4); margin-bottom: 10px; text-align: right; }
+  .greeting { font-family: 'Special Elite', monospace; font-size: 0.75rem; color: #2a2418; margin-bottom: 8px; opacity: 0; transition: opacity 0.5s ease; }
   .greeting.visible { opacity: 1; }
-  .typing-area { font-family: 'Special Elite', monospace; font-size: 0.72rem; line-height: 22px; color: #222; letter-spacing: 0.02em; }
-  .cursor { display: inline-block; width: 6px; height: 1.5px; background: #222; margin-left: 1px; vertical-align: middle; animation: blink 530ms step-end infinite; }
+  .typing-area { font-family: 'Special Elite', monospace; font-size: 0.66rem; line-height: 19px; color: #1e1a12; letter-spacing: 0.02em; }
+  .cursor { display: inline-block; width: 6px; height: 1.5px; background: #1e1a12; margin-left: 1px; vertical-align: middle; animation: blink 530ms step-end infinite; }
   @keyframes blink { 50% { opacity: 0; } }
-  .em-word { color: #222; font-style: italic; }
-  .signoff-line { font-family: 'Special Elite', monospace; font-size: 0.72rem; color: #222; margin-top: 18px; opacity: 0; transition: opacity 0.8s ease; }
-  .signoff-line.visible { opacity: 1; }
-  .signature { font-family: 'Caveat', cursive; font-size: 1.1rem; color: #222; margin-top: 4px; opacity: 0; transition: opacity 0.8s ease; }
-  .signature.visible { opacity: 1; }
+  .em-word { color: #1e1a12; font-style: italic; }
+  .signoff-line { font-family: 'Special Elite', monospace; font-size: 0.66rem; color: #1e1a12; margin-top: 14px; opacity: 0; height: 0; overflow: hidden; transition: opacity 0.8s ease; }
+  .signoff-line.visible { opacity: 1; height: auto; }
+  .signature { font-family: 'Caveat', cursive; font-size: 1rem; color: #1e1a12; margin-top: 4px; opacity: 0; height: 0; overflow: hidden; transition: opacity 0.8s ease; }
+  .signature.visible { opacity: 1; height: auto; }
 
-  /* === TYPEWRITER BELOW THE PAPER === */
+  /* === TYPEWRITER === */
   .typewriter {
-    width: min(92vw, 370px);
-    z-index: 10;
+    position: relative;
+    z-index: 15;
+    width: min(76vw, 300px);
     transition: opacity 0.6s ease;
   }
   .typewriter.dimmed { opacity: 0.15; }
+
   .tw-platen {
-    width: 100%; height: 18px;
+    width: 100%; height: 14px;
     background: linear-gradient(180deg, #1a1816, #0e0d0b, #1a1816, #0a0908);
-    border-radius: 9px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.5), inset 0 2px 3px rgba(0,0,0,0.4);
+    border-radius: 7px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.5), inset 0 2px 3px rgba(0,0,0,0.4);
     position: relative;
   }
   .tw-knob {
     position: absolute; top: 50%; transform: translateY(-50%);
-    width: 18px; height: 18px; border-radius: 50%;
+    width: 15px; height: 15px; border-radius: 50%;
     background: radial-gradient(circle at 35% 35%, #4a4540, #2a2520);
     box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
   }
-  .tw-knob.l { left: -6px; }
-  .tw-knob.r { right: -6px; }
+  .tw-knob.l { left: -5px; }
+  .tw-knob.r { right: -5px; }
   .tw-slot {
-    width: 90%; height: 4px; margin: 2px auto 0;
+    width: 86%; height: 3px; margin: 1px auto 0;
     background: #000; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
   }
   .tw-body {
-    width: 100%; padding: 12px 10px 20px;
+    width: 100%; padding: 10px 6px 14px;
     background: linear-gradient(180deg, #1a1816, #121010, #0e0c0b);
-    border-radius: 0 0 12px 12px;
+    border-radius: 0 0 10px 10px;
     box-shadow: 0 6px 25px rgba(0,0,0,0.5);
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
   }
-  .tw-row { display: flex; gap: 4px; }
-  .tw-row:nth-child(2) { padding: 0 6px; }
-  .tw-row:nth-child(3) { padding: 0 14px; }
+  .tw-row { display: flex; gap: 3px; }
+  .tw-row:nth-child(2) { padding: 0 5px; }
+  .tw-row:nth-child(3) { padding: 0 10px; }
   .tw-key {
-    width: 18px; height: 18px; border-radius: 50%;
+    width: 15px; height: 15px; border-radius: 50%;
     background: radial-gradient(circle at 38% 34%, #302e2a, #1e1c1a);
-    box-shadow: 0 2px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    box-shadow: 0 2px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
     transition: transform 0.04s, box-shadow 0.04s;
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Inter', sans-serif; font-size: 0.25rem; color: rgba(255,255,255,0.07);
+    font-family: 'Special Elite', monospace; font-size: 0.3rem; color: rgba(255,255,255,0.12);
+    font-weight: 400;
   }
   .tw-key.pressed {
     transform: translateY(2px) scale(0.93);
     box-shadow: 0 0 1px rgba(0,0,0,0.5);
+    color: rgba(255,255,255,0.25);
   }
   .tw-space {
-    width: 80px; height: 10px; border-radius: 5px; margin-top: 4px;
+    width: 65px; height: 8px; border-radius: 4px; margin-top: 3px;
     background: linear-gradient(180deg, #2a2826, #1e1c1a);
     box-shadow: 0 2px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
     transition: transform 0.04s;
   }
   .tw-space.pressed { transform: translateY(1px); }
 
-  /* Dark overlay behind popped paper */
   .overlay {
     position: fixed; inset: 0; z-index: 150;
     background: rgba(8,8,14,0); pointer-events: none;
@@ -140,16 +151,16 @@
   .overlay.visible { background: rgba(8,8,14,0.8); }
 
   .hint {
-    position: fixed; bottom: 14px;
-    font-family: 'Inter', sans-serif; font-size: 0.6rem;
+    position: fixed; bottom: 8px;
+    font-family: 'Inter', sans-serif; font-size: 0.5rem;
     color: rgba(255,255,255,0.15); letter-spacing: 1px;
     z-index: 200; transition: opacity 0.5s ease;
-    cursor: pointer; padding: 12px 24px;
+    cursor: pointer; padding: 10px 20px;
   }
   .hint.hidden { opacity: 0; pointer-events: none; }
   .hint.tap-prompt { color: rgba(255,255,255,0.25); animation: hintPulse 2.5s ease-in-out infinite; }
   @keyframes hintPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-  .restart { position: fixed; bottom: 14px; font-family: 'Inter', sans-serif; font-size: 0.6rem; color: rgba(255,255,255,0.12); background: none; border: none; cursor: pointer; letter-spacing: 1px; z-index: 250; opacity: 0; transition: opacity 0.5s ease; padding: 8px 16px; }
+  .restart { position: fixed; bottom: 30px; font-family: 'Inter', sans-serif; font-size: 0.5rem; color: rgba(255,255,255,0.12); background: none; border: none; cursor: pointer; letter-spacing: 1px; z-index: 250; opacity: 0; transition: opacity 0.5s ease; padding: 8px 16px; }
   .restart.visible { opacity: 1; }
   .restart:hover { color: rgba(255,255,255,0.25); }
 </style>
@@ -158,42 +169,48 @@
 <a class="back-link" href="../building-blocks.html">← blocks</a>
 <span class="block-label">LOVE LETTER</span>
 
-<!-- Paper — sits above the typewriter, always visible during typing -->
-<div class="paper" id="paper">
-  <div class="letter-date">March 8th, tonight</div>
-  <div class="greeting" id="greeting">My Erica,</div>
-  <div class="typing-area" id="typeArea"></div>
-  <div class="signoff-line" id="signoffLine">Forever yours,</div>
-  <div class="signature" id="signature">— T</div>
-</div>
-
-<!-- Typewriter below -->
-<div class="typewriter" id="typewriter">
-  <div class="tw-platen"><div class="tw-knob l"></div><div class="tw-knob r"></div></div>
-  <div class="tw-slot"></div>
-  <div class="tw-body">
-    <div class="tw-row" id="kr1"></div>
-    <div class="tw-row" id="kr2"></div>
-    <div class="tw-row" id="kr3"></div>
-    <div class="tw-space" id="twSpace"></div>
+<div class="scene">
+  <!-- Paper clip area — hides paper below the platen line -->
+  <div class="paper-clip" id="paperClip">
+    <div class="paper" id="paper">
+      <div class="letter-date">March 8th, tonight</div>
+      <div class="greeting" id="greeting">My Erica,</div>
+      <div class="typing-area" id="typeArea"></div>
+      <div class="signoff-line" id="signoffLine">Forever yours,</div>
+      <div class="signature" id="signature">— T</div>
+    </div>
+  </div>
+  <!-- Typewriter -->
+  <div class="typewriter" id="typewriter">
+    <div class="tw-platen"><div class="tw-knob l"></div><div class="tw-knob r"></div></div>
+    <div class="tw-slot"></div>
+    <div class="tw-body">
+      <div class="tw-row" id="kr1"></div>
+      <div class="tw-row" id="kr2"></div>
+      <div class="tw-row" id="kr3"></div>
+      <div class="tw-space" id="twSpace"></div>
+    </div>
   </div>
 </div>
 
 <div class="overlay" id="overlay"></div>
-<div class="hint tap-prompt" id="hint">tap to open</div>
+<div class="hint tap-prompt" id="hint">tap to begin</div>
 <button class="restart" id="restartBtn" onclick="restart()">↻ replay</button>
 
 <script>
-for(let i=0;i<15;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.top=Math.random()*100+'%';p.style.animationDuration=(8+Math.random()*14)+'s';p.style.animationDelay=Math.random()*10+'s';document.body.appendChild(p)}
+for(let i=0;i<12;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.top=Math.random()*100+'%';p.style.animationDuration=(8+Math.random()*14)+'s';p.style.animationDelay=Math.random()*10+'s';document.body.appendChild(p)}
 
-// Keys
+// QWERTY keys with actual letters
 const keyRows=[['kr1','QWERTYUIOP'],['kr2','ASDFGHJKL'],['kr3','ZXCVBNM']];
 const keyMap={};
 keyRows.forEach(function(r){
   const el=document.getElementById(r[0]);
   for(let i=0;i<r[1].length;i++){
-    const k=document.createElement('div');k.className='tw-key';k.textContent=r[1][i];
-    k.dataset.k=r[1][i];el.appendChild(k);keyMap[r[1][i]]=k;
+    const k=document.createElement('div');k.className='tw-key';
+    k.textContent=r[1][i];
+    k.dataset.k=r[1][i];
+    el.appendChild(k);
+    keyMap[r[1][i]]=k;
   }
 });
 
@@ -224,22 +241,44 @@ const area=document.getElementById('typeArea'),
       signoffLine=document.getElementById('signoffLine'),
       signature=document.getElementById('signature'),
       paper=document.getElementById('paper'),
+      paperClip=document.getElementById('paperClip'),
       typewriterEl=document.getElementById('typewriter'),
       overlay=document.getElementById('overlay'),
       twSpace=document.getElementById('twSpace'),
       allKeys=document.querySelectorAll('.tw-key');
 
-const TYPE_SPEED=50,PAUSE_NEWLINE=400;
+const TYPE_SPEED=50,PAUSE_NEWLINE=400,LINE_H=19;
 let cursor,running=false,started=false,cancelToken={cancelled:false};
+let linesTyped=0;
+
+// Paper is position:absolute bottom:0 in the clip.
+// translateY(100%) = fully hidden below. translateY(0) = fully visible.
+// We feed it up gradually as lines are typed.
+function updatePaperPos(){
+  const clipH=paperClip.offsetHeight;
+  const showH=(linesTyped+3)*LINE_H+50;
+  // How much to still hide: clipH - showH pixels remain below
+  const hidePercent=Math.max(0, (clipH-showH)/clipH*100);
+  paper.style.transform='translateY('+hidePercent+'%)';
+}
 
 function createCursor(){cursor=document.createElement('span');cursor.className='cursor';return cursor}
 function sleep(ms,token){return new Promise((r,j)=>{const id=setTimeout(r,ms);if(token){const check=setInterval(()=>{if(token.cancelled){clearTimeout(id);clearInterval(check);j('cancelled')}},50)}})}
 function haptic(ms){try{navigator.vibrate(ms||10)}catch(e){}}
 
+// Press the MATCHING key on the typewriter
 function pressKey(ch){
   if(ch===' '){twSpace.classList.add('pressed');setTimeout(()=>twSpace.classList.remove('pressed'),60);return}
-  const k=keyMap[ch.toUpperCase()]||allKeys[Math.floor(Math.random()*allKeys.length)];
-  k.classList.add('pressed');setTimeout(()=>k.classList.remove('pressed'),60);
+  const upper=ch.toUpperCase();
+  const k=keyMap[upper];
+  if(k){
+    k.classList.add('pressed');
+    setTimeout(()=>k.classList.remove('pressed'),60);
+  } else {
+    // For punctuation etc. press a random key
+    const rk=allKeys[Math.floor(Math.random()*allKeys.length)];
+    rk.classList.add('pressed');setTimeout(()=>rk.classList.remove('pressed'),60);
+  }
 }
 
 async function typeText(text,className,token){
@@ -251,6 +290,8 @@ async function typeText(text,className,token){
     const ch=text[i];
     if(ch==='\n'){
       span.appendChild(document.createElement('br'));
+      linesTyped++;
+      updatePaperPos();
       await sleep(PAUSE_NEWLINE,token);
     } else {
       span.textContent+=ch;
@@ -271,21 +312,28 @@ async function play(){
   signature.classList.remove('visible');
   restartBtn.classList.remove('visible');
   paper.classList.remove('popped');
-  paper.classList.remove('feeding');
   overlay.classList.remove('visible');
   typewriterEl.classList.remove('dimmed');
+  linesTyped=0;
+
+  // Hide paper inside typewriter
+  paper.style.transition='none';
+  paper.style.transform='translateY(100%)';
   area.appendChild(createCursor());
 
   try{
-    await sleep(400,cancelToken);
-    // Paper feeds up from typewriter
-    paper.classList.add('feeding');
-    await sleep(600,cancelToken);
+    await sleep(300,cancelToken);
+    paper.style.transition='transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+
+    // Feed paper out — show top edge with date + greeting
+    linesTyped=2;
+    updatePaperPos();
+    await sleep(500,cancelToken);
     greeting.classList.add('visible');
     haptic(8);
-    await sleep(800,cancelToken);
+    await sleep(600,cancelToken);
 
-    // Type the letter — visible on the white paper, keys press below
+    // Type the letter
     for(const seg of segments){
       if(cancelToken.cancelled)return;
       if(seg.pause){
@@ -299,22 +347,30 @@ async function play(){
     }
 
     // Done typing
-    await sleep(800,cancelToken);
+    await sleep(600,cancelToken);
+    linesTyped+=2;
+    updatePaperPos();
     signoffLine.classList.add('visible');
+    scrollPaper();
     haptic(8);
-    await sleep(1000,cancelToken);
-    signature.classList.add('visible');
-    await sleep(1500,cancelToken);
-    if(cursor)cursor.style.opacity='0';
     await sleep(800,cancelToken);
+    signature.classList.add('visible');
+    scrollPaper();
+    await sleep(1200,cancelToken);
+    if(cursor)cursor.style.opacity='0';
 
-    // Pull paper out — dim typewriter, overlay, pop paper to center
+    // Pull paper fully out
+    await sleep(600,cancelToken);
+    paper.style.transform='translateY(0)';
+    await sleep(500,cancelToken);
+
+    // Pop to center
     typewriterEl.classList.add('dimmed');
     overlay.classList.add('visible');
-    await sleep(500,cancelToken);
+    await sleep(400,cancelToken);
     paper.classList.add('popped');
     haptic(12);
-    await sleep(1200,cancelToken);
+    await sleep(1000,cancelToken);
     restartBtn.classList.add('visible')
   }catch(e){}
   running=false
@@ -324,7 +380,6 @@ function restart(){
   cancelToken.cancelled=true;running=false;
   hint.classList.add('hidden');
   paper.classList.remove('popped');
-  paper.classList.remove('feeding');
   overlay.classList.remove('visible');
   typewriterEl.classList.remove('dimmed');
   setTimeout(play,200);
@@ -334,7 +389,7 @@ function onFirstInteraction(){
   if(started)return;
   started=true;
   hint.classList.add('hidden');
-  setTimeout(play,400);
+  setTimeout(play,300);
 }
 document.body.addEventListener('click',onFirstInteraction);
 document.body.addEventListener('touchstart',onFirstInteraction,{passive:true});
