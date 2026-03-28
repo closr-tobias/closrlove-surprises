@@ -74,6 +74,13 @@
     100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
   }
 
+  /* Firework canvas */
+  #fwCanvas {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    z-index: 2; pointer-events: none;
+  }
+
   .stage {
     position: relative;
     width: 100%;
@@ -172,15 +179,37 @@
     text-transform: uppercase;
   }
 
-  @keyframes screenShake {
-    0%, 100% { transform: translateX(0); }
-    10% { transform: translateX(-3px) rotate(-0.3deg); }
-    30% { transform: translateX(3px) rotate(0.3deg); }
-    50% { transform: translateX(-2px); }
-    70% { transform: translateX(2px); }
+  @keyframes shakeBig {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    10% { transform: translateX(-5px) translateY(2px) rotate(-0.5deg); }
+    20% { transform: translateX(5px) translateY(-2px) rotate(0.5deg); }
+    30% { transform: translateX(-4px) translateY(1px) rotate(-0.3deg); }
+    40% { transform: translateX(4px) translateY(-1px) rotate(0.3deg); }
+    50% { transform: translateX(-3px) translateY(1px); }
+    60% { transform: translateX(3px) translateY(-1px); }
+    70% { transform: translateX(-2px); }
+    80% { transform: translateX(2px); }
     90% { transform: translateX(-1px); }
   }
-  .stage.shaking { animation: screenShake 0.4s ease; }
+  @keyframes shakeMedium {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    15% { transform: translateX(-3px) translateY(1px) rotate(-0.2deg); }
+    30% { transform: translateX(3px) translateY(-1px) rotate(0.2deg); }
+    50% { transform: translateX(-2px); }
+    70% { transform: translateX(2px); }
+    85% { transform: translateX(-1px); }
+  }
+  @keyframes shakeSmall {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-1.5px); }
+    40% { transform: translateX(1.5px); }
+    60% { transform: translateX(-1px); }
+    80% { transform: translateX(1px); }
+  }
+  .stage.shake-big { animation: shakeBig 0.5s ease; }
+  .stage.shake-medium { animation: shakeMedium 0.35s ease; }
+  .stage.shake-small { animation: shakeSmall 0.25s ease; }
+  .stage.shaking { animation: shakeBig 0.4s ease; }
 
   .bonus-line {
     font-family: 'Space Grotesk', sans-serif;
@@ -215,6 +244,7 @@
 </head>
 <body>
 
+<canvas id="fwCanvas"></canvas>
 <div class="flash" id="flash"></div>
 <div class="progress-track"><div class="progress-fill" id="progress"></div></div>
 
@@ -330,6 +360,134 @@
     }
   }
 
+  // === Canvas fireworks (same system as celebration block) ===
+  var fwCanvas = document.getElementById('fwCanvas');
+  var fwCtx = fwCanvas.getContext('2d');
+  var fwDpr = Math.min(window.devicePixelRatio || 1, 2);
+  var fwW, fwH;
+  var fwParticles = [];
+  var fwTrails = [];
+
+  function fwResize() {
+    fwW = window.innerWidth; fwH = window.innerHeight;
+    fwCanvas.width = fwW * fwDpr; fwCanvas.height = fwH * fwDpr;
+    fwCtx.setTransform(fwDpr, 0, 0, fwDpr, 0, 0);
+    fwCanvas.style.width = fwW + 'px'; fwCanvas.style.height = fwH + 'px';
+  }
+  fwResize();
+  window.addEventListener('resize', fwResize);
+
+  var fwPalettes = [
+    ['#ffd700','#ffaa00','#ff8c42','#ffe066'],
+    ['#ff5e8a','#ff85a2','#ffc2d1','#ff3366'],
+    ['#c77dff','#9d4edd','#e0aaff','#7b2ff7'],
+    ['#5e9eff','#38b6ff','#a2d2ff','#0077ff'],
+    ['#ff8c32','#ffa64d','#ffc080','#ffdd80']
+  ];
+
+  function launchFirework(x, y) {
+    var palette = fwPalettes[Math.floor(Math.random() * fwPalettes.length)];
+    var count = 40 + Math.floor(Math.random() * 30);
+    var riseTime = 350 + Math.random() * 250;
+    var startY = fwH + 20;
+
+    fwTrails.push({ x: x, startY: startY, endY: y, start: performance.now(), dur: riseTime, color: palette[0] });
+
+    setTimeout(function() {
+      for (var i = 0; i < count; i++) {
+        var angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.3;
+        var speed = 1.5 + Math.random() * 3;
+        fwParticles.push({
+          x: x, y: y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+          life: 1, decay: 0.008 + Math.random() * 0.008,
+          color: palette[Math.floor(Math.random() * palette.length)],
+          size: 1.5 + Math.random() * 1.5, gravity: 0.02 + Math.random() * 0.02, trail: []
+        });
+      }
+      // Glitter sparks
+      for (var j = 0; j < 15; j++) {
+        var a2 = Math.random() * Math.PI * 2;
+        fwParticles.push({
+          x: x, y: y, vx: Math.cos(a2) * (0.3 + Math.random() * 0.8), vy: Math.sin(a2) * (0.3 + Math.random() * 0.8),
+          life: 1, decay: 0.015 + Math.random() * 0.01,
+          color: '#ffffff', size: 0.8, gravity: 0.005, trail: []
+        });
+      }
+    }, riseTime);
+  }
+
+  function fwTick() {
+    fwCtx.globalCompositeOperation = 'source-over';
+    fwCtx.fillStyle = 'rgba(6,6,12,0.18)';
+    fwCtx.fillRect(0, 0, fwW, fwH);
+    fwCtx.globalCompositeOperation = 'lighter';
+
+    var now = performance.now();
+
+    // Rising trails
+    for (var t = fwTrails.length - 1; t >= 0; t--) {
+      var tr = fwTrails[t];
+      var prog = Math.min((now - tr.start) / tr.dur, 1);
+      if (prog >= 1) { fwTrails.splice(t, 1); continue; }
+      var cy = tr.startY + (tr.endY - tr.startY) * (1 - Math.pow(1 - prog, 2));
+      var cx = tr.x + Math.sin(prog * 8) * 1.5;
+      fwCtx.beginPath(); fwCtx.arc(cx, cy, 2, 0, Math.PI * 2);
+      fwCtx.fillStyle = tr.color; fwCtx.globalAlpha = 1 - prog * 0.5; fwCtx.fill();
+      fwCtx.beginPath(); fwCtx.moveTo(cx, cy); fwCtx.lineTo(cx, cy + 12 * (1 - prog));
+      fwCtx.strokeStyle = tr.color; fwCtx.lineWidth = 1; fwCtx.globalAlpha = 0.3 * (1 - prog); fwCtx.stroke();
+      fwCtx.globalAlpha = 1;
+    }
+
+    // Particles
+    for (var i = fwParticles.length - 1; i >= 0; i--) {
+      var p = fwParticles[i];
+      p.trail.push({ x: p.x, y: p.y, life: p.life });
+      if (p.trail.length > 6) p.trail.shift();
+      p.x += p.vx; p.y += p.vy;
+      p.vy += p.gravity; p.vx *= 0.99;
+      p.life -= p.decay;
+      if (p.life <= 0) { fwParticles.splice(i, 1); continue; }
+
+      // Trail
+      for (var j = 0; j < p.trail.length; j++) {
+        var tp = p.trail[j];
+        fwCtx.beginPath();
+        fwCtx.arc(tp.x, tp.y, p.size * 0.5 * (j / p.trail.length), 0, Math.PI * 2);
+        fwCtx.fillStyle = p.color; fwCtx.globalAlpha = (j / p.trail.length) * p.life * 0.3; fwCtx.fill();
+      }
+      // Head
+      fwCtx.beginPath(); fwCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      fwCtx.fillStyle = p.color; fwCtx.globalAlpha = p.life; fwCtx.fill();
+      // Glow
+      fwCtx.beginPath(); fwCtx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+      fwCtx.fillStyle = p.color; fwCtx.globalAlpha = p.life * 0.08; fwCtx.fill();
+    }
+    fwCtx.globalAlpha = 1;
+    requestAnimationFrame(fwTick);
+  }
+  fwTick();
+
+  // Line firework — launches when a hype line lands
+  function lineFirework() {
+    var x = fwW * (0.2 + Math.random() * 0.6);
+    var y = fwH * (0.15 + Math.random() * 0.35);
+    launchFirework(x, y);
+  }
+
+  // Background fireworks loop
+  function startBgFireworks() {
+    function next() {
+      launchFirework(30 + Math.random() * (fwW - 60), 30 + Math.random() * (fwH * 0.45));
+      if (Math.random() < 0.3) {
+        setTimeout(function() {
+          launchFirework(30 + Math.random() * (fwW - 60), 30 + Math.random() * (fwH * 0.45));
+        }, 200 + Math.random() * 400);
+      }
+      setTimeout(next, 2500 + Math.random() * 2500);
+    }
+    next();
+  }
+
   function impactFlash() {
     flash.classList.add('hit');
     setTimeout(function(){ flash.classList.remove('hit'); }, 80);
@@ -344,27 +502,43 @@
     var line = lines[idx];
     var isBig = line.classList.contains('big');
 
-    line.style.transition = 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease-out, filter 0.3s ease-out';
+    line.style.transition = 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease-out, filter 0.5s ease-out';
     requestAnimationFrame(function(){
       line.classList.add('landed');
+      // Remove any existing shake class
+      stage.classList.remove('shake-big','shake-medium','shake-small');
+      void stage.offsetWidth; // force reflow to restart animation
+
       if (isBig) {
         line.classList.add('live');
         impactFlash();
         spawnPulse();
         spawnBurst(true);
-        if (navigator.vibrate) navigator.vibrate(30);
+        lineFirework();
+        setTimeout(lineFirework, 200);
+        stage.classList.add('shake-big');
+        if (navigator.vibrate) navigator.vibrate(40);
       } else if (line.classList.contains('medium')) {
         spawnBurst(false);
+        lineFirework();
+        stage.classList.add('shake-medium');
+        if (navigator.vibrate) navigator.vibrate(20);
+      } else {
+        stage.classList.add('shake-small');
+        if (navigator.vibrate) navigator.vibrate(10);
       }
     });
 
     progress.style.width = ((idx + 1) / totalLines * 100) + '%';
     current = idx + 1;
-    var delay = isBig ? 900 : line.classList.contains('small') ? 700 : 550;
+    var delay = isBig ? 1800 : line.classList.contains('small') ? 1400 : 1100;
     setTimeout(function(){ landLine(idx + 1); }, delay);
   }
 
-  setTimeout(function(){ landLine(0); }, 600);
+  setTimeout(function(){
+    startBgFireworks();
+    landLine(0);
+  }, 1000);
 
   var lastShake = 0;
   var shakeThreshold = 20;
