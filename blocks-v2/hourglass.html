@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Hourglass</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0f;font-family:'Georgia','Times New Roman',serif}
+  .scene{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+  canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0}
+  .hourglass-wrap{position:relative;width:180px;height:360px;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;transition:transform 0.9s cubic-bezier(0.4,0,0.2,1)}
+  .hourglass-wrap.flipped{transform:rotate(180deg)}
+  .prompt{position:absolute;bottom:50px;color:rgba(212,175,120,0.4);font-size:13px;letter-spacing:3px;text-transform:uppercase;z-index:3;transition:opacity 1s}
+  .prompt.hidden{opacity:0;pointer-events:none}
+  .message{position:absolute;bottom:50px;text-align:center;color:#d4af78;font-size:20px;line-height:1.7;letter-spacing:1px;opacity:0;transition:opacity 2s;max-width:80%;z-index:3;text-shadow:0 0 30px rgba(212,175,120,0.3)}
+  .message.visible{opacity:1}
+</style>
+</head>
+<body>
+<div class="scene" id="scene">
+  <canvas id="bg"></canvas>
+  <div class="hourglass-wrap" id="hourglass"></div>
+  <div class="prompt" id="prompt">tap to flip</div>
+  <div class="message" id="message"></div>
+</div>
+<script>
+const scene=document.getElementById('scene');
+const hg=document.getElementById('hourglass');
+const promptEl=document.getElementById('prompt');
+const msgEl=document.getElementById('message');
+const bgCanvas=document.getElementById('bg');
+const bgCtx=bgCanvas.getContext('2d');
+
+// Main canvas for hourglass
+const c=document.createElement('canvas');
+c.style.cssText='width:100%;height:100%;position:absolute;top:0;left:0';
+hg.appendChild(c);
+const ctx=c.getContext('2d');
+
+const MESSAGES=[
+  "Every second\nwith you\nis worth the wait",
+  "Time stops\nwhen I hold you",
+  "You are\nmy forever",
+  "I'd wait\na thousand lifetimes\nfor you",
+  "Some moments\ndeserve eternity"
+];
+
+let W,H,isFlipped=false,isDraining=false,drainProgress=0,msgIndex=0;
+let grains=[];
+let dustParticles=[];
+let showMsg=false;
+
+function resize(){
+  W=180*2;H=360*2;c.width=W;c.height=H;
+  bgCanvas.width=window.innerWidth*2;bgCanvas.height=window.innerHeight*2;
+  bgCanvas.style.width=window.innerWidth+'px';bgCanvas.style.height=window.innerHeight+'px';
+}
+resize();
+window.addEventListener('resize',resize);
+
+// Dust particles for background
+for(let i=0;i<30;i++){
+  dustParticles.push({
+    x:Math.random()*window.innerWidth*2,
+    y:Math.random()*window.innerHeight*2,
+    vx:(Math.random()-0.5)*0.3,
+    vy:-0.2-Math.random()*0.3,
+    size:1+Math.random()*2,
+    alpha:0.1+Math.random()*0.2,
+    phase:Math.random()*Math.PI*2
+  });
+}
+
+function drawBg(t){
+  bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+  dustParticles.forEach(p=>{
+    p.x+=p.vx+Math.sin(t*0.001+p.phase)*0.2;
+    p.y+=p.vy;
+    if(p.y<-10)p.y=bgCanvas.height+10;
+    if(p.x<-10)p.x=bgCanvas.width+10;
+    if(p.x>bgCanvas.width+10)p.x=-10;
+    bgCtx.beginPath();
+    bgCtx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    bgCtx.fillStyle=`rgba(212,175,120,${p.alpha+Math.sin(t*0.002+p.phase)*0.05})`;
+    bgCtx.fill();
+  });
+}
+
+// Hourglass drawing
+const CX=W/2, frameW=160, frameH=18, glassW=130, neckW=10;
+const topY=36, botY=H-36, midY=H/2;
+
+function drawFrame(y){
+  ctx.save();
+  const g=ctx.createLinearGradient(0,y-frameH/2,0,y+frameH/2);
+  g.addColorStop(0,'#9e8668');g.addColorStop(0.5,'#7a6248');g.addColorStop(1,'#5c4a36');
+  ctx.fillStyle=g;
+  roundRect(ctx,CX-frameW/2,y-frameH/2,frameW,frameH,4);
+  ctx.fill();
+  // Knobs
+  [CX-frameW/2+14, CX+frameW/2-14].forEach(kx=>{
+    ctx.beginPath();ctx.arc(kx,y,5,0,Math.PI*2);
+    ctx.fillStyle='#a08060';ctx.fill();
+    ctx.beginPath();ctx.arc(kx-1,y-1,2,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fill();
+  });
+  ctx.restore();
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function drawGlass(){
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=2;
+  // Top bulb
+  ctx.beginPath();
+  ctx.moveTo(CX-glassW/2, topY+frameH/2);
+  ctx.quadraticCurveTo(CX-glassW/2, midY-20, CX-neckW/2, midY);
+  ctx.moveTo(CX+glassW/2, topY+frameH/2);
+  ctx.quadraticCurveTo(CX+glassW/2, midY-20, CX+neckW/2, midY);
+  ctx.stroke();
+  // Bottom bulb
+  ctx.beginPath();
+  ctx.moveTo(CX-neckW/2, midY);
+  ctx.quadraticCurveTo(CX-glassW/2, midY+20, CX-glassW/2, botY-frameH/2);
+  ctx.moveTo(CX+neckW/2, midY);
+  ctx.quadraticCurveTo(CX+glassW/2, midY+20, CX+glassW/2, botY-frameH/2);
+  ctx.stroke();
+  // Reflection
+  ctx.beginPath();
+  ctx.moveTo(CX-glassW/2+15, topY+frameH/2+20);
+  ctx.quadraticCurveTo(CX-glassW/2+12, midY-60, CX-neckW/2+5, midY-15);
+  ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=8;ctx.stroke();
+  ctx.restore();
+}
+
+function drawSand(progress){
+  // progress: 0=full top, 1=full bottom
+  ctx.save();
+  const topFill=1-progress;
+  const botFill=progress;
+  
+  // Top sand (triangle pointing down)
+  if(topFill>0){
+    ctx.beginPath();
+    const sandH=topFill;
+    // Sand sits at bottom of top bulb, shrinking upward
+    const topSandTop=topY+frameH/2+10+(1-sandH)*((midY-20)-(topY+frameH/2+10));
+    const topSandBot=midY-8;
+    // Width narrows as we go down
+    const wTop=glassW/2-10-(1-sandH)*20;
+    const wBot=neckW/2+2;
+    ctx.moveTo(CX-wTop, topSandTop);
+    ctx.quadraticCurveTo(CX-wTop-5, (topSandTop+topSandBot)/2, CX-wBot, topSandBot);
+    ctx.lineTo(CX+wBot, topSandBot);
+    ctx.quadraticCurveTo(CX+wTop+5, (topSandTop+topSandBot)/2, CX+wTop, topSandTop);
+    // Flat top with slight curve
+    ctx.quadraticCurveTo(CX, topSandTop-4*sandH, CX-wTop, topSandTop);
+    const sg=ctx.createLinearGradient(0,topSandTop,0,topSandBot);
+    sg.addColorStop(0,'#d4af78');sg.addColorStop(1,'#c49a5c');
+    ctx.fillStyle=sg;ctx.fill();
+  }
+  
+  // Bottom sand (triangle pointing up, fills from bottom)
+  if(botFill>0){
+    ctx.beginPath();
+    const botSandBot=botY-frameH/2-10;
+    const botSandTop=botSandBot-botFill*((botSandBot)-(midY+8));
+    const wBot2=glassW/2-10-(1-botFill)*20;
+    const wTop2=neckW/2+botFill*10;
+    ctx.moveTo(CX-wBot2, botSandBot);
+    ctx.quadraticCurveTo(CX-wBot2-5, (botSandTop+botSandBot)/2, CX-wTop2, botSandTop);
+    // Mound top
+    ctx.quadraticCurveTo(CX, botSandTop-8*botFill, CX+wTop2, botSandTop);
+    ctx.quadraticCurveTo(CX+wBot2+5, (botSandTop+botSandBot)/2, CX+wBot2, botSandBot);
+    ctx.closePath();
+    const sg2=ctx.createLinearGradient(0,botSandTop,0,botSandBot);
+    sg2.addColorStop(0,'#c49a5c');sg2.addColorStop(1,'#d4af78');
+    ctx.fillStyle=sg2;ctx.fill();
+  }
+  
+  // Falling stream
+  if(progress>0&&progress<1){
+    ctx.beginPath();
+    ctx.moveTo(CX-1.5, midY-6);
+    ctx.lineTo(CX+1.5, midY-6);
+    ctx.lineTo(CX+1, midY+15);
+    ctx.lineTo(CX-1, midY+15);
+    ctx.closePath();
+    ctx.fillStyle='rgba(212,175,120,0.7)';ctx.fill();
+    
+    // Spawn grain particles
+    if(Math.random()<0.4){
+      grains.push({
+        x:CX+(Math.random()-0.5)*4,
+        y:midY+10+Math.random()*10,
+        vy:1+Math.random()*2,
+        vx:(Math.random()-0.5)*0.5,
+        life:1
+      });
+    }
+  }
+  
+  // Draw grains
+  grains.forEach((g,i)=>{
+    g.y+=g.vy;g.x+=g.vx;g.life-=0.03;
+    if(g.life>0){
+      ctx.beginPath();ctx.arc(g.x,g.y,1.5,0,Math.PI*2);
+      ctx.fillStyle=`rgba(212,175,120,${g.life*0.6})`;ctx.fill();
+    }
+  });
+  grains=grains.filter(g=>g.life>0);
+  
+  ctx.restore();
+}
+
+// Ambient glow
+function drawGlow(t){
+  ctx.save();
+  const pulse=0.04+Math.sin(t*0.002)*0.015;
+  const grd=ctx.createRadialGradient(CX,midY,20,CX,midY,180);
+  grd.addColorStop(0,`rgba(212,175,120,${pulse})`);
+  grd.addColorStop(1,'transparent');
+  ctx.fillStyle=grd;
+  ctx.fillRect(0,0,W,H);
+  ctx.restore();
+}
+
+let drainStart=0;
+const DRAIN_MS=7000;
+
+function draw(t){
+  ctx.clearRect(0,0,W,H);
+  drawBg(t);
+  drawGlow(t);
+  
+  if(isDraining){
+    const elapsed=t-drainStart;
+    drainProgress=Math.min(elapsed/DRAIN_MS,1);
+    // Ease out
+    const eased=1-Math.pow(1-drainProgress,2.5);
+    drawSand(eased);
+    if(drainProgress>=1){
+      isDraining=false;
+      setTimeout(()=>{
+        msgEl.innerHTML=MESSAGES[msgIndex%MESSAGES.length].split('\n').join('<br>');
+        msgEl.classList.add('visible');
+        msgIndex++;
+      },400);
+    }
+  } else {
+    drawSand(showMsg?1:0);
+  }
+  
+  drawGlass();
+  drawFrame(topY);
+  drawFrame(botY);
+  
+  requestAnimationFrame(draw);
+}
+
+hg.addEventListener('click',()=>{
+  if(isDraining)return;
+  msgEl.classList.remove('visible');
+  promptEl.classList.add('hidden');
+  showMsg=false;
+  
+  if(!isFlipped){
+    isFlipped=true;
+    hg.classList.add('flipped');
+    setTimeout(()=>{drainProgress=0;isDraining=true;drainStart=performance.now()},950);
+  } else {
+    isFlipped=false;
+    hg.classList.remove('flipped');
+    setTimeout(()=>{
+      isFlipped=true;
+      hg.classList.add('flipped');
+      setTimeout(()=>{drainProgress=0;isDraining=true;drainStart=performance.now()},950);
+    },950);
+  }
+});
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
