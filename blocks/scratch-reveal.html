@@ -98,7 +98,7 @@
     justify-content: center;
     padding: 16px 20px;
     text-align: center;
-    background: linear-gradient(145deg, #12101a 0%, #0e0c16 100%);
+    background: linear-gradient(145deg, #1a1828 0%, #161424 100%);
   }
   .card-text .emoji-bg {
     position: absolute;
@@ -135,21 +135,94 @@
     cursor: pointer;
     touch-action: none;
   }
+  /* Gold shimmer over the scratch surface */
+  .scratch-card::after {
+    content: '';
+    position: absolute; inset: 0;
+    z-index: 3; pointer-events: none;
+    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 45%, transparent 55%);
+    background-size: 250% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+    border-radius: 12px;
+  }
+  .scratch-card.revealed::after { opacity: 0; transition: opacity 0.5s; }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -50% 0; }
+  }
+
+  /* Card shakes when close to reveal */
+  .scratch-card.excited {
+    animation: cardExcite 0.3s ease infinite;
+  }
+  @keyframes cardExcite {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    25% { transform: translateX(-1.5px) rotate(-0.3deg); }
+    75% { transform: translateX(1.5px) rotate(0.3deg); }
+  }
+  /* Card nudges while scratching */
+  .scratch-card.scratching {
+    transition: transform 0.05s;
+  }
 
   .scratch-card.revealed {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none;
     box-shadow:
       0 2px 8px rgba(0,0,0,0.3),
       0 12px 40px rgba(0,0,0,0.25),
-      0 0 30px rgba(255,215,0,0.06),
-      inset 0 0 0 1px rgba(255,215,0,0.12);
+      0 0 40px rgba(255,215,0,0.1),
+      inset 0 0 0 1px rgba(255,215,0,0.15);
   }
   .scratch-card.revealed .card-text .text-content p {
     animation: textGlow 0.8s ease forwards;
   }
   @keyframes textGlow {
-    0% { opacity: 0.5; transform: scale(0.96); }
-    50% { text-shadow: 0 0 20px rgba(255,215,0,0.15); }
-    100% { opacity: 1; transform: scale(1); text-shadow: none; }
+    0% { opacity: 0.5; transform: scale(0.92); }
+    40% { text-shadow: 0 0 30px rgba(255,215,0,0.25); transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1); text-shadow: 0 0 8px rgba(255,215,0,0.06); }
+  }
+
+  /* Confetti */
+  .confetti {
+    position: fixed;
+    width: 6px; height: 6px;
+    pointer-events: none; z-index: 300;
+  }
+  @keyframes confettiFall {
+    0% { opacity: 1; transform: translate(0,0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translate(var(--cx), var(--cy)) rotate(var(--cr)) scale(0.4); }
+  }
+
+  /* Warm glow on cleared areas */
+  .scratch-card .warm-glow {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 1;
+    background: radial-gradient(ellipse at center, rgba(255,180,80,0.06) 0%, transparent 70%);
+    opacity: 0; transition: opacity 0.5s ease;
+  }
+
+  /* Gold flakes that fly off while scratching */
+  .gold-flake {
+    position: absolute;
+    border-radius: 1px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  @keyframes flakeOff {
+    0% { opacity: 1; transform: translate(0,0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translate(var(--fx), var(--fy)) rotate(var(--fr)) scale(0.3); }
+  }
+
+  /* Progress glow around card edge */
+  .scratch-card .progress-glow {
+    position: absolute; inset: -2px;
+    border-radius: 14px;
+    pointer-events: none;
+    z-index: 1;
+    border: 2px solid transparent;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
   }
 
   .sparkle {
@@ -226,6 +299,8 @@
     </div>
     <canvas class="scratch-canvas"></canvas>
     <div class="scratch-hint">scratch me</div>
+    <div class="progress-glow"></div>
+    <div class="warm-glow"></div>
   </div>
   <!-- /SLOT -->
 
@@ -240,6 +315,8 @@
     </div>
     <canvas class="scratch-canvas"></canvas>
     <div class="scratch-hint">scratch me</div>
+    <div class="progress-glow"></div>
+    <div class="warm-glow"></div>
   </div>
   <!-- /SLOT -->
 
@@ -254,6 +331,8 @@
     </div>
     <canvas class="scratch-canvas"></canvas>
     <div class="scratch-hint">scratch me</div>
+    <div class="progress-glow"></div>
+    <div class="warm-glow"></div>
   </div>
   <!-- /SLOT -->
 
@@ -268,6 +347,8 @@
     </div>
     <canvas class="scratch-canvas"></canvas>
     <div class="scratch-hint">scratch me</div>
+    <div class="progress-glow"></div>
+    <div class="warm-glow"></div>
   </div>
   <!-- /SLOT -->
 
@@ -356,32 +437,116 @@
       ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
     }
 
+    var RADIUS = 40;
+    var lastScratchPos = null;
+    var scratchCount = 0;
+    var lastRatio = 0;
+    var progressGlow = card.querySelector('.progress-glow');
+    var warmGlow = card.querySelector('.warm-glow');
+
+    function spawnFlakes(x, y) {
+      var count = 2 + Math.floor(Math.random() * 3);
+      for (var i = 0; i < count; i++) {
+        var flake = document.createElement('div');
+        flake.className = 'gold-flake';
+        var size = 2 + Math.random() * 4;
+        var goldColors = ['#d4a843','#f0d060','#e8c84a','#c89830','#ffd700'];
+        var fx = (Math.random() - 0.5) * 80;
+        var fy = -(20 + Math.random() * 50);
+        var fr = (Math.random() - 0.5) * 360;
+        flake.style.cssText = 'left:'+x+'px;top:'+y+'px;width:'+size+'px;height:'+(size*0.6)+'px;'+
+          'background:'+goldColors[Math.floor(Math.random()*goldColors.length)]+';'+
+          '--fx:'+fx+'px;--fy:'+fy+'px;--fr:'+fr+'deg;'+
+          'animation:flakeOff '+(0.4+Math.random()*0.3)+'s ease-out forwards;'+
+          'animation-delay:'+(Math.random()*0.05)+'s;';
+        card.appendChild(flake);
+        setTimeout(function(f){f.remove()}.bind(null,flake), 800);
+      }
+    }
+
+    function updateProgressGlow(ratio) {
+      if (ratio < 0.3) {
+        progressGlow.style.borderColor = 'transparent';
+        progressGlow.style.boxShadow = 'none';
+      } else if (ratio < 0.6) {
+        progressGlow.style.borderColor = 'rgba(255,215,0,0.1)';
+        progressGlow.style.boxShadow = '0 0 8px rgba(255,215,0,0.05)';
+      } else if (ratio < 0.8) {
+        progressGlow.style.borderColor = 'rgba(255,215,0,0.2)';
+        progressGlow.style.boxShadow = '0 0 15px rgba(255,215,0,0.08)';
+      } else {
+        progressGlow.style.borderColor = 'rgba(255,215,0,0.35)';
+        progressGlow.style.boxShadow = '0 0 25px rgba(255,215,0,0.12)';
+      }
+    }
+
     function scratch(x, y) {
       var rect = canvas.getBoundingClientRect();
       var cx = x - rect.left;
       var cy = y - rect.top;
 
       ctx.globalCompositeOperation = 'destination-out';
-      var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 22);
-      grad.addColorStop(0, 'rgba(0,0,0,1)');
-      grad.addColorStop(0.7, 'rgba(0,0,0,0.8)');
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 22, 0, Math.PI * 2);
-      ctx.fill();
 
-      for (var i = 0; i < 3; i++) {
-        var ox = cx + (Math.random() - 0.5) * 30;
-        var oy = cy + (Math.random() - 0.5) * 30;
+      // Continuous thick line — no gaps
+      if (lastScratchPos) {
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+        ctx.lineWidth = RADIUS * 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         ctx.beginPath();
-        ctx.arc(ox, oy, Math.random() * 4 + 1, 0, Math.PI * 2);
+        ctx.moveTo(lastScratchPos.x, lastScratchPos.y);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(0,0,0,1)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, RADIUS, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.globalCompositeOperation = 'source-over';
 
-      checkInterval++;
-      if (checkInterval % 6 === 0) checkReveal();
+      // Scatter
+      for (var i = 0; i < 2; i++) {
+        var ox = cx + (Math.random() - 0.5) * RADIUS * 1.5;
+        var oy = cy + (Math.random() - 0.5) * RADIUS * 1.5;
+        ctx.beginPath();
+        ctx.arc(ox, oy, Math.random() * 5 + 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Scratch marks on the gold surface — thin lines
+      ctx.globalCompositeOperation = 'source-over';
+      if (lastScratchPos) {
+        ctx.save();
+        ctx.globalAlpha = 0.08;
+        ctx.strokeStyle = '#8a6820';
+        ctx.lineWidth = 0.5;
+        for (var s = 0; s < 3; s++) {
+          var sx1 = cx + (Math.random()-0.5)*RADIUS;
+          var sy1 = cy + (Math.random()-0.5)*RADIUS;
+          var sx2 = sx1 + (Math.random()-0.5)*20;
+          var sy2 = sy1 + (Math.random()-0.5)*8;
+          ctx.beginPath();
+          ctx.moveTo(sx1,sy1);
+          ctx.lineTo(sx2,sy2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      lastScratchPos = { x: cx, y: cy };
+
+
+      // Gold flakes fly off
+      scratchCount++;
+      if (scratchCount % 3 === 0) spawnFlakes(cx, cy);
+
+      // Haptic — intensifies as you get closer to reveal
+      if (scratchCount % 4 === 0 && navigator.vibrate) {
+        var intensity = Math.min(8, 2 + Math.floor(lastRatio * 8));
+        navigator.vibrate(intensity);
+      }
+
+      if (scratchCount % 6 === 0) checkReveal();
     }
 
     function checkReveal() {
@@ -390,68 +555,147 @@
       var pixels = imageData.data;
       var transparent = 0;
       for (var i = 3; i < pixels.length; i += 64) {
-        if (pixels[i] === 0) transparent++;
+        if (pixels[i] < 30) transparent++;
       }
       var ratio = transparent / (pixels.length / 64);
-      if (ratio > 0.45) revealCard();
+      lastRatio = ratio;
+
+      // Progress glow around border
+      updateProgressGlow(ratio);
+
+      // Warm glow builds on cleared areas
+      warmGlow.style.opacity = String(Math.min(1, ratio * 1.2));
+
+      // No opacity changes — keep gold surface fully visible until reveal
+
+      if (ratio > 0.95) revealCard();
     }
 
     function revealCard() {
       if (hasRevealed) return;
       hasRevealed = true;
 
+      card.classList.remove('excited');
+      card.style.transform = 'none';
+
       canvas.style.transition = 'opacity 0.5s ease-out';
       canvas.style.opacity = '0';
       setTimeout(function() { canvas.style.display = 'none'; }, 500);
 
       card.classList.add('revealed');
+      progressGlow.style.borderColor = 'rgba(255,215,0,0.4)';
+      progressGlow.style.boxShadow = '0 0 30px rgba(255,215,0,0.15)';
+      setTimeout(function(){
+        progressGlow.style.transition = 'all 1.5s ease';
+        progressGlow.style.borderColor = 'rgba(255,215,0,0.08)';
+        progressGlow.style.boxShadow = 'none';
+      }, 800);
 
-      var rect = card.getBoundingClientRect();
+      // Confetti burst — appended to body with fixed positioning
+      var cardRect = card.getBoundingClientRect();
+      var centerX = cardRect.left + cardRect.width / 2;
+      var centerY = cardRect.top + cardRect.height / 2;
+      var confettiColors = ['#ffd700','#ff6b6b','#5ed4ff','#ff69b4','#7bff6b','#c77dff','#ffaa00','#ffffff'];
+      for (var i = 0; i < 30; i++) {
+        var conf = document.createElement('div');
+        conf.className = 'confetti';
+        var angle = Math.random() * Math.PI * 2;
+        var dist = 60 + Math.random() * 120;
+        var size = 3 + Math.random() * 5;
+        var color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+        var isRect = Math.random() > 0.5;
+        conf.style.cssText = 'left:'+centerX+'px;top:'+centerY+'px;'+
+          'width:'+size+'px;height:'+(isRect ? size*0.4 : size)+'px;'+
+          'background:'+color+';'+
+          'border-radius:'+(isRect?'1px':'50%')+';'+
+          '--cx:'+(Math.cos(angle)*dist)+'px;'+
+          '--cy:'+(Math.sin(angle)*dist - 30)+'px;'+
+          '--cr:'+(Math.random()*720-360)+'deg;'+
+          'animation:confettiFall '+(0.7+Math.random()*0.5)+'s ease-out forwards;'+
+          'animation-delay:'+(Math.random()*0.15)+'s;';
+        document.body.appendChild(conf);
+        setTimeout(function(c){c.remove()}.bind(null,conf), 1300);
+      }
+
+      // Sparkles too
       for (var i = 0; i < 12; i++) {
         var spark = document.createElement('div');
         spark.className = 'sparkle';
-        var angle = (Math.PI * 2 / 12) * i + Math.random() * 0.5;
-        var dist = 40 + Math.random() * 60;
-        spark.style.cssText = 'left:' + (rect.width/2) + 'px;top:' + (rect.height/2) + 'px;' +
-          '--tx:' + (Math.cos(angle) * dist) + 'px;--ty:' + (Math.sin(angle) * dist) + 'px;' +
-          'width:' + (2 + Math.random() * 4) + 'px;height:' + (2 + Math.random() * 4) + 'px;' +
-          'animation-delay:' + (Math.random() * 0.15) + 's;';
+        var a2 = (Math.PI * 2 / 12) * i + Math.random() * 0.5;
+        var d2 = 40 + Math.random() * 60;
+        spark.style.cssText = 'left:'+(cw/2)+'px;top:'+(ch/2)+'px;'+
+          '--tx:'+(Math.cos(a2)*d2)+'px;--ty:'+(Math.sin(a2)*d2)+'px;'+
+          'width:'+(2+Math.random()*4)+'px;height:'+(2+Math.random()*4)+'px;'+
+          'animation-delay:'+(Math.random()*0.15)+'s;';
         card.appendChild(spark);
-        setTimeout(function(s){ s.remove(); }.bind(null, spark), 800);
+        setTimeout(function(s){s.remove()}.bind(null,spark), 800);
       }
 
-      if (navigator.vibrate) navigator.vibrate(30);
+      if (navigator.vibrate) navigator.vibrate([15,30,15,30,15]);
 
       revealedCount++;
-      document.getElementById('revealCount').textContent = revealedCount;
+      // Animate counter
+      var countEl = document.getElementById('revealCount');
+      countEl.textContent = revealedCount;
+      countEl.style.color = 'rgba(255,215,0,0.7)';
+      setTimeout(function(){ countEl.style.color = 'rgba(255,215,0,0.3)'; }, 500);
 
       if (revealedCount === totalCards) {
-        setTimeout(showComplete, 600);
+        setTimeout(showComplete, 800);
       }
     }
 
     function showComplete() {
+      if (navigator.vibrate) navigator.vibrate([20,40,20,40,20,40,20]);
+
       var el = document.createElement('div');
-      el.style.cssText = 'text-align:center;margin-top:20px;opacity:0;animation:fadeIn 0.8s forwards;';
-      el.innerHTML = '<p style="font-family:Caveat,cursive;font-size:1.1rem;color:rgba(255,215,0,0.4);margin-bottom:4px;">all secrets revealed \u2727</p>' +
-        '<p style="font-size:0.55rem;color:rgba(255,255,255,0.06);letter-spacing:2px;text-transform:uppercase;">our little world</p>';
+      el.style.cssText = 'text-align:center;margin-top:28px;opacity:0;animation:fadeIn 1s forwards;';
+      el.innerHTML = '<p style="font-family:Caveat,cursive;font-size:1.3rem;color:rgba(255,215,0,0.5);margin-bottom:6px;">Nobody else would get any of this ✦</p>' +
+        '<p style="font-family:Caveat,cursive;font-size:1rem;color:rgba(255,215,0,0.25);">That\'s why I love us.</p>';
       document.querySelector('.cards-container').appendChild(el);
+
+      // Staggered confetti burst from all cards
+      var confettiColors = ['#ffd700','#ff6b6b','#5ed4ff','#ff69b4','#7bff6b','#c77dff','#ffaa00'];
+      document.querySelectorAll('.scratch-card').forEach(function(c, ci) {
+        setTimeout(function(){
+          var cr = c.getBoundingClientRect();
+          var cx = cr.left + cr.width/2;
+          var cy = cr.top + cr.height/2;
+          for (var i = 0; i < 20; i++) {
+            var conf = document.createElement('div');
+            conf.className = 'confetti';
+            var angle = Math.random() * Math.PI * 2;
+            var dist = 50 + Math.random() * 100;
+            var size = 3 + Math.random() * 5;
+            var color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+            conf.style.cssText = 'left:'+cx+'px;top:'+cy+'px;'+
+              'width:'+size+'px;height:'+(size*(Math.random()>0.5?0.4:1))+'px;'+
+              'background:'+color+';border-radius:'+(Math.random()>0.5?'1px':'50%')+';'+
+              '--cx:'+(Math.cos(angle)*dist)+'px;--cy:'+(Math.sin(angle)*dist-20)+'px;'+
+              '--cr:'+(Math.random()*720-360)+'deg;'+
+              'animation:confettiFall '+(0.7+Math.random()*0.5)+'s ease-out forwards;'+
+              'animation-delay:'+(Math.random()*0.2)+'s;';
+            document.body.appendChild(conf);
+            setTimeout(function(co){co.remove()}.bind(null,conf), 1300);
+          }
+        }, ci * 150);
+      });
     }
 
-    canvas.addEventListener('mousedown', function(e) { isDrawing = true; scratch(e.clientX, e.clientY); });
+    canvas.addEventListener('mousedown', function(e) { isDrawing = true; lastScratchPos = null; scratch(e.clientX, e.clientY); });
     canvas.addEventListener('mousemove', function(e) { if (isDrawing) scratch(e.clientX, e.clientY); });
-    canvas.addEventListener('mouseup', function() { isDrawing = false; });
-    canvas.addEventListener('mouseleave', function() { isDrawing = false; });
+    canvas.addEventListener('mouseup', function() { isDrawing = false; lastScratchPos = null; if(!hasRevealed&&!card.classList.contains('excited'))card.style.transform='none'; });
+    canvas.addEventListener('mouseleave', function() { isDrawing = false; lastScratchPos = null; if(!hasRevealed&&!card.classList.contains('excited'))card.style.transform='none'; });
 
     canvas.addEventListener('touchstart', function(e) {
-      e.preventDefault(); isDrawing = true;
+      e.preventDefault(); isDrawing = true; lastScratchPos = null;
       scratch(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
     canvas.addEventListener('touchmove', function(e) {
       e.preventDefault();
       if (isDrawing) scratch(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
-    canvas.addEventListener('touchend', function() { isDrawing = false; });
+    canvas.addEventListener('touchend', function() { isDrawing = false; lastScratchPos = null; if(!hasRevealed&&!card.classList.contains('excited'))card.style.transform='none'; });
 
     var delay = parseInt(card.dataset.index) * 200 + 500;
     setTimeout(function() { initCanvas(); }, delay + 600);
