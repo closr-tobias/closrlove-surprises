@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Pocket Mirror</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Inter:wght@300;400&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#0a0610;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .mirror-closed{width:180px;height:180px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d4a855,#8a6a30 70%,#5a4420);border:3px solid rgba(255,220,150,.15);box-shadow:0 8px 40px rgba(0,0,0,.5),inset 0 2px 4px rgba(255,220,150,.2);cursor:pointer;position:relative;z-index:2;transition:all .8s cubic-bezier(.4,0,.2,1)}
+  .mirror-closed .ornament{position:absolute;inset:12px;border-radius:50%;border:2px solid rgba(255,220,150,.15)}
+  .mirror-closed .initial{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Caveat',cursive;font-size:2.5rem;color:rgba(255,220,150,.3)}
+  .mirror-closed.opened{transform:scale(0.8) translateY(40px);opacity:0;pointer-events:none}
+  .mirror-open{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);width:300px;height:300px;border-radius:50%;background:#1a1620;border:6px solid;border-image:linear-gradient(135deg,#d4a855,#8a6a30,#d4a855) 1;z-index:3;overflow:hidden;transition:transform .8s cubic-bezier(.4,0,.2,1) .3s;border-radius:50%;border:6px solid #9a7a40;box-shadow:0 0 60px rgba(200,160,80,.1)}
+  .mirror-open.show{transform:translate(-50%,-50%) scale(1)}
+  canvas#mercury{position:absolute;inset:0;border-radius:50%;z-index:1;cursor:crosshair}
+  .hidden-message{position:absolute;inset:20px;display:flex;align-items:center;justify-content:center;text-align:center;z-index:0;padding:20px}
+  .hidden-text{font-family:'Caveat',cursive;font-size:1.4rem;color:rgba(200,170,120,.85);line-height:1.6;text-shadow:0 0 20px rgba(200,160,80,.2)}
+  .filigree{position:absolute;inset:4px;border-radius:50%;border:1px solid rgba(200,160,80,.1);z-index:4;pointer-events:none}
+  .frame-glow{position:absolute;inset:-2px;border-radius:50%;z-index:5;pointer-events:none;transition:box-shadow 2s}
+  .frame-glow.active{box-shadow:0 0 40px rgba(200,160,80,.2),inset 0 0 30px rgba(200,160,80,.1)}
+  .final-msg{position:fixed;bottom:50px;left:50%;transform:translateX(-50%);text-align:center;z-index:10;opacity:0;transition:all 1.5s;width:85%;max-width:360px}
+  .final-msg.show{opacity:1}
+  .final-msg .text{font-family:'Caveat',cursive;font-size:1.6rem;color:rgba(200,170,120,.8);line-height:1.5}
+  .final-msg .sub{font-size:.6rem;color:rgba(200,160,80,.2);letter-spacing:3px;margin-top:12px}
+  .hint{position:fixed;bottom:30px;font-size:.75rem;color:rgba(200,160,80,.2);z-index:10;animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.15}50%{opacity:.4}}
+  .progress-bar{position:fixed;top:20px;left:50%;transform:translateX(-50%);width:120px;height:3px;background:rgba(200,160,80,.1);border-radius:2px;z-index:10;opacity:0;transition:opacity .5s}
+  .progress-bar.show{opacity:1}
+  .progress-fill{height:100%;background:rgba(200,160,80,.5);border-radius:2px;width:0%;transition:width .3s}
+</style>
+</head>
+<body>
+<div class="mirror-closed" id="closed">
+  <div class="ornament"></div>
+  <div class="initial">♡</div>
+</div>
+<div class="mirror-open" id="open">
+  <div class="frame-glow" id="frameGlow"></div>
+  <div class="filigree"></div>
+  <canvas id="mercury"></canvas>
+  <div class="hidden-message">
+    <div class="hidden-text">You are more beautiful than any reflection could ever show</div>
+  </div>
+</div>
+<div class="hint" id="hint">tap to open</div>
+<div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+<div class="final-msg" id="finalMsg">
+  <div class="text">I see my whole world when I look at you.</div>
+  <div class="sub">REFLECTED</div>
+</div>
+<script>
+const closed = document.getElementById('closed');
+const open = document.getElementById('open');
+const hint = document.getElementById('hint');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const frameGlow = document.getElementById('frameGlow');
+const finalMsg = document.getElementById('finalMsg');
+let isOpen = false;
+let cleared = 0;
+const totalCells = 40 * 40;
+const grid = new Uint8Array(totalCells); // 0=mercury, 1=cleared
+
+// Open mirror on tap
+closed.addEventListener('click', () => {
+  if (isOpen) return;
+  isOpen = true;
+  closed.classList.add('opened');
+  setTimeout(() => {
+    open.classList.add('show');
+    hint.textContent = 'swipe to clear the glass';
+    progressBar.classList.add('show');
+    initMercury();
+  }, 300);
+});
+
+const canvas = document.getElementById('mercury');
+let ctx, W, H;
+
+function initMercury() {
+  W = canvas.width = 600;
+  H = canvas.height = 600;
+  ctx = canvas.getContext('2d');
+  drawMercury();
+}
+
+function drawMercury() {
+  const cellW = W / 40, cellH = H / 40;
+  ctx.clearRect(0, 0, W, H);
+  const t = Date.now() * 0.001;
+  for (let y = 0; y < 40; y++) {
+    for (let x = 0; x < 40; x++) {
+      const idx = y * 40 + x;
+      if (grid[idx]) continue;
+      // Mercury-like silver with shimmer
+      const shimmer = Math.sin(t*2 + x*0.3 + y*0.2) * 15;
+      const base = 140 + shimmer;
+      ctx.fillStyle = `rgba(${base+20},${base+15},${base+30},0.92)`;
+      ctx.fillRect(x * cellW, y * cellH, cellW + 0.5, cellH + 0.5);
+    }
+  }
+  if (cleared < totalCells) requestAnimationFrame(drawMercury);
+}
+
+function clearAt(cx, cy) {
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((cx - rect.left) / rect.width * 40);
+  const y = Math.floor((cy - rect.top) / rect.height * 40);
+  const radius = 3;
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      const nx = x + dx, ny = y + dy;
+      if (nx >= 0 && nx < 40 && ny >= 0 && ny < 40) {
+        const idx = ny * 40 + nx;
+        if (!grid[idx]) {
+          grid[idx] = 1;
+          cleared++;
+        }
+      }
+    }
+  }
+  const pct = (cleared / totalCells) * 100;
+  progressFill.style.width = pct + '%';
+  if (pct > 85 && !finalMsg.classList.contains('show')) {
+    frameGlow.classList.add('active');
+    finalMsg.classList.add('show');
+    hint.style.display = 'none';
+    progressBar.style.display = 'none';
+  }
+}
+
+let drawing = false;
+canvas.addEventListener('mousedown', () => drawing = true);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; });
+document.addEventListener('mouseup', () => drawing = false);
+document.addEventListener('touchend', () => drawing = false);
+canvas.addEventListener('mousemove', e => { if (drawing) clearAt(e.clientX, e.clientY); });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (drawing) clearAt(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: false });
+canvas.addEventListener('click', e => clearAt(e.clientX, e.clientY));
+</script>
+</body>
+</html>

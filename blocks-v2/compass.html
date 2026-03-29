@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Compass</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e8dcc8;font-family:Georgia,'Times New Roman',serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;-webkit-user-select:none;user-select:none}
+.container{position:relative;width:min(80vw,340px);height:min(80vw,340px)}
+.compass-body{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 40% 35%,#2a2520,#151210 70%);box-shadow:0 0 0 6px #3a3228,0 0 0 8px #1a1612,0 0 60px rgba(0,0,0,.8),inset 0 2px 20px rgba(0,0,0,.6);overflow:hidden}
+.compass-body::after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.06),transparent 60%);pointer-events:none}
+.compass-ring{position:absolute;inset:12%;border-radius:50%;border:1px solid rgba(200,180,140,.15)}
+.compass-ring-inner{position:absolute;inset:25%;border-radius:50%;border:1px solid rgba(200,180,140,.1)}
+.cardinal{position:absolute;font-size:clamp(14px,3.5vw,18px);color:rgba(200,180,140,.5);font-weight:bold;letter-spacing:2px}
+.cardinal.n{top:8%;left:50%;transform:translateX(-50%);color:rgba(220,160,120,.7)}
+.cardinal.s{bottom:8%;left:50%;transform:translateX(-50%)}
+.cardinal.e{right:10%;top:50%;transform:translateY(-50%)}
+.cardinal.w{left:10%;top:50%;transform:translateY(-50%)}
+.needle-container{position:absolute;inset:0;transition:transform 2s cubic-bezier(.2,.8,.3,1);cursor:pointer}
+.needle{position:absolute;left:50%;top:15%;width:4px;height:70%;transform:translateX(-50%)}
+.needle-north{position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:100px solid #c45c3e;filter:drop-shadow(0 0 6px rgba(196,92,62,.4))}
+.needle-south{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:100px solid rgba(200,180,140,.3)}
+.needle-center{position:absolute;top:50%;left:50%;width:14px;height:14px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 40% 35%,#4a4038,#2a2420);border:1px solid rgba(200,180,140,.25);z-index:2;box-shadow:0 0 8px rgba(0,0,0,.5)}
+.glass{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.08),transparent 50%);pointer-events:none;z-index:3}
+.message-area{margin-top:40px;text-align:center;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 20px}
+.message-text{font-size:clamp(16px,4vw,20px);line-height:1.6;opacity:0;transition:opacity 1s ease;color:#e8dcc8;font-style:italic;max-width:320px}
+.message-text.visible{opacity:1}
+.hint{font-size:13px;color:rgba(200,180,140,.35);letter-spacing:1px;margin-top:20px;transition:opacity .5s;text-transform:uppercase}
+.hint.hidden{opacity:0}
+.direction-label{font-size:12px;color:rgba(196,92,62,.6);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;opacity:0;transition:opacity .8s ease}
+.direction-label.visible{opacity:1}
+.spin-count{position:fixed;bottom:20px;font-size:11px;color:rgba(200,180,140,.2);letter-spacing:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="compass-body">
+<div class="compass-ring"></div>
+<div class="compass-ring-inner"></div>
+<span class="cardinal n">N</span>
+<span class="cardinal s">S</span>
+<span class="cardinal e">E</span>
+<span class="cardinal w">W</span>
+<div class="needle-container" id="needleContainer">
+<div class="needle">
+<div class="needle-north"></div>
+<div class="needle-south"></div>
+</div>
+<div class="needle-center"></div>
+</div>
+<div class="glass"></div>
+</div>
+</div>
+<div class="message-area">
+<div class="direction-label" id="dirLabel"></div>
+<div class="message-text" id="msgText"></div>
+</div>
+<div class="hint" id="hint">Tap the compass</div>
+<div class="spin-count" id="spinCount"></div>
+<script>
+const messages=[
+{dir:'North',text:'Every direction I turn, they all lead back to you.'},
+{dir:'Northeast',text:'You are the most beautiful detour I never planned.'},
+{dir:'East',text:'Sunrise reminds me of you — warm, golden, impossible to look away from.'},
+{dir:'Southeast',text:'Some people search their whole lives. I just had to look across an ocean.'},
+{dir:'South',text:'You make even the distance feel small.'},
+{dir:'Southwest',text:'My compass doesn\'t point north. It points to wherever you are.'},
+{dir:'West',text:'You are my favorite place, and I haven\'t even gotten there yet.'},
+{dir:'Northwest',text:'I\'d cross every timezone just to fall asleep next to you.'},
+];
+const needle=document.getElementById('needleContainer');
+const msgText=document.getElementById('msgText');
+const dirLabel=document.getElementById('dirLabel');
+const hint=document.getElementById('hint');
+const spinCount=document.getElementById('spinCount');
+let currentRotation=0,spinning=false,spins=0,usedIndices=[];
+function getNextMessage(){
+if(usedIndices.length>=messages.length)usedIndices=[];
+let idx;do{idx=Math.floor(Math.random()*messages.length)}while(usedIndices.includes(idx));
+usedIndices.push(idx);return messages[idx];
+}
+function spin(){
+if(spinning)return;spinning=true;spins++;
+hint.classList.add('hidden');
+msgText.classList.remove('visible');dirLabel.classList.remove('visible');
+const msg=getNextMessage();
+const extraSpins=3+Math.floor(Math.random()*3);
+currentRotation+=extraSpins*360+Math.random()*360;
+needle.style.transform='rotate('+currentRotation+'deg)';
+setTimeout(()=>{
+dirLabel.textContent=msg.dir;dirLabel.classList.add('visible');
+setTimeout(()=>{
+msgText.textContent=msg.text;msgText.classList.add('visible');
+spinning=false;spinCount.textContent=spins+' / '+messages.length;
+},600);
+},2200);
+}
+needle.addEventListener('click',spin);
+needle.addEventListener('touchend',(e)=>{e.preventDefault();spin()});
+</script>
+</body>
+</html>
