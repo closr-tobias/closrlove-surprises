@@ -31,6 +31,30 @@
     position: fixed; bottom: 0; left: 0; right: 0; height: 80px;
     pointer-events: none; z-index: 5;
   }
+  /* Moon */
+  .moon {
+    position: fixed; top: 8%; right: 12%;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: radial-gradient(circle at 60% 40%, rgba(255,250,230,0.12), rgba(255,240,200,0.04) 60%, transparent 80%);
+    box-shadow: 0 0 40px rgba(255,240,200,0.06), 0 0 80px rgba(255,240,200,0.03);
+    pointer-events: none; z-index: 2;
+  }
+  .moon::before {
+    content: ''; position: absolute;
+    top: 3px; left: 8px; width: 34px; height: 34px;
+    border-radius: 50%; background: #060810;
+  }
+  /* Text breathing after visible */
+  .line.visible { animation: breathe 5s ease-in-out infinite; }
+  .line.visible:nth-child(2) { animation-delay: 0.8s; }
+  .line.visible:nth-child(3) { animation-delay: 1.6s; }
+  .line.visible:nth-child(4) { animation-delay: 2.4s; }
+  .line.visible:nth-child(5) { animation-delay: 3.2s; }
+  .line.visible:nth-child(6) { animation-delay: 4s; }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 0.65; }
+  }
   .ground svg { width: 100%; height: 100%; }
   .touch-glow {
     position: fixed; width: 280px; height: 280px; border-radius: 50%;
@@ -50,7 +74,7 @@
   .line {
     font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic;
     color: rgba(255, 235, 205, 0); font-size: 1.55rem; line-height: 1.65;
-    letter-spacing: 0.3px; margin-bottom: 20px; transition: color 1.8s ease;
+    letter-spacing: 0.3px; margin-bottom: 20px; transition: color 2.4s ease;
     text-shadow: 0 0 30px rgba(255,200,100,0);
   }
   .line.visible {
@@ -74,6 +98,7 @@
 </head>
 <body>
 <div class="sky"></div>
+<div class="moon"></div>
 <div class="stars" id="stars"></div>
 <div class="ground">
   <svg viewBox="0 0 400 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -111,27 +136,52 @@
   resize();window.addEventListener('resize',resize);
 
   var touchPos=null,isHolding=false,holdStart=0;
-  var fireflies=[],NUM=22;
+  var fireflies=[],NUM=60;
   var warmColors=[[255,210,80],[255,190,60],[255,230,120],[240,200,90],[255,180,50],[220,255,120]];
 
   function createFirefly(){
     var c=warmColors[Math.floor(Math.random()*warmColors.length)];
-    return{x:Math.random()*W,y:Math.random()*H*0.8+H*0.1,vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.2,radius:Math.random()*2.5+1.5,glowRadius:Math.random()*12+8,phase:Math.random()*Math.PI*2,blinkSpeed:Math.random()*0.008+0.004,driftPhase:Math.random()*Math.PI*2,driftSpeed:Math.random()*0.002+0.001,color:c,brightness:0,targetBrightness:0,blinkTimer:Math.random()*400,blinkOn:Math.random()>0.5}
+    return{x:Math.random()*W,y:Math.random()*H*0.8+H*0.1,vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.2,radius:Math.random()*2.5+1.5,glowRadius:Math.random()*12+8,phase:Math.random()*Math.PI*2,blinkSpeed:Math.random()*0.008+0.004,driftPhase:Math.random()*Math.PI*2,driftSpeed:Math.random()*0.002+0.001,color:c,brightness:0,targetBrightness:0,blinkTimer:Math.random()*400,blinkOn:Math.random()>0.5,trail:[]}
   }
   for(var i=0;i<NUM;i++)fireflies.push(createFirefly());
 
   function drawFirefly(f){
     if(f.brightness<0.02)return;
     var a=f.brightness;
+    // Trail
+    if(f.trail.length>1){
+      for(var t=0;t<f.trail.length-1;t++){
+        var tp=f.trail[t];
+        var ta=(t/f.trail.length)*a*0.08;
+        ctx.fillStyle='rgba('+f.color[0]+','+f.color[1]+','+f.color[2]+','+ta+')';
+        ctx.beginPath();ctx.arc(tp.x,tp.y,f.radius*0.5*(t/f.trail.length),0,Math.PI*2);ctx.fill();
+      }
+    }
+    // Glow
     var g=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,f.glowRadius*(0.8+a*0.4));
     g.addColorStop(0,'rgba('+f.color[0]+','+f.color[1]+','+f.color[2]+','+(a*0.35)+')');
     g.addColorStop(0.4,'rgba('+f.color[0]+','+f.color[1]+','+f.color[2]+','+(a*0.12)+')');
     g.addColorStop(1,'rgba('+f.color[0]+','+f.color[1]+','+f.color[2]+',0)');
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(f.x,f.y,f.glowRadius*(0.8+a*0.4),0,Math.PI*2);ctx.fill();
+    // Core
     ctx.fillStyle='rgba(255,255,240,'+(a*0.9)+')';ctx.beginPath();ctx.arc(f.x,f.y,f.radius*a,0,Math.PI*2);ctx.fill();
   }
 
   function updateFirefly(f,dt){
+    // Heart mode — lock to heart position with gentle bob
+    if(heartMode&&f.heartX!=null){
+      var t=Math.min((performance.now()-f.heartStart)/4000,1);
+      var ease=t*t*(3-2*t);
+      var bobX=Math.sin(performance.now()*0.0008+f.phase)*2.5;
+      var bobY=Math.cos(performance.now()*0.001+f.phase)*2.5;
+      f.x=f.origX+(f.heartX-f.origX)*ease+bobX;
+      f.y=f.origY+(f.heartY-f.origY)*ease+bobY;
+      f.brightness+=(1-f.brightness)*0.02;
+      f.trail.push({x:f.x,y:f.y});
+      if(f.trail.length>12)f.trail.shift();
+      return;
+    }
+
     f.blinkTimer-=dt;
     if(f.blinkTimer<=0){f.blinkOn=!f.blinkOn;f.blinkTimer=f.blinkOn?(Math.random()*2000+800):(Math.random()*3000+1500)}
     f.targetBrightness=f.blinkOn?(0.6+Math.sin(f.phase)*0.35):0;
@@ -142,15 +192,46 @@
     f.vy+=Math.cos(f.driftPhase*0.7)*0.002;
     if(isHolding&&touchPos){
       var dx=touchPos.x-f.x,dy=touchPos.y-f.y,dist=Math.sqrt(dx*dx+dy*dy);
-      if(dist>10){var ht=Math.min((Date.now()-holdStart)/2000,1),force=ht*0.015/Math.max(dist*0.01,1);f.vx+=dx*force;f.vy+=dy*force}
-      if(dist<150)f.targetBrightness=Math.max(f.targetBrightness,0.8);
+      if(dist>10){var ht=Math.min((Date.now()-holdStart)/1200,1),force=ht*0.025/Math.max(dist*0.008,1);f.vx+=dx*force;f.vy+=dy*force}
+      if(dist<180)f.targetBrightness=Math.max(f.targetBrightness,0.9+ht*0.1);
     }
     f.vx*=0.995;f.vy*=0.995;
     var spd=Math.sqrt(f.vx*f.vx+f.vy*f.vy);
     if(spd>1.2){f.vx*=1.2/spd;f.vy*=1.2/spd}
     f.x+=f.vx*dt*0.06;f.y+=f.vy*dt*0.06;
+    f.trail.push({x:f.x,y:f.y});
+    if(f.trail.length>12)f.trail.shift();
     if(f.x<-20)f.x=W+20;if(f.x>W+20)f.x=-20;
     if(f.y<H*0.05)f.vy+=0.01;if(f.y>H*0.9)f.vy-=0.01;
+  }
+
+  // Shooting stars
+  var shootingStars=[];
+  function spawnShootingStar(){
+    shootingStars.push({
+      x:Math.random()*W*0.8,y:Math.random()*H*0.3,
+      vx:3+Math.random()*4,vy:1.5+Math.random()*2,
+      life:1,decay:0.015+Math.random()*0.01,
+      len:30+Math.random()*40
+    });
+    setTimeout(spawnShootingStar,4000+Math.random()*8000);
+  }
+  setTimeout(spawnShootingStar,3000);
+
+  function drawShootingStar(s){
+    ctx.save();
+    ctx.globalAlpha=s.life*0.6;
+    var grad=ctx.createLinearGradient(s.x,s.y,s.x-s.vx*s.len*0.3,s.y-s.vy*s.len*0.3);
+    grad.addColorStop(0,'rgba(255,255,255,0.8)');
+    grad.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.strokeStyle=grad;ctx.lineWidth=1.2;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(s.x,s.y);
+    ctx.lineTo(s.x-s.vx*s.len*0.3,s.y-s.vy*s.len*0.3);
+    ctx.stroke();
+    // Bright head
+    ctx.fillStyle='rgba(255,255,240,'+s.life*0.9+')';
+    ctx.beginPath();ctx.arc(s.x,s.y,1,0,Math.PI*2);ctx.fill();
+    ctx.restore();
   }
 
   var lastTime=performance.now();
@@ -158,6 +239,13 @@
     var dt=Math.min(now-lastTime,50);lastTime=now;
     ctx.clearRect(0,0,W,H);
     for(var i=0;i<fireflies.length;i++){updateFirefly(fireflies[i],dt);drawFirefly(fireflies[i])}
+    // Shooting stars
+    for(var j=shootingStars.length-1;j>=0;j--){
+      var ss=shootingStars[j];
+      ss.x+=ss.vx;ss.y+=ss.vy;ss.life-=ss.decay;
+      if(ss.life<=0){shootingStars.splice(j,1);continue}
+      drawShootingStar(ss);
+    }
     requestAnimationFrame(animate);
   }
   requestAnimationFrame(animate);
@@ -174,8 +262,78 @@
   document.addEventListener('mouseup',onUp);
 
   var lines=document.querySelectorAll('.line, .line-closing');
-  lines.forEach(function(line,i){setTimeout(function(){line.classList.add('visible')},800+i*600)});
+  lines.forEach(function(line,i){setTimeout(function(){line.classList.add('visible')},1000+i*780)});
   setTimeout(function(){document.getElementById('hint').style.opacity='0'},6000);
+
+  // Cricket flickers along the treeline
+  var cricketCanvas=document.createElement('canvas');
+  cricketCanvas.style.cssText='position:fixed;bottom:0;left:0;width:100%;height:100px;pointer-events:none;z-index:6;';
+  document.body.appendChild(cricketCanvas);
+  var cCtx=cricketCanvas.getContext('2d');
+  var crickets=[];
+  for(var ci=0;ci<15;ci++){
+    crickets.push({x:Math.random()*W,y:H-30-Math.random()*40,phase:Math.random()*Math.PI*2,speed:0.02+Math.random()*0.03});
+  }
+  function resizeCricket(){cricketCanvas.width=W;cricketCanvas.height=100}
+  resizeCricket();window.addEventListener('resize',resizeCricket);
+
+  function drawCrickets(now){
+    cCtx.clearRect(0,0,W,100);
+    for(var i=0;i<crickets.length;i++){
+      var c=crickets[i];
+      c.phase+=c.speed;
+      var brightness=Math.max(0,Math.sin(c.phase)*0.7-0.3);
+      if(brightness>0){
+        cCtx.fillStyle='rgba(180,255,100,'+brightness*0.15+')';
+        cCtx.beginPath();
+        cCtx.arc(c.x,100-(H-c.y),1,0,Math.PI*2);
+        cCtx.fill();
+      }
+    }
+    requestAnimationFrame(drawCrickets);
+  }
+  drawCrickets(0);
+
+  // Hold warmth — sky warms around finger
+  var warmOverlay=document.createElement('div');
+  warmOverlay.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;transition:opacity 0.8s ease;';
+  document.body.appendChild(warmOverlay);
+  function updateWarmth(){
+    if(isHolding&&touchPos){
+      var ht=Math.min((Date.now()-holdStart)/2000,1);
+      warmOverlay.style.background='radial-gradient(300px circle at '+touchPos.x+'px '+touchPos.y+'px, rgba(60,30,10,'+ht*0.15+') 0%, transparent 100%)';
+      warmOverlay.style.opacity='1';
+    } else {
+      warmOverlay.style.opacity='0';
+    }
+    requestAnimationFrame(updateWarmth);
+  }
+  updateWarmth();
+
+  // Fireflies drift into heart shape after all text is shown
+  var totalTextTime=1000+lines.length*780+2000;
+  var heartPoints=[];
+  // Generate heart shape points
+  var heartFireflyCount=Math.floor(NUM/2);
+  for(var ha=0;ha<Math.PI*2;ha+=Math.PI*2/heartFireflyCount){
+    var hx=16*Math.pow(Math.sin(ha),3);
+    var hy=-(13*Math.cos(ha)-5*Math.cos(2*ha)-2*Math.cos(3*ha)-Math.cos(4*ha));
+    heartPoints.push({x:W/2+hx*4,y:H*0.45+hy*4});
+  }
+  var heartMode=false;
+  setTimeout(function(){
+    heartMode=true;
+    // Only first half goes to heart, rest stay free
+    var heartCount=Math.floor(fireflies.length/2);
+    for(var fi=0;fi<heartCount;fi++){
+      var hp=heartPoints[fi%heartPoints.length];
+      fireflies[fi].heartX=hp.x;
+      fireflies[fi].heartY=hp.y;
+      fireflies[fi].heartStart=performance.now();
+      fireflies[fi].origX=fireflies[fi].x;
+      fireflies[fi].origY=fireflies[fi].y;
+    }
+  },totalTextTime);
 })();
 </script>
 </body>
