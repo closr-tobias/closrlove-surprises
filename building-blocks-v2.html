@@ -27,17 +27,19 @@
 <div class="count" id="count"></div>
 <script>
 const blocks = [
-      { emoji:'🔥', name:'Zippo Lighter', type:'reveal · cinematic', desc:'Flick the lighter to ignite a flame in the dark. Each light reveals a message illuminated by firelight.', file:'zippo-lighter.html' },
-  { emoji:'🌌', name:'Aurora Sky', type:'interactive · celestial', desc:'Paint the night sky with aurora ribbons. Each brushstroke reveals love messages written in the stars.', file:'aurora-sky.html' },
   { emoji:'🏮', name:'Campfire Stories', type:'narrative · warmth', desc:'Crackling campfire with floating embers. Tap the flames to reveal stories and memories.', file:'campfire-stories.html' },
   { emoji:'🥠', name:'Fortune Cookie', type:'reveal · playful', desc:'Crack open golden fortune cookies. Each holds a personalized love fortune.', file:'fortune-cookie.html' },
   { emoji:'🫧', name:'Water Ripple', type:'reveal · calm', desc:'Drop pebbles into still water. Ripples expand outward revealing words on the surface.', file:'water-ripple.html' },
-  { emoji:'🎈', name:'Hot Air Balloon', type:'journey · wonder', desc:'Rise through layered clouds. Each cloud you pass reveals a message as the sky shifts.', file:'hot-air-balloon.html' },
-  { emoji:'🦋', name:'Butterfly Release', type:'transformation · magical', desc:'Tap the glowing cocoon to release butterflies that carry messages into the sky.', file:'butterfly-release.html' },
-  { emoji:'🔮', name:'Snow Globe', type:'interactive · magical', desc:'Shake or tap the glass globe to swirl snow and reveal love messages hidden inside. Real device-shake support.', file:'snow-globe.html' },
-      { emoji:'🎞️', name:'Film Strip', type:'gallery · nostalgic', desc:'Old 16mm film reel. Swipe through frames, each holding a moment and a feeling.', file:'film-strip.html' },
-      { emoji:'🎱', name:'Magic 8-Ball', type:'reveal · mystical', desc:'Shake or tap the cosmic 8-ball. The triangle rises from dark liquid to reveal your fortune — and it's always about you.', file:'magic-8-ball.html' },
-      { emoji:'🧭', name:'Compass', type:'reveal · cinematic', desc:'Spin the needle and let it find its way. Every direction points to a message — because all roads lead to you.', file:'compass.html' },
+  { emoji:'🎈', name:'Hot Air Balloon', type:'journey · wonder', desc:'Rise through layered clouds. Each cloud reveals a message as the sky shifts.', file:'hot-air-balloon.html' },
+  { emoji:'🦋', name:'Butterfly Release', type:'transformation · magical', desc:'Tap the glowing cocoon to release butterflies carrying messages into the sky.', file:'butterfly-release.html' },
+  { emoji:'🎞️', name:'Film Strip', type:'gallery · nostalgic', desc:'Old 16mm film reel. Swipe through frames, each holding a moment and a feeling.', file:'film-strip.html' },
+  { emoji:'🌌', name:'Aurora Sky', type:'atmosphere · wonder', desc:'Northern lights dance across the sky, revealing messages in the shifting colors.', file:'aurora-sky.html' },
+  { emoji:'⛄', name:'Snow Globe', type:'reveal · magical', desc:'Shake to swirl snow around a hidden love message inside the globe.', file:'snow-globe.html' },
+  { emoji:'🔥', name:'Zippo Lighter', type:'reveal · tactile', desc:'Flip open and strike a Zippo. The flame illuminates a message in the dark.', file:'zippo-lighter.html' },
+  { emoji:'🔭', name:'Telescope', type:'discovery · exploration', desc:'Drag a brass telescope across the night sky to find hidden words among the stars.', file:'telescope.html' },
+  { emoji:'🕯️', name:'Candle', type:'reveal · atmospheric', desc:'Hold the flame until it extinguishes. The message rises from the smoke.', file:'candle.html' },
+  { emoji:'🧭', name:'Compass', type:'interactive · poetic', desc:'Guide the needle home. As it settles, the fog clears to reveal an engraved message.', file:'compass.html' },
+  { emoji:'🪞', name:'Pocket Mirror', type:'reveal · intimate', desc:'Open an ornate mirror. Swipe the mercury surface to reveal the hidden message beneath.', file:'pocket-mirror.html' },
 ];
 const grid = document.getElementById('grid');
 blocks.forEach(b => {
