@@ -110,9 +110,14 @@
   }
 
   .neon-char {
-    display: inline-block;
+    display: inline;
     opacity: 0;
     transition: none;
+  }
+  /* Words wrap together, not mid-word */
+  .neon-word {
+    display: inline-block;
+    white-space: nowrap;
   }
   .neon-char.lit { opacity: 1; }
   .neon-char.flicker {
@@ -273,20 +278,32 @@
   var currentLine = 0;
   var revealing = false;
 
+  // Wrap text into word spans so words don't break at the edge
   lines.forEach(function(line) {
     var text = line.dataset.text;
     line.innerHTML = '';
-    for (var i = 0; i < text.length; i++) {
-      var span = document.createElement('span');
-      span.className = 'neon-char';
-      span.textContent = text[i] === ' ' ? '\u00A0' : text[i];
-      line.appendChild(span);
-    }
+    var words = text.split(' ');
+    words.forEach(function(word, wi) {
+      var wordSpan = document.createElement('span');
+      wordSpan.className = 'neon-word';
+      for (var i = 0; i < word.length; i++) {
+        var ch = document.createElement('span');
+        ch.className = 'neon-char';
+        ch.textContent = word[i];
+        wordSpan.appendChild(ch);
+      }
+      line.appendChild(wordSpan);
+      // Add space between words (not after last)
+      if (wi < words.length - 1) {
+        var space = document.createElement('span');
+        space.className = 'neon-char';
+        space.textContent = '\u00A0';
+        line.appendChild(space);
+      }
+    });
   });
 
-  function revealLine(lineEl, callback) {
-    if (revealing) return;
-    revealing = true;
+  function revealLine(lineEl, delay, callback) {
     lineEl.classList.add('visible');
     var chars = lineEl.querySelectorAll('.neon-char');
     var i = 0;
@@ -296,48 +313,53 @@
         setTimeout(function() {
           lineEl.classList.add('idle-flicker');
           lineEl.style.animationDelay = (Math.random() * 2) + 's';
-          revealing = false;
           if (callback) callback();
         }, 300);
         return;
       }
       chars[i].classList.add('flicker', 'lit');
-      var delay = 45 + Math.random() * 25;
-      if (Math.random() < 0.08) delay += 200;
+      var d = 90 + Math.random() * 50;
+      if (Math.random() < 0.08) d += 400;
       i++;
-      setTimeout(nextChar, delay);
+      setTimeout(nextChar, d);
     }
-    nextChar();
+    setTimeout(nextChar, delay);
   }
 
-  function revealNext() {
-    if (currentLine >= lines.length) {
-      fromLine.classList.add('visible');
-      hint.classList.add('hidden');
-      return;
+  // One tap reveals all lines sequentially
+  var started = false;
+  function revealAll() {
+    if (started) return;
+    started = true;
+    hint.classList.add('hidden');
+
+    var totalDelay = 0;
+    for (var li = 0; li < lines.length; li++) {
+      (function(idx, d) {
+        revealLine(lines[idx], d, function() {
+          if (idx === 0) streetGlow.classList.add('on');
+          if (idx === lines.length - 1) {
+            fromLine.classList.add('visible');
+          }
+        });
+      })(li, totalDelay);
+      // Estimate how long this line takes: chars * ~55ms + 600ms gap
+      var charCount = lines[li].querySelectorAll('.neon-char').length;
+      totalDelay += charCount * 110 + 800;
     }
-    revealLine(lines[currentLine], function() {
-      currentLine++;
-      if (currentLine === 1) streetGlow.classList.add('on');
-    });
   }
 
   function handleTap(e) {
     if (e.target.closest && e.target.closest('.back-link')) return;
-    if (!revealing) revealNext();
+    revealAll();
   }
 
   document.addEventListener('click', handleTap);
   document.addEventListener('touchend', function(e) {
     if (e.target.closest && e.target.closest('.back-link')) return;
     e.preventDefault();
-    if (!revealing) revealNext();
+    revealAll();
   }, { passive: false });
-
-  setTimeout(function() {
-    hint.textContent = 'tap for next line';
-    revealNext();
-  }, 1500);
 })();
 </script>
 </body>
