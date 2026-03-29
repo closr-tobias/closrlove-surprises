@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Magic 8-Ball</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#080810;font-family:'Georgia',serif;user-select:none;-webkit-user-select:none}
+canvas{position:fixed;top:0;left:0;width:100%;height:100%}
+#hint{position:fixed;bottom:50px;left:0;width:100%;text-align:center;color:rgba(160,140,255,.45);font-size:13px;letter-spacing:2.5px;z-index:3;animation:pulse 2.5s ease-in-out infinite;transition:opacity .8s}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:.75}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hint">SHAKE OR TAP TO ASK</div>
+<script>
+const messages=[
+"You are the answer\nto every question\nI never knew to ask",
+"The universe says:\nyou're stuck with me\n(lucky you)",
+"Signs point to\nforever with you",
+"Without a doubt,\nyou're the best thing\nthat ever happened to me",
+"All signs say:\nI'm falling harder\nevery single day",
+"It is certain:\nno one else\ncould ever compare",
+"My sources say\nyou're unfairly beautiful\nand I'm unfairly lucky",
+"Outlook: a lifetime\nof stealing the covers\nand loving every second",
+"Reply hazy —\njust kidding,\nit was always you",
+"Concentrate and ask again...\nstill you. Always you."
+];
+
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d'),hint=document.getElementById('hint');
+let W,H,dpr,ballR,ballX,ballY;
+let shaking=false,shakeTime=0,revealPhase=0,currentMsg=0,msgUsed=new Set();
+let triangleAlpha=0,textAlpha=0,liquidOffset=0,wobbleX=0,wobbleY=0;
+let bubbles=[];
+let lastAccel={x:0,y:0,z:0};
+let touchStart=null;
+
+function resize(){
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth;H=window.innerHeight;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ballR=Math.min(W,H)*.36;
+  ballX=W/2;ballY=H/2;
+}
+resize();window.addEventListener('resize',resize);
+
+function pickMsg(){
+  if(msgUsed.size>=messages.length)msgUsed.clear();
+  let i;do{i=Math.floor(Math.random()*messages.length)}while(msgUsed.has(i));
+  msgUsed.add(i);currentMsg=i;
+}
+
+function triggerShake(){
+  if(shaking)return;
+  shaking=true;shakeTime=0;revealPhase=0;
+  triangleAlpha=0;textAlpha=0;liquidOffset=0;
+  bubbles=[];pickMsg();
+  hint.style.opacity='0';
+  for(let i=0;i<20;i++){
+    bubbles.push({x:(Math.random()-.5)*ballR*.6,y:(Math.random()-.5)*ballR*.6,r:1+Math.random()*3,vx:(Math.random()-.5)*2,vy:-(1+Math.random()*3),life:1});
+  }
+}
+
+if(window.DeviceMotionEvent){
+  window.addEventListener('devicemotion',e=>{
+    const a=e.accelerationIncludingGravity;if(!a)return;
+    const dx=Math.abs(a.x-(lastAccel.x||0)),dy=Math.abs(a.y-(lastAccel.y||0)),dz=Math.abs(a.z-(lastAccel.z||0));
+    lastAccel={x:a.x,y:a.y,z:a.z};
+    if(dx+dy+dz>25)triggerShake();
+  });
+}
+
+canvas.addEventListener('pointerdown',e=>{touchStart={x:e.clientX,y:e.clientY,t:Date.now()}});
+canvas.addEventListener('pointerup',e=>{
+  if(!touchStart)return;
+  if(Date.now()-touchStart.t<400)triggerShake();
+  touchStart=null;
+});
+
+function drawBall(){
+  const cx=ballX+wobbleX,cy=ballY+wobbleY;
+  // Shadow
+  const sg=ctx.createRadialGradient(cx+8,cy+12,ballR*.5,cx+8,cy+12,ballR*1.3);
+  sg.addColorStop(0,'rgba(0,0,0,.5)');sg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=sg;ctx.beginPath();ctx.arc(cx+8,cy+12,ballR*1.2,0,Math.PI*2);ctx.fill();
+
+  // Sphere
+  const bg=ctx.createRadialGradient(cx-ballR*.3,cy-ballR*.3,ballR*.05,cx,cy,ballR);
+  bg.addColorStop(0,'#2a2a3a');bg.addColorStop(.4,'#1a1a28');bg.addColorStop(.8,'#0e0e18');bg.addColorStop(1,'#060610');
+  ctx.fillStyle=bg;ctx.beginPath();ctx.arc(cx,cy,ballR,0,Math.PI*2);ctx.fill();
+
+  // Gloss
+  const hl=ctx.createRadialGradient(cx-ballR*.25,cy-ballR*.35,0,cx-ballR*.25,cy-ballR*.35,ballR*.5);
+  hl.addColorStop(0,'rgba(255,255,255,.12)');hl.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=hl;ctx.beginPath();ctx.arc(cx,cy,ballR,0,Math.PI*2);ctx.fill();
+
+  // Inner window
+  const winR=ballR*.52;
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,winR,0,Math.PI*2);ctx.clip();
+  const wg=ctx.createRadialGradient(cx,cy,0,cx,cy,winR);
+  wg.addColorStop(0,'#0a0a2a');wg.addColorStop(.7,'#06061a');wg.addColorStop(1,'#030310');
+  ctx.fillStyle=wg;ctx.fillRect(0,0,W,H);
+
+  // Liquid swirl
+  if(shaking&&revealPhase===0){
+    for(let i=0;i<3;i++){
+      const sx=cx+Math.sin(liquidOffset+i*2.1)*winR*.3;
+      const sy=cy+Math.cos(liquidOffset*1.3+i*1.7)*winR*.3;
+      const sg2=ctx.createRadialGradient(sx,sy,0,sx,sy,winR*.5);
+      sg2.addColorStop(0,'rgba(30,20,80,.4)');sg2.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=sg2;ctx.fillRect(cx-winR,cy-winR,winR*2,winR*2);
+    }
+  }
+
+  // Bubbles
+  bubbles.forEach(b=>{
+    if(b.life<=0)return;
+    ctx.beginPath();ctx.arc(cx+b.x,cy+b.y,b.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(140,130,220,${b.life*.3})`;ctx.fill();
+  });
+
+  // Triangle
+  if(triangleAlpha>0){
+    const ts=winR*.7;
+    ctx.save();ctx.globalAlpha=triangleAlpha;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-ts*.6);
+    ctx.lineTo(cx-ts*.55,cy+ts*.4);
+    ctx.lineTo(cx+ts*.55,cy+ts*.4);
+    ctx.closePath();
+    ctx.fillStyle='#12123a';ctx.fill();
+    ctx.strokeStyle='rgba(100,90,200,.4)';ctx.lineWidth=1.5;ctx.stroke();
+
+    if(textAlpha>0){
+      ctx.globalAlpha=textAlpha;
+      const lines=messages[currentMsg].split('\n');
+      const fontSize=Math.min(14,winR*.1);
+      ctx.font=fontSize+'px Georgia';
+      ctx.fillStyle='rgba(200,190,255,.95)';
+      ctx.textAlign='center';
+      const lineH=fontSize*1.5;
+      const startY=cy-((lines.length-1)*lineH)/2;
+      lines.forEach((line,i)=>{ctx.fillText(line,cx,startY+i*lineH)});
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // Rim
+  ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(cx,cy,ballR-.5,0,Math.PI*2);ctx.stroke();
+
+  // "8"
+  if(triangleAlpha<.3){
+    ctx.save();ctx.globalAlpha=(.3-triangleAlpha)*.8;
+    ctx.font='bold '+ballR*.22+'px Georgia';
+    ctx.fillStyle='rgba(255,255,255,.1)';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('8',cx,cy+ballR*.55);
+    ctx.restore();
+  }
+}
+
+function drawStars(){
+  const t=Date.now()*.0003;
+  for(let i=0;i<40;i++){
+    const x=(Math.sin(i*127.1+i)*0.5+0.5)*W;
+    const y=(Math.cos(i*311.7+i)*0.5+0.5)*H;
+    if(Math.hypot(x-ballX,y-ballY)<ballR*1.1)continue;
+    const a=.2+Math.sin(t+i*1.7)*.15;
+    const s=1+Math.sin(t*1.3+i)*.5;
+    ctx.fillStyle=`rgba(160,150,220,${a})`;
+    ctx.beginPath();ctx.arc(x,y,s,0,Math.PI*2);ctx.fill();
+  }
+}
+
+let lastT=0;
+function animate(t){
+  const dt=Math.min((t-lastT)/1000,.05);lastT=t;
+  ctx.clearRect(0,0,W,H);
+
+  const bgG=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.7);
+  bgG.addColorStop(0,'#0c0c1a');bgG.addColorStop(1,'#040408');
+  ctx.fillStyle=bgG;ctx.fillRect(0,0,W,H);
+
+  drawStars();
+
+  if(shaking){
+    shakeTime+=dt;
+    if(shakeTime<.8){
+      revealPhase=0;
+      wobbleX=Math.sin(shakeTime*30)*(4-shakeTime*4);
+      wobbleY=Math.cos(shakeTime*25)*(3-shakeTime*3);
+      liquidOffset+=dt*8;
+      bubbles.forEach(b=>{b.x+=b.vx;b.y+=b.vy;b.vy+=dt*2;b.life-=dt*1.2});
+    }else if(shakeTime<2.5){
+      revealPhase=1;wobbleX*=.9;wobbleY*=.9;
+      triangleAlpha=Math.min(1,(shakeTime-.8)/1.2);
+    }else if(shakeTime<4){
+      revealPhase=2;wobbleX=0;wobbleY=0;
+      triangleAlpha=1;textAlpha=Math.min(1,(shakeTime-2.5)/1);
+    }else if(shakeTime>7){
+      textAlpha=Math.max(0,textAlpha-dt*.5);
+      triangleAlpha=Math.max(0,triangleAlpha-dt*.5);
+      if(triangleAlpha<=0){shaking=false;hint.style.opacity='1'}
+    }
+  }
+
+  drawBall();
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
