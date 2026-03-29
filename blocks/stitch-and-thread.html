@@ -207,40 +207,42 @@
 
 <script>
 (function(){
-  var GRID = 32;
-  var STITCH_MS = 38;
+  var GRID = 64;
+  var STITCH_MS = 30;
+  var TEXT_GRID = 90; // text uses a finer grid for smaller letters
   var COLORS = ['#c0394f','#d4556b','#e88a9a','#f2c4cb','#8b2942'];
   var BG_THREAD = '#cec0a6';
 
-  // 5x7 pixel font
+  // 3x5 mini pixel font — fits inside the oval
+  var FONT_W = 3, FONT_H = 5;
   var F = {
-    'A':'01110,10001,10001,11111,10001,10001,10001',
-    'B':'11110,10001,10001,11110,10001,10001,11110',
-    'C':'01110,10001,10000,10000,10000,10001,01110',
-    'D':'11100,10010,10001,10001,10001,10010,11100',
-    'E':'11111,10000,10000,11110,10000,10000,11111',
-    'F':'11111,10000,10000,11110,10000,10000,10000',
-    'G':'01110,10001,10000,10111,10001,10001,01110',
-    'H':'10001,10001,10001,11111,10001,10001,10001',
-    'I':'01110,00100,00100,00100,00100,00100,01110',
-    'J':'00111,00010,00010,00010,00010,10010,01100',
-    'K':'10001,10010,10100,11000,10100,10010,10001',
-    'L':'10000,10000,10000,10000,10000,10000,11111',
-    'M':'10001,11011,10101,10101,10001,10001,10001',
-    'N':'10001,11001,10101,10011,10001,10001,10001',
-    'O':'01110,10001,10001,10001,10001,10001,01110',
-    'P':'11110,10001,10001,11110,10000,10000,10000',
-    'R':'11110,10001,10001,11110,10100,10010,10001',
-    'S':'01110,10001,10000,01110,00001,10001,01110',
-    'T':'11111,00100,00100,00100,00100,00100,00100',
-    'U':'10001,10001,10001,10001,10001,10001,01110',
-    'V':'10001,10001,10001,10001,01010,01010,00100',
-    'W':'10001,10001,10001,10101,10101,11011,10001',
-    'Y':'10001,10001,01010,00100,00100,00100,00100',
-    ' ':'00000,00000,00000,00000,00000,00000,00000',
-    '&':'01100,10010,01010,00100,01011,10001,01110',
-    '.':'00000,00000,00000,00000,00000,00000,00100',
-    '!':'00100,00100,00100,00100,00100,00000,00100'
+    'A':'010,101,111,101,101',
+    'B':'110,101,110,101,110',
+    'C':'011,100,100,100,011',
+    'D':'110,101,101,101,110',
+    'E':'111,100,110,100,111',
+    'F':'111,100,110,100,100',
+    'G':'011,100,101,101,011',
+    'H':'101,101,111,101,101',
+    'I':'111,010,010,010,111',
+    'J':'011,001,001,101,010',
+    'K':'101,110,100,110,101',
+    'L':'100,100,100,100,111',
+    'M':'101,111,101,101,101',
+    'N':'101,111,111,101,101',
+    'O':'010,101,101,101,010',
+    'P':'110,101,110,100,100',
+    'R':'110,101,110,101,101',
+    'S':'011,100,010,001,110',
+    'T':'111,010,010,010,010',
+    'U':'101,101,101,101,010',
+    'V':'101,101,101,010,010',
+    'W':'101,101,101,111,101',
+    'Y':'101,101,010,010,010',
+    ' ':'000,000,000,000,000',
+    '&':'010,101,010,101,011',
+    '.':'000,000,000,000,010',
+    '!':'010,010,010,000,010'
   };
   // Heart shape (7x7 for bigger impact)
   var HEART = [
@@ -259,12 +261,12 @@
   }
 
   function textToGrid(text) {
-    var rows = []; for(var i=0;i<7;i++) rows[i]=[];
+    var rows = []; for(var i=0;i<FONT_H;i++) rows[i]=[];
     text.split('').forEach(function(ch,ci){
       var g = parseFont(ch);
-      for(var r=0;r<7;r++){
-        for(var c=0;c<5;c++) rows[r].push(g[r][c]);
-        if(ci < text.length-1) rows[r].push(0);
+      for(var r=0;r<FONT_H;r++){
+        for(var c=0;c<FONT_W;c++) rows[r].push(g[r][c]);
+        if(ci < text.length-1) rows[r].push(0); // 1px spacing
       }
     });
     return rows;
@@ -303,19 +305,30 @@
     drawAll();
   }
 
+  // Check if inside the oval with given radius factor (0-0.5)
+  function inOval(gx, gy, gH, r) {
+    var nx = (gx + 0.5) / GRID;
+    var ny = (gy + 0.5) / gH;
+    var dx = (nx - 0.5) / r;
+    var dy = (ny - 0.5) / r;
+    return (dx * dx + dy * dy) <= 1;
+  }
+
   function buildMap(){
     allStitches = [];
     var gH = Math.floor(H/cellSize);
 
-    // Decorative border
-    var bi = 3;
-    for(var x=bi;x<GRID-bi;x++){
-      allStitches.push({x:x,y:bi,c:BG_THREAD,phase:0});
-      allStitches.push({x:x,y:gH-bi-1,c:BG_THREAD,phase:0});
-    }
-    for(var y=bi;y<gH-bi;y++){
-      allStitches.push({x:bi,y:y,c:BG_THREAD,phase:0});
-      allStitches.push({x:GRID-bi-1,y:y,c:BG_THREAD,phase:0});
+    // Oval border — stitched outline following the frame
+    var used = {};
+    for(var a = 0; a < 360; a += 1.2) {
+      var rad = a * Math.PI / 180;
+      var bx = Math.floor(GRID/2 + Math.cos(rad) * (GRID * 0.43));
+      var by = Math.floor(gH/2 + Math.sin(rad) * (gH * 0.43));
+      var key = bx + ',' + by;
+      if(bx >= 0 && bx < GRID && by >= 0 && by < gH && !used[key]) {
+        used[key] = true;
+        allStitches.push({x:bx, y:by, c:BG_THREAD, phase:0});
+      }
     }
 
     // Heart (centered, upper area, scaled 2x)
@@ -328,11 +341,46 @@
         if(HEART[r][c]){
           for(var sr=0;sr<scale;sr++){
             for(var sc=0;sc<scale;sc++){
+              if(inOval(hx+c*scale+sc, hy+r*scale+sr, gH, 0.38)) {
+                allStitches.push({
+                  x: hx+c*scale+sc,
+                  y: hy+r*scale+sr,
+                  c: COLORS[Math.floor(Math.random()*2)],
+                  phase: 1
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Text lines — rendered on the finer TEXT_GRID
+    var textCellSize = W / TEXT_GRID;
+    var tgH = Math.floor(H / textCellSize);
+    var g1 = textToGrid(LINE1);
+    var g2 = textToGrid(LINE2);
+    var tw1 = g1[0].length, tw2 = g2[0].length;
+    var y1 = Math.floor(tgH * 0.50);
+    var y2 = Math.floor(tgH * 0.63);
+    var x1 = Math.floor((TEXT_GRID - tw1) / 2);
+    var x2 = Math.floor((TEXT_GRID - tw2) / 2);
+
+    function addText(grid, sx, sy, cols, phase) {
+      for (var r = 0; r < FONT_H; r++) {
+        for (var c = 0; c < grid[r].length; c++) {
+          if (grid[r][c]) {
+            // Check bounds using text grid coordinates mapped to oval
+            var nx = (sx + c + 0.5) / TEXT_GRID;
+            var ny = (sy + r + 0.5) / tgH;
+            var dx = (nx - 0.5) / 0.38;
+            var dy = (ny - 0.5) / 0.38;
+            if (dx * dx + dy * dy <= 1) {
               allStitches.push({
-                x: hx+c*scale+sc,
-                y: hy+r*scale+sr,
-                c: COLORS[Math.floor(Math.random()*2)],
-                phase: 1
+                x: sx + c, y: sy + r,
+                c: cols[Math.floor(Math.random() * cols.length)],
+                phase: phase,
+                textGrid: true // flag: use textCellSize for rendering
               });
             }
           }
@@ -340,31 +388,25 @@
       }
     }
 
-    // Text lines
-    var g1 = textToGrid(LINE1);
-    var g2 = textToGrid(LINE2);
-    var tw1 = g1[0].length, tw2 = g2[0].length;
-    var y1 = Math.floor(gH*0.52);
-    var y2 = Math.floor(gH*0.67);
-    var x1 = Math.floor((GRID-tw1)/2);
-    var x2 = Math.floor((GRID-tw2)/2);
+    addText(g1, x1, y1, [COLORS[0], COLORS[1], COLORS[4]], 2);
+    addText(g2, x2, y2, [COLORS[2], COLORS[3]], 3);
 
-    function addText(grid,sx,sy,cols,phase){
-      for(var r=0;r<7;r++){
-        for(var c=0;c<grid[r].length;c++){
-          if(grid[r][c]) allStitches.push({x:sx+c,y:sy+r,c:cols[Math.floor(Math.random()*cols.length)],phase:phase});
+    // Small heart at the bottom
+    var MINI_HEART = [
+      [0,1,0,1,0],
+      [1,1,1,1,1],
+      [0,1,1,1,0],
+      [0,0,1,0,0]
+    ];
+    var mhx = Math.floor(GRID/2) - 2;
+    var mhy = Math.floor(gH * 0.80);
+    for(var mr=0;mr<4;mr++){
+      for(var mc=0;mc<5;mc++){
+        if(MINI_HEART[mr][mc] && inOval(mhx+mc, mhy+mr, gH, 0.40)){
+          allStitches.push({x:mhx+mc, y:mhy+mr, c:COLORS[2+Math.floor(Math.random()*2)], phase:4});
         }
       }
     }
-
-    addText(g1,x1,y1,[COLORS[0],COLORS[1],COLORS[4]],2);
-    addText(g2,x2,y2,[COLORS[2],COLORS[3]],3);
-
-    // Decorative dots below
-    var dy = Math.floor(gH*0.82);
-    [COLORS[3],COLORS[2],COLORS[0],COLORS[2],COLORS[3]].forEach(function(col,i){
-      allStitches.push({x:Math.floor(GRID/2)-4+i*2,y:dy,c:col,phase:4});
-    });
   }
 
   function drawX(x,y,sz,color,alpha){
@@ -415,14 +457,16 @@
     for(var gx=0;gx<GRID;gx++){
       for(var gy=0;gy<gH;gy++){
         ctx.beginPath();
-        ctx.arc(gx*cellSize+cellSize/2, gy*cellSize+cellSize/2, 0.4, 0, Math.PI*2);
+        ctx.arc(gx*cellSize+cellSize/2, gy*cellSize+cellSize/2, 0.3, 0, Math.PI*2);
         ctx.fill();
       }
     }
     // Completed stitches
+    var tcs = W / TEXT_GRID;
     for(var i=0;i<current;i++){
       var s = allStitches[i];
-      drawX(s.x*cellSize, s.y*cellSize, cellSize, s.c, 1);
+      var cs = s.textGrid ? tcs : cellSize;
+      drawX(s.x*cs, s.y*cs, cs, s.c, 1);
     }
   }
 
@@ -442,10 +486,27 @@
       if(navigator.vibrate) navigator.vibrate([30,60,30]);
       return;
     }
+
+    var tcs = W / TEXT_GRID;
+    // Background fill stitches (phase -1) — draw many per tick for speed
     var s = allStitches[current];
-    drawX(s.x*cellSize, s.y*cellSize, cellSize, s.c, 1);
+    if(s.phase === -1) {
+      var batch = 12;
+      for(var b=0;b<batch && current<allStitches.length;b++){
+        s = allStitches[current];
+        if(s.phase !== -1) break;
+        var cs2 = s.textGrid ? tcs : cellSize;
+        drawX(s.x*cs2, s.y*cs2, cs2, s.c, 1);
+        current++;
+      }
+      moveNeedle(allStitches[Math.min(current,allStitches.length-1)]);
+      return;
+    }
+
+    var cs3 = s.textGrid ? tcs : cellSize;
+    drawX(s.x*cs3, s.y*cs3, cs3, s.c, 1);
     moveNeedle(s);
-    if(current%6===0 && navigator.vibrate) navigator.vibrate(10);
+    if(current%20===0 && navigator.vibrate) navigator.vibrate(8);
 
     // Update active swatch
     var sw = swatchEl.children;

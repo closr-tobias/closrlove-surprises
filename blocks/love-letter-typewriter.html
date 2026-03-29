@@ -39,7 +39,7 @@
   /* Paper clip area — fixed height, clips paper below the platen */
   .paper-clip {
     width: min(62vw, 248px);
-    height: min(45vh, 320px);
+    height: min(50vh, 360px);
     overflow: hidden;
     position: relative;
     z-index: 5;
@@ -47,27 +47,21 @@
 
   .paper {
     width: 100%;
-    min-height: 100%;
-    background: #f5f2eb;
+    height: min(50vh, 360px);
+    background: #f5f2eb !important;
     padding: 18px 20px 24px;
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
     transform: translateY(100%);
     transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
   }
   .paper.popped {
     position: fixed !important;
-    left: 50% !important; top: 50% !important;
-    bottom: auto !important;
-    width: min(62vw, 248px) !important;
-    min-height: min(45vh, 320px) !important;
-    max-height: 75vh;
-    transform: translate(-50%, -50%) !important;
     z-index: 200 !important;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 20px 60px rgba(0,0,0,0.3), 0 40px 100px rgba(0,0,0,0.2);
-    transition: all 0.9s cubic-bezier(0.25, 1, 0.5, 1) !important;
     overflow-y: auto;
   }
 
@@ -92,53 +86,123 @@
   }
   .typewriter.dimmed { opacity: 0.15; }
 
+  /* Platen — thick rubber roller */
   .tw-platen {
-    width: 100%; height: 14px;
-    background: linear-gradient(180deg, #1a1816, #0e0d0b, #1a1816, #0a0908);
-    border-radius: 7px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.5), inset 0 2px 3px rgba(0,0,0,0.4);
+    width: 100%; height: 20px;
+    background: linear-gradient(180deg, #1e1c1a 0%, #0e0d0b 20%, #1a1816 40%, #0a0908 60%, #161412 80%, #1e1c1a 100%);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(0,0,0,0.5), 0 -1px 0 rgba(255,255,255,0.03);
     position: relative;
   }
+  /* Rubber texture on platen */
+  .tw-platen::after {
+    content: ''; position: absolute; inset: 2px; border-radius: 8px;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.008) 0px, transparent 1px, transparent 3px);
+    pointer-events: none;
+  }
+  /* Knobs with grip ridges */
   .tw-knob {
     position: absolute; top: 50%; transform: translateY(-50%);
-    width: 15px; height: 15px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #4a4540, #2a2520);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+    width: 20px; height: 20px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #4a4540, #2a2520, #1a1815);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
   }
-  .tw-knob.l { left: -5px; }
-  .tw-knob.r { right: -5px; }
+  .tw-knob::before {
+    content: ''; position: absolute; inset: 3px; border-radius: 50%;
+    background: conic-gradient(from 0deg,
+      rgba(255,255,255,0.05) 0deg, transparent 30deg,
+      rgba(255,255,255,0.05) 60deg, transparent 90deg,
+      rgba(255,255,255,0.05) 120deg, transparent 150deg,
+      rgba(255,255,255,0.05) 180deg, transparent 210deg,
+      rgba(255,255,255,0.05) 240deg, transparent 270deg,
+      rgba(255,255,255,0.05) 300deg, transparent 330deg);
+  }
+  .tw-knob::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    width: 5px; height: 5px; border-radius: 50%;
+    transform: translate(-50%,-50%);
+    background: radial-gradient(circle, #1a1815, #0a0908);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .tw-knob.l { left: -8px; }
+  .tw-knob.r { right: -8px; }
+  /* Paper slot */
   .tw-slot {
-    width: 86%; height: 3px; margin: 1px auto 0;
-    background: #000; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+    width: 84%; height: 4px; margin: 2px auto 0;
+    background: linear-gradient(180deg, #000, #0a0908, #000);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
   }
+  /* Ribbon area with spools */
+  .tw-ribbon {
+    width: 100%; height: 14px; position: relative;
+    background: linear-gradient(180deg, #161412, #1a1816);
+  }
+  .tw-spool {
+    position: absolute; top: 2px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%, #2a2825, #161412);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .tw-spool::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    width: 4px; height: 4px; border-radius: 50%;
+    transform: translate(-50%,-50%);
+    background: #0a0908; box-shadow: inset 0 1px 1px rgba(0,0,0,0.5);
+  }
+  .tw-spool.l { left: 25px; }
+  .tw-spool.r { right: 25px; }
+  .tw-ribbon::after {
+    content: ''; position: absolute; top: 7px; left: 40px; right: 40px; height: 2px;
+    background: linear-gradient(90deg, #1a1816, #0a0908, #1a1816);
+  }
+  /* Main body — with metal texture */
   .tw-body {
-    width: 100%; padding: 10px 6px 14px;
-    background: linear-gradient(180deg, #1a1816, #121010, #0e0c0b);
-    border-radius: 0 0 10px 10px;
-    box-shadow: 0 6px 25px rgba(0,0,0,0.5);
+    width: 100%; padding: 10px 8px 18px;
+    background: linear-gradient(180deg, #1e1c1a, #161412, #0e0c0b, #0a0908);
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 16px 60px rgba(0,0,0,0.3),
+      inset 0 1px 0 rgba(255,255,255,0.03);
     display: flex; flex-direction: column; align-items: center; gap: 3px;
+    position: relative;
+  }
+  /* Metal trim */
+  .tw-body::before {
+    content: ''; position: absolute; top: 0; left: 12px; right: 12px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  }
+  /* Side panels */
+  .tw-body::after {
+    content: ''; position: absolute; top: 5px; bottom: 14px; left: 5px; width: 4px;
+    background: linear-gradient(180deg, #1a1815, #0e0c0a); border-radius: 2px;
+    box-shadow: calc(min(76vw, 300px) - 14px) 0 0 0 #0e0c0a;
   }
   .tw-row { display: flex; gap: 3px; }
-  .tw-row:nth-child(2) { padding: 0 5px; }
-  .tw-row:nth-child(3) { padding: 0 10px; }
+  .tw-row:nth-child(2) { padding: 0 6px; }
+  .tw-row:nth-child(3) { padding: 0 14px; }
+  /* Keys — concave tops with letter engravings */
   .tw-key {
-    width: 15px; height: 15px; border-radius: 50%;
-    background: radial-gradient(circle at 38% 34%, #302e2a, #1e1c1a);
-    box-shadow: 0 2px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    width: 17px; height: 17px; border-radius: 50%; position: relative;
+    background: radial-gradient(circle at 38% 34%, #35322e, #1e1c1a, #141210);
+    box-shadow: 0 2px 3px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
     transition: transform 0.04s, box-shadow 0.04s;
     display: flex; align-items: center; justify-content: center;
     font-family: 'Special Elite', monospace; font-size: 0.3rem; color: rgba(255,255,255,0.12);
-    font-weight: 400;
+  }
+  .tw-key::before {
+    content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 3px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 45% 40%, rgba(255,255,255,0.06), transparent);
   }
   .tw-key.pressed {
     transform: translateY(2px) scale(0.93);
-    box-shadow: 0 0 1px rgba(0,0,0,0.5);
-    color: rgba(255,255,255,0.25);
+    box-shadow: 0 0 1px rgba(0,0,0,0.6);
+    color: rgba(255,255,255,0.3);
   }
+  /* Spacebar */
   .tw-space {
-    width: 65px; height: 8px; border-radius: 4px; margin-top: 3px;
-    background: linear-gradient(180deg, #2a2826, #1e1c1a);
-    box-shadow: 0 2px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+    width: 80px; height: 10px; border-radius: 5px; margin-top: 4px;
+    background: linear-gradient(180deg, #2a2826, #1e1c1a, #161412);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
     transition: transform 0.04s;
   }
   .tw-space.pressed { transform: translateY(1px); }
@@ -184,6 +248,7 @@
   <div class="typewriter" id="typewriter">
     <div class="tw-platen"><div class="tw-knob l"></div><div class="tw-knob r"></div></div>
     <div class="tw-slot"></div>
+    <div class="tw-ribbon"><div class="tw-spool l"></div><div class="tw-spool r"></div></div>
     <div class="tw-body">
       <div class="tw-row" id="kr1"></div>
       <div class="tw-row" id="kr2"></div>
@@ -215,8 +280,6 @@ keyRows.forEach(function(r){
 });
 
 const segments=[
-{text:"I've been thinking about what you mean to me, and every version sounds too small.\n\n"},
-{pause:300},
 {text:"When you laugh — that "},
 {text:"completely contagious ",em:true},
 {text:"laugh — I forget the "},
@@ -225,7 +288,7 @@ const segments=[
 {pause:400},
 {text:"The distance is "},
 {text:"temporary.",em:true},
-{text:" Every call, every time you fall asleep on FaceTime — it's all building something.\n\n"},
+{text:" Every call, every FaceTime — it's building something.\n\n"},
 {pause:500},
 {text:"I ",em:true},
 {text:"love",em:true},
@@ -249,17 +312,19 @@ const area=document.getElementById('typeArea'),
 
 const TYPE_SPEED=50,PAUSE_NEWLINE=400,LINE_H=19;
 let cursor,running=false,started=false,cancelToken={cancelled:false};
-let linesTyped=0;
+let lastAreaH=0;
 
-// Paper is position:absolute bottom:0 in the clip.
-// translateY(100%) = fully hidden below. translateY(0) = fully visible.
-// We feed it up gradually as lines are typed.
-function updatePaperPos(){
-  const clipH=paperClip.offsetHeight;
-  const showH=(linesTyped+3)*LINE_H+50;
-  // How much to still hide: clipH - showH pixels remain below
-  const hidePercent=Math.max(0, (clipH-showH)/clipH*100);
-  paper.style.transform='translateY('+hidePercent+'%)';
+// Move paper up when typing area gets taller (from wrapping or \n)
+function feedPaper(){
+  const areaH=area.offsetHeight;
+  if(areaH>lastAreaH){
+    lastAreaH=areaH;
+  }
+  const paperH=paper.offsetHeight;
+  // Show: date(30) + greeting(25) + typed content + padding
+  const showH=lastAreaH+80;
+  const hidePixels=Math.max(0, paperH-showH);
+  paper.style.transform='translateY('+hidePixels+'px)';
 }
 
 function createCursor(){cursor=document.createElement('span');cursor.className='cursor';return cursor}
@@ -290,13 +355,13 @@ async function typeText(text,className,token){
     const ch=text[i];
     if(ch==='\n'){
       span.appendChild(document.createElement('br'));
-      linesTyped++;
-      updatePaperPos();
+      feedPaper();
       await sleep(PAUSE_NEWLINE,token);
     } else {
       span.textContent+=ch;
       pressKey(ch);
       haptic(3);
+      feedPaper();
       await sleep(TYPE_SPEED+(Math.random()*24-12),token);
     }
   }
@@ -314,20 +379,20 @@ async function play(){
   paper.classList.remove('popped');
   overlay.classList.remove('visible');
   typewriterEl.classList.remove('dimmed');
-  linesTyped=0;
+  lastAreaH=0;
 
   // Hide paper inside typewriter
   paper.style.transition='none';
-  paper.style.transform='translateY(100%)';
+  paper.style.transform='translateY(400px)';
   area.appendChild(createCursor());
 
   try{
     await sleep(300,cancelToken);
-    paper.style.transition='transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+    paper.style.transition='transform 0.3s ease-out';
 
     // Feed paper out — show top edge with date + greeting
-    linesTyped=2;
-    updatePaperPos();
+    lastAreaH=30;
+    feedPaper();
     await sleep(500,cancelToken);
     greeting.classList.add('visible');
     haptic(8);
@@ -348,14 +413,14 @@ async function play(){
 
     // Done typing
     await sleep(600,cancelToken);
-    linesTyped+=2;
-    updatePaperPos();
     signoffLine.classList.add('visible');
-    scrollPaper();
+    lastAreaH+=40;
+    feedPaper();
     haptic(8);
     await sleep(800,cancelToken);
     signature.classList.add('visible');
-    scrollPaper();
+    lastAreaH+=30;
+    feedPaper();
     await sleep(1200,cancelToken);
     if(cursor)cursor.style.opacity='0';
 
@@ -364,11 +429,30 @@ async function play(){
     paper.style.transform='translateY(0)';
     await sleep(500,cancelToken);
 
-    // Pop to center
+    // Pop to center — capture current position first
+    var rect=paper.getBoundingClientRect();
+    var pw=rect.width, ph=rect.height;
+
+    // Switch to fixed at the SAME screen position (no jump)
+    paper.style.transition='none';
+    paper.classList.add('popped');
+    paper.style.left=rect.left+'px';
+    paper.style.top=rect.top+'px';
+    paper.style.width=pw+'px';
+    paper.style.height=ph+'px';
+    paper.style.transform='none';
+    paper.style.bottom='auto';
+    paper.offsetHeight; // force layout
+
     typewriterEl.classList.add('dimmed');
     overlay.classList.add('visible');
-    await sleep(400,cancelToken);
-    paper.classList.add('popped');
+    await sleep(100,cancelToken);
+
+    // Now animate to center
+    paper.style.transition='all 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
+    paper.style.left='50%';
+    paper.style.top='50%';
+    paper.style.transform='translate(-50%, -50%)';
     haptic(12);
     await sleep(1000,cancelToken);
     restartBtn.classList.add('visible')
