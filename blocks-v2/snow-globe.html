@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Snow Globe — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;500;700&family=Inter:wght@300;400;500;600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:#08080e;
+    font-family:'Inter',sans-serif;
+    min-height:100dvh;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    user-select:none;-webkit-user-select:none;
+    overflow:hidden;
+  }
+
+  .particle{
+    position:fixed;width:2px;height:2px;
+    background:rgba(180,200,240,0.04);border-radius:50%;
+    pointer-events:none;animation:ambientDrift linear infinite;
+  }
+  @keyframes ambientDrift{
+    0%{transform:translateY(0) translateX(0);opacity:0}
+    10%{opacity:1}90%{opacity:1}
+    100%{transform:translateY(-100vh) translateX(20px);opacity:0}
+  }
+
+  .globe-wrapper{
+    position:relative;
+    width:min(320px,80vw);
+    aspect-ratio:1;
+    margin-bottom:20px;
+  }
+
+  /* Glass dome */
+  .globe{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.08),rgba(255,255,255,0.02) 40%,rgba(20,25,40,0.3) 100%);
+    border:1.5px solid rgba(255,255,255,0.06);
+    box-shadow:
+      inset 0 0 60px rgba(100,130,200,0.05),
+      inset 0 -20px 40px rgba(0,0,0,0.15),
+      0 8px 32px rgba(0,0,0,0.4),
+      0 0 80px rgba(100,130,200,0.03);
+    overflow:hidden;
+    z-index:2;
+  }
+
+  /* Glass highlight */
+  .globe::before{
+    content:'';position:absolute;
+    width:60%;height:60%;
+    top:8%;left:12%;
+    border-radius:50%;
+    background:radial-gradient(ellipse at center,rgba(255,255,255,0.06),transparent 70%);
+    transform:rotate(-20deg);
+    pointer-events:none;
+  }
+  /* Bottom reflection */
+  .globe::after{
+    content:'';position:absolute;
+    bottom:0;left:0;right:0;height:35%;
+    background:linear-gradient(180deg,transparent,rgba(180,200,240,0.03));
+    pointer-events:none;
+  }
+
+  /* Scene inside globe */
+  canvas#snowCanvas{
+    position:absolute;inset:0;
+    width:100%;height:100%;
+    border-radius:50%;
+    z-index:1;
+  }
+
+  /* Base/pedestal */
+  .base{
+    position:absolute;
+    bottom:-12%;left:10%;right:10%;
+    height:24%;
+    background:linear-gradient(180deg,#2a2035,#1a1520);
+    border-radius:0 0 40% 40% / 0 0 60% 60%;
+    border:1px solid rgba(255,255,255,0.04);
+    box-shadow:0 8px 24px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.03);
+    z-index:3;
+    display:flex;align-items:center;justify-content:center;
+    padding-top:8px;
+  }
+  .base-text{
+    font-family:'Caveat',cursive;
+    font-size:0.85rem;
+    color:rgba(255,200,160,0.4);
+    letter-spacing:1px;
+    text-align:center;
+  }
+
+  /* Message panel below globe */
+  .message-area{
+    text-align:center;
+    padding:0 28px;
+    max-width:340px;
+    min-height:100px;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+  }
+
+  .msg-kicker{
+    font-size:0.55rem;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    color:rgba(180,200,240,0.2);
+    margin-bottom:12px;
+    opacity:0;
+    transition:opacity 0.8s;
+  }
+  .msg-kicker.show{opacity:1}
+
+  .msg-text{
+    font-family:'Playfair Display',serif;
+    font-size:clamp(1.1rem,4.5vw,1.5rem);
+    font-weight:400;font-style:italic;
+    line-height:1.6;
+    color:#e8e4dc;
+    opacity:0;transform:translateY(15px);
+    transition:opacity 1s,transform 1s cubic-bezier(0.34,1.56,0.64,1);
+    text-shadow:0 0 30px rgba(180,200,240,0.06);
+  }
+  .msg-text.show{opacity:1;transform:translateY(0)}
+
+  .msg-counter{
+    margin-top:16px;
+    font-size:0.6rem;
+    color:rgba(255,255,255,0.06);
+    letter-spacing:2px;
+    opacity:0;transition:opacity 0.5s;
+  }
+  .msg-counter.show{opacity:1}
+
+  .hint{
+    position:fixed;bottom:24px;left:0;right:0;
+    text-align:center;font-size:0.5rem;
+    color:rgba(255,255,255,0.1);
+    letter-spacing:3px;text-transform:uppercase;
+    animation:hintPulse 3s ease-in-out infinite;
+  }
+  @keyframes hintPulse{0%,100%{opacity:0.3}50%{opacity:0.8}}
+
+  .back-link{position:fixed;top:14px;left:14px;font-size:0.65rem;color:#ffffff12;text-decoration:none;z-index:40}
+  .block-label{position:fixed;top:14px;right:14px;font-size:0.5rem;color:#ffffff0a;letter-spacing:1px;z-index:40}
+</style>
+</head>
+<body>
+
+<a href="../building-blocks-v2.html" class="back-link">← blocks</a>
+<div class="block-label">closr · snow globe</div>
+
+<div class="globe-wrapper">
+  <div class="globe">
+    <canvas id="snowCanvas"></canvas>
+  </div>
+  <div class="base">
+    <div class="base-text">shake me</div>
+  </div>
+</div>
+
+<div class="message-area">
+  <div class="msg-kicker" id="kicker">memory i</div>
+  <div class="msg-text" id="msgText"></div>
+  <div class="msg-counter" id="counter"></div>
+</div>
+
+<div class="hint" id="hint">shake your phone or tap the globe</div>
+
+<script>
+(function(){
+  // Ambient particles
+  for(let i=0;i<15;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    p.style.left=Math.random()*100+'%';
+    p.style.animationDuration=(15+Math.random()*20)+'s';
+    p.style.animationDelay=(-Math.random()*20)+'s';
+    document.body.appendChild(p);
+  }
+
+  const canvas=document.getElementById('snowCanvas');
+  const ctx=canvas.getContext('2d');
+  const globe=document.querySelector('.globe');
+  const kicker=document.getElementById('kicker');
+  const msgText=document.getElementById('msgText');
+  const counterEl=document.getElementById('counter');
+  const hintEl=document.getElementById('hint');
+  const baseText=document.querySelector('.base-text');
+
+  let W,H,cx,cy,radius;
+  function resize(){
+    const rect=canvas.parentElement.getBoundingClientRect();
+    W=canvas.width=rect.width*2;
+    H=canvas.height=rect.height*2;
+    canvas.style.width=rect.width+'px';
+    canvas.style.height=rect.height+'px';
+    ctx.scale(2,2);
+    cx=rect.width/2;cy=rect.height/2;
+    radius=Math.min(cx,cy)-2;
+  }
+  resize();
+
+  // Messages
+  const messages=[
+    {kicker:'memory i',text:'The first time you fell asleep on FaceTime and I just watched you breathe for ten minutes like a complete weirdo'},
+    {kicker:'memory ii',text:'That night we stayed up until 4am talking about nothing and everything and I forgot what time zones even were'},
+    {kicker:'memory iii',text:'When you sent me that voice message laughing so hard you couldn\'t finish the sentence'},
+    {kicker:'memory iv',text:'The airport arrivals gate. I saw you before you saw me. You were looking at the wrong exit.'},
+    {kicker:'always',text:'Every snowflake that settles is another reason I\'d cross any distance for you'}
+  ];
+
+  let current=0;
+  let shaking=false;
+  let snowflakes=[];
+  let settled=[];
+
+  // Scene elements
+  const house={x:cx,y:cy+radius*0.25,w:30,h:25};
+  const trees=[
+    {x:cx-radius*0.45,y:cy+radius*0.35,h:28},
+    {x:cx-radius*0.25,y:cy+radius*0.28,h:35},
+    {x:cx+radius*0.3,y:cy+radius*0.32,h:30},
+    {x:cx+radius*0.5,y:cy+radius*0.38,h:24}
+  ];
+
+  // Snowflake class
+  class Flake{
+    constructor(turbulent){
+      this.x=cx+(Math.random()-0.5)*radius*1.6;
+      this.y=turbulent?cy+(Math.random()-0.5)*radius*1.6:cy-radius+Math.random()*20;
+      this.r=1+Math.random()*2.5;
+      this.vx=(Math.random()-0.5)*0.3;
+      this.vy=0.2+Math.random()*0.5;
+      this.ax=0;this.ay=0;
+      this.opacity=0.4+Math.random()*0.6;
+      this.wobbleSpeed=0.02+Math.random()*0.02;
+      this.wobbleAmp=0.3+Math.random()*0.5;
+      this.t=Math.random()*Math.PI*2;
+      this.settled=false;
+      this.sparkle=Math.random();
+    }
+    update(){
+      if(this.settled)return;
+      this.t+=this.wobbleSpeed;
+      this.vx+=this.ax+Math.sin(this.t)*this.wobbleAmp*0.02;
+      this.vy+=this.ay+0.01;
+      this.vx*=0.98;this.vy*=0.98;
+      this.x+=this.vx;this.y+=this.vy;
+
+      // Contain within globe
+      const dx=this.x-cx,dy=this.y-cy;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist>radius-this.r){
+        const angle=Math.atan2(dy,dx);
+        this.x=cx+Math.cos(angle)*(radius-this.r);
+        this.y=cy+Math.sin(angle)*(radius-this.r);
+        this.vx*=-0.3;this.vy*=-0.3;
+      }
+
+      // Settle at bottom
+      const groundY=cy+radius*0.55;
+      if(this.y>groundY&&Math.abs(this.vy)<0.5){
+        this.y=groundY-(Math.random()*8);
+        this.settled=true;
+        settled.push({x:this.x,y:this.y,r:this.r,opacity:this.opacity});
+      }
+    }
+    draw(){
+      if(this.settled)return;
+      ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      const shimmer=0.8+Math.sin(this.t*3)*0.2;
+      ctx.fillStyle=`rgba(220,230,255,${this.opacity*shimmer})`;
+      ctx.fill();
+      // Sparkle
+      if(this.sparkle>0.7&&Math.sin(this.t*5)>0.8){
+        ctx.beginPath();ctx.arc(this.x,this.y,this.r*0.4,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,255,255,0.9)';ctx.fill();
+      }
+    }
+  }
+
+  // Initial snow
+  for(let i=0;i<40;i++){
+    const f=new Flake(true);
+    f.y=cy+radius*0.3+Math.random()*radius*0.3;
+    f.settled=true;
+    settled.push({x:f.x,y:f.y,r:f.r,opacity:f.opacity*0.5});
+  }
+
+  function drawScene(){
+    const hw=W/2,hh=H/2;
+    ctx.save();
+    // Clip to globe circle
+    ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.clip();
+
+    // Night sky gradient
+    const skyG=ctx.createLinearGradient(0,cy-radius,0,cy+radius);
+    skyG.addColorStop(0,'#0a1628');
+    skyG.addColorStop(0.6,'#121830');
+    skyG.addColorStop(1,'#1a2040');
+    ctx.fillStyle=skyG;ctx.fillRect(0,0,hw,hh);
+
+    // Ground/snow base
+    const groundY=cy+radius*0.45;
+    const groundG=ctx.createLinearGradient(0,groundY,0,cy+radius);
+    groundG.addColorStop(0,'#c8d0e0');
+    groundG.addColorStop(1,'#a0a8c0');
+    ctx.fillStyle=groundG;
+    ctx.beginPath();
+    ctx.ellipse(cx,groundY+10,radius,radius*0.5,0,0,Math.PI);
+    ctx.fill();
+
+    // Stars in sky
+    for(let i=0;i<30;i++){
+      const sx=cx+(Math.random()-0.5)*radius*1.8;
+      const sy=cy-radius*0.2+Math.random()*radius*0.5*-1;
+      const sr=0.3+Math.random()*0.8;
+      ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,210,240,${0.2+Math.random()*0.3})`;
+      ctx.fill();
+    }
+
+    // Moon
+    ctx.beginPath();ctx.arc(cx+radius*0.35,cy-radius*0.5,8,0,Math.PI*2);
+    ctx.fillStyle='rgba(240,235,220,0.7)';ctx.fill();
+    ctx.beginPath();ctx.arc(cx+radius*0.35,cy-radius*0.5,12,0,Math.PI*2);
+    ctx.fillStyle='rgba(240,235,220,0.05)';ctx.fill();
+
+    // Trees
+    trees.forEach(t=>{
+      // Trunk
+      ctx.fillStyle='#3a2820';
+      ctx.fillRect(t.x-2,t.y-t.h*0.3,4,t.h*0.4);
+      // Snow-covered triangle layers
+      for(let l=0;l<3;l++){
+        const ly=t.y-t.h+l*t.h*0.3;
+        const lw=6+l*5;
+        ctx.beginPath();
+        ctx.moveTo(t.x,ly);
+        ctx.lineTo(t.x-lw,ly+t.h*0.35);
+        ctx.lineTo(t.x+lw,ly+t.h*0.35);
+        ctx.closePath();
+        ctx.fillStyle=l===0?'#e0e8f0':'#1a3028';
+        ctx.fill();
+        // Snow caps
+        ctx.beginPath();
+        ctx.moveTo(t.x,ly);
+        ctx.lineTo(t.x-lw*0.6,ly+t.h*0.15);
+        ctx.lineTo(t.x+lw*0.6,ly+t.h*0.15);
+        ctx.closePath();
+        ctx.fillStyle='rgba(220,230,245,0.7)';
+        ctx.fill();
+      }
+    });
+
+    // House
+    const hx=house.x,hy=house.y;
+    // Walls
+    ctx.fillStyle='#2a2028';
+    ctx.fillRect(hx-house.w/2,hy-house.h,house.w,house.h);
+    // Roof
+    ctx.beginPath();
+    ctx.moveTo(hx-house.w/2-5,hy-house.h);
+    ctx.lineTo(hx,hy-house.h-16);
+    ctx.lineTo(hx+house.w/2+5,hy-house.h);
+    ctx.closePath();
+    ctx.fillStyle='#1a1520';ctx.fill();
+    // Snow on roof
+    ctx.beginPath();
+    ctx.moveTo(hx-house.w/2-5,hy-house.h);
+    ctx.lineTo(hx,hy-house.h-14);
+    ctx.lineTo(hx+house.w/2+5,hy-house.h);
+    ctx.closePath();
+    ctx.fillStyle='rgba(220,230,245,0.5)';ctx.fill();
+    // Window with warm glow
+    const winGlow=0.5+Math.sin(Date.now()*0.002)*0.15;
+    ctx.fillStyle=`rgba(255,180,80,${winGlow})`;
+    ctx.fillRect(hx-5,hy-house.h+6,10,10);
+    ctx.strokeStyle='#1a1520';ctx.lineWidth=1.5;
+    ctx.strokeRect(hx-5,hy-house.h+6,10,10);
+    ctx.beginPath();ctx.moveTo(hx,hy-house.h+6);ctx.lineTo(hx,hy-house.h+16);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(hx-5,hy-house.h+11);ctx.lineTo(hx+5,hy-house.h+11);ctx.stroke();
+    // Window light cast
+    ctx.fillStyle=`rgba(255,180,80,${winGlow*0.04})`;
+    ctx.beginPath();
+    ctx.moveTo(hx-5,hy-house.h+16);
+    ctx.lineTo(hx-20,hy+10);
+    ctx.lineTo(hx+20,hy+10);
+    ctx.lineTo(hx+5,hy-house.h+16);
+    ctx.fill();
+
+    // Settled snow
+    settled.forEach(s=>{
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(220,230,245,${s.opacity*0.4})`;ctx.fill();
+    });
+
+    // Active snowflakes
+    snowflakes.forEach(f=>f.draw());
+
+    ctx.restore();
+  }
+
+  function animate(){
+    ctx.clearRect(0,0,W/2,H/2);
+    snowflakes.forEach(f=>f.update());
+    snowflakes=snowflakes.filter(f=>!f.settled);
+    drawScene();
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  function shake(){
+    if(shaking)return;
+    shaking=true;
+    if(navigator.vibrate)navigator.vibrate([30,50,30]);
+
+    // Unsettle some snow
+    const unsettled=settled.splice(0,Math.min(settled.length,15));
+    unsettled.forEach(s=>{
+      const f=new Flake(false);
+      f.x=s.x;f.y=s.y;f.r=s.r;
+      f.vy=-2-Math.random()*3;
+      f.vx=(Math.random()-0.5)*4;
+      snowflakes.push(f);
+    });
+
+    // Add new snow
+    for(let i=0;i<35;i++){
+      const f=new Flake(true);
+      f.vy=(Math.random()-0.5)*3;
+      f.vx=(Math.random()-0.5)*4;
+      snowflakes.push(f);
+    }
+
+    // Globe shake animation
+    globe.style.transition='none';
+    let shakeT=0;
+    const shakeInterval=setInterval(()=>{
+      shakeT++;
+      const decay=Math.max(0,1-shakeT/15);
+      const ox=Math.sin(shakeT*1.5)*(4*decay);
+      const oy=Math.cos(shakeT*2)*(2*decay);
+      globe.style.transform=`translate(${ox}px,${oy}px)`;
+      if(shakeT>15){
+        clearInterval(shakeInterval);
+        globe.style.transform='';
+      }
+    },30);
+
+    // Show message after snow starts settling
+    setTimeout(()=>{
+      showMessage();
+      shaking=false;
+    },2000);
+  }
+
+  function showMessage(){
+    if(current>=messages.length)return;
+    const m=messages[current];
+
+    // Fade out old
+    kicker.classList.remove('show');
+    msgText.classList.remove('show');
+
+    setTimeout(()=>{
+      kicker.textContent=m.kicker;
+      msgText.textContent=m.text;
+      kicker.classList.add('show');
+      msgText.classList.add('show');
+      counterEl.textContent=`${current+1} / ${messages.length}`;
+      counterEl.classList.add('show');
+
+      if(current===0){
+        hintEl.textContent='shake again';
+        baseText.textContent='again';
+      }
+      if(current>=messages.length-1){
+        hintEl.textContent='';
+        baseText.textContent='yours forever';
+      }
+
+      current++;
+    },300);
+  }
+
+  // Tap to shake
+  globe.addEventListener('click',shake);
+
+  // Device motion shake detection
+  let lastAcc=0;
+  window.addEventListener('devicemotion',e=>{
+    const a=e.accelerationIncludingGravity;
+    if(!a)return;
+    const total=Math.abs(a.x)+Math.abs(a.y)+Math.abs(a.z);
+    if(total-lastAcc>25)shake();
+    lastAcc=total;
+  });
+})();
+</script>
+</body>
+</html>
