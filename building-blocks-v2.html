@@ -27,21 +27,7 @@
 <div class="count" id="count"></div>
 <script>
 const blocks = [
-  { emoji:'u{1FA99}', name:'Wishing Well', type:'reveal · ritual', desc:'Drag a golden coin into the dark well. Watch it tumble, hear the splash, and a wish rises from the depths.', file:'wishing-well.html' },
-  { emoji:'🏮', name:'Campfire Stories', type:'narrative · warmth', desc:'Crackling campfire with floating embers. Tap the flames to reveal stories and memories.', file:'campfire-stories.html' },
-  { emoji:'🥠', name:'Fortune Cookie', type:'reveal · playful', desc:'Crack open golden fortune cookies. Each holds a personalized love fortune.', file:'fortune-cookie.html' },
-  { emoji:'🫧', name:'Water Ripple', type:'reveal · calm', desc:'Drop pebbles into still water. Ripples expand outward revealing words on the surface.', file:'water-ripple.html' },
-  { emoji:'🎈', name:'Hot Air Balloon', type:'journey · wonder', desc:'Rise through layered clouds. Each cloud reveals a message as the sky shifts.', file:'hot-air-balloon.html' },
-  { emoji:'🦋', name:'Butterfly Release', type:'transformation · magical', desc:'Tap the glowing cocoon to release butterflies carrying messages into the sky.', file:'butterfly-release.html' },
-  { emoji:'🎞️', name:'Film Strip', type:'gallery · nostalgic', desc:'Old 16mm film reel. Swipe through frames, each holding a moment and a feeling.', file:'film-strip.html' },
-  { emoji:'🌌', name:'Aurora Sky', type:'atmosphere · wonder', desc:'Northern lights dance across the sky, revealing messages in the shifting colors.', file:'aurora-sky.html' },
-  { emoji:'⛄', name:'Snow Globe', type:'reveal · magical', desc:'Shake to swirl snow around a hidden love message inside the globe.', file:'snow-globe.html' },
-  { emoji:'🔥', name:'Zippo Lighter', type:'reveal · tactile', desc:'Flip open and strike a Zippo. The flame illuminates a message in the dark.', file:'zippo-lighter.html' },
-  { emoji:'🔭', name:'Telescope', type:'discovery · exploration', desc:'Drag a brass telescope across the night sky to find hidden words among the stars.', file:'telescope.html' },
-  { emoji:'🕯️', name:'Candle', type:'reveal · atmospheric', desc:'Hold the flame until it extinguishes. The message rises from the smoke.', file:'candle.html' },
-  { emoji:'🧭', name:'Compass', type:'interactive · poetic', desc:'Guide the needle home. As it settles, the fog clears to reveal an engraved message.', file:'compass.html' },
-  { emoji:'🪞', name:'Pocket Mirror', type:'reveal · intimate', desc:'Open an ornate mirror. Swipe the mercury surface to reveal the hidden message beneath.', file:'pocket-mirror.html' },
-  { emoji:'⏳', name:'Hourglass', type:'reveal · patient', desc:'Flip the hourglass and watch golden sand drain. When time runs out, a message appears.', file:'hourglass.html' },
+  { emoji:'🛏️', name:'Pillow Note', type:'intimate · morning', desc:'Wake up to find a handwritten note on your pillow. Morning light, floating dust, warm sheets. Pick up the note and read.', file:'pillow-note.html' },
 ];
 const grid = document.getElementById('grid');
 blocks.forEach(b => {
@@ -51,7 +37,7 @@ blocks.forEach(b => {
   card.onclick = () => window.open('blocks-v2/' + b.file, '_blank');
   grid.appendChild(card);
 });
-document.getElementById('count').textContent = blocks.length + ' blocks';
+document.getElementById('count').textContent = blocks.length + ' block' + (blocks.length===1?'':'s');
 </script>
 </body>
 </html>

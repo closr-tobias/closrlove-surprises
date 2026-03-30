@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Pillow Note</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Inter:wght@300;400&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{font-family:'Inter',sans-serif;background:#0a0806;display:flex;align-items:center;justify-content:center}
+
+  /* Wake up overlay */
+  .wake-overlay{position:fixed;inset:0;background:#000;z-index:100;pointer-events:none;animation:wakeUp 4s cubic-bezier(.4,0,.2,1) forwards}
+  @keyframes wakeUp{0%{opacity:1}60%{opacity:.6}100%{opacity:0}}
+
+  /* Scene */
+  .scene{position:relative;width:100%;height:100vh;overflow:hidden;background:linear-gradient(180deg,#1a1610 0%,#2a2018 40%,#1e1810 100%)}
+
+  /* Morning light — warm god rays from window */
+  .light{position:absolute;top:-10%;right:-5%;width:70%;height:70%;background:radial-gradient(ellipse at center,rgba(255,210,130,.08),rgba(255,180,80,.03) 40%,transparent 70%);z-index:1;animation:lightBreath 8s ease-in-out infinite}
+  .light-ray{position:absolute;top:0;right:10%;width:200px;height:120%;background:linear-gradient(180deg,rgba(255,200,100,.06),rgba(255,180,80,.02) 60%,transparent);transform:rotate(15deg);transform-origin:top right;z-index:1;animation:rayShift 12s ease-in-out infinite}
+  .light-ray:nth-child(2){right:20%;width:150px;opacity:.7;animation-delay:2s;transform:rotate(20deg)}
+  .light-ray:nth-child(3){right:5%;width:100px;opacity:.5;animation-delay:4s;transform:rotate(10deg)}
+  @keyframes lightBreath{0%,100%{opacity:.8}50%{opacity:1}}
+  @keyframes rayShift{0%,100%{opacity:.6}50%{opacity:1}}
+
+  /* Floating dust in morning light */
+  .dust-container{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+  .dust{position:absolute;border-radius:50%;background:rgba(255,220,150,.4);animation:dustFloat linear infinite}
+  @keyframes dustFloat{
+    0%{transform:translate(0,0) scale(1);opacity:0}
+    15%{opacity:1}
+    85%{opacity:.6}
+    100%{transform:translate(var(--dx),var(--dy)) scale(0.3);opacity:0}
+  }
+
+  /* Bed / Sheets */
+  .bed{position:absolute;bottom:0;left:0;right:0;height:65%;z-index:3}
+  .sheet-bg{position:absolute;inset:0;background:linear-gradient(180deg,#e8e0d0,#d8d0c0 30%,#c8c0b0 100%);border-radius:30px 30px 0 0}
+  .sheet-fold{position:absolute;top:0;left:0;right:0;height:40%;background:linear-gradient(180deg,#f0e8d8,#e8e0d0);border-radius:30px 30px 0 0;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+  .sheet-wrinkle{position:absolute;width:100%;height:100%;top:0;left:0}
+  .sheet-wrinkle::before{content:'';position:absolute;top:30%;left:10%;width:80%;height:2px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.03) 30%,rgba(0,0,0,.04) 50%,rgba(0,0,0,.03) 70%,transparent);border-radius:50%}
+  .sheet-wrinkle::after{content:'';position:absolute;top:55%;left:20%;width:60%;height:1.5px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.025) 40%,rgba(0,0,0,.03) 60%,transparent);border-radius:50%}
+
+  /* Pillow */
+  .pillow{position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:280px;height:160px;z-index:4}
+  .pillow-body{width:100%;height:100%;background:linear-gradient(135deg,#f5f0e5,#ede6d8 30%,#e5ddd0 70%,#ddd5c8);border-radius:40% 40% 45% 45% / 50% 50% 50% 50%;box-shadow:0 8px 30px rgba(0,0,0,.12),inset 0 -4px 10px rgba(0,0,0,.04),inset 0 4px 8px rgba(255,255,255,.3);position:relative}
+  .pillow-body::after{content:'';position:absolute;top:15%;left:10%;width:80%;height:2px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.04),transparent);border-radius:50%}
+  .pillow-indent{position:absolute;top:20%;left:15%;width:70%;height:50%;background:radial-gradient(ellipse,rgba(0,0,0,.02),transparent);border-radius:50%}
+
+  /* The Note */
+  .note-wrapper{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:5;cursor:pointer}
+  .note{width:140px;height:90px;background:linear-gradient(135deg,#faf6ee,#f5f0e5);border-radius:3px;box-shadow:0 2px 12px rgba(0,0,0,.1),0 1px 3px rgba(0,0,0,.08);position:relative;transition:all 1.2s cubic-bezier(.4,0,.2,1);transform-origin:center center}
+  .note::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 18px,rgba(180,200,220,.12) 18px,rgba(180,200,220,.12) 19px);border-radius:3px}
+  .note-fold-line{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(0,0,0,.06)}
+  .note-heart{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.2rem;opacity:.4;transition:all .8s}
+  .note.picked-up{transform:translateY(-180px) scale(1.1);box-shadow:0 12px 40px rgba(0,0,0,.2)}
+
+  /* Unfolded note */
+  .note-open{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);width:320px;background:linear-gradient(135deg,#faf6ee,#f5f0e5);border-radius:6px;padding:40px 30px;box-shadow:0 20px 60px rgba(0,0,0,.3),0 4px 12px rgba(0,0,0,.1);z-index:50;opacity:0;pointer-events:none;transition:all .8s cubic-bezier(.4,0,.2,1)}
+  .note-open.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+  .note-open::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(180,200,220,.1) 28px,rgba(180,200,220,.1) 29px);border-radius:6px;pointer-events:none}
+  .note-open .greeting{font-family:'Caveat',cursive;font-size:1.1rem;color:rgba(80,60,40,.4);margin-bottom:16px}
+  .note-open .body{font-family:'Caveat',cursive;font-size:1.5rem;color:#3a2a18;line-height:1.8;opacity:0;animation:writeIn 3s ease-out forwards;animation-delay:.5s}
+  .note-open .sign-off{font-family:'Caveat',cursive;font-size:1.2rem;color:rgba(80,60,40,.5);margin-top:24px;text-align:right;opacity:0;animation:writeIn 1s ease-out forwards;animation-delay:3s}
+  .note-open .tiny-heart{text-align:right;font-size:1.4rem;margin-top:4px;opacity:0;animation:heartPop .5s ease-out forwards;animation-delay:3.8s}
+  @keyframes writeIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+  @keyframes heartPop{0%{opacity:0;transform:scale(0.5)}60%{transform:scale(1.2)}100%{opacity:1;transform:scale(1)}}
+
+  /* Tap ripple */
+  .ripple{position:absolute;width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,200,100,.15);animation:rippleOut .8s ease-out forwards;pointer-events:none;z-index:10}
+  @keyframes rippleOut{0%{transform:scale(0);opacity:1}100%{transform:scale(3);opacity:0}}
+
+  /* Backdrop blur when note is open */
+  .backdrop{position:fixed;inset:0;background:rgba(10,8,6,.6);backdrop-filter:blur(8px);z-index:40;opacity:0;pointer-events:none;transition:all .6s}
+  .backdrop.show{opacity:1;pointer-events:auto}
+
+  /* Hint */
+  .hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:6;font-size:.7rem;color:rgba(160,140,110,.4);animation:hintPulse 3s ease-in-out infinite;letter-spacing:1px}
+  @keyframes hintPulse{0%,100%{opacity:.3}50%{opacity:.6}}
+
+  /* Pages */
+  .page-dots{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:55;opacity:0;transition:opacity .5s}
+  .page-dots.show{opacity:1}
+  .page-dot{width:6px;height:6px;border-radius:50%;background:rgba(80,60,40,.15);transition:all .3s;cursor:pointer}
+  .page-dot.active{background:rgba(80,60,40,.5)}
+</style>
+</head>
+<body>
+<div class="wake-overlay"></div>
+<div class="scene">
+  <!-- Morning light -->
+  <div class="light"></div>
+  <div class="light-ray"></div>
+  <div class="light-ray"></div>
+  <div class="light-ray"></div>
+
+  <!-- Floating dust -->
+  <div class="dust-container" id="dustContainer"></div>
+
+  <!-- Bed -->
+  <div class="bed">
+    <div class="sheet-bg"></div>
+    <div class="sheet-fold">
+      <div class="sheet-wrinkle"></div>
+    </div>
+
+    <!-- Pillow -->
+    <div class="pillow">
+      <div class="pillow-body">
+        <div class="pillow-indent"></div>
+      </div>
+
+      <!-- Note on pillow -->
+      <div class="note-wrapper" id="noteWrapper">
+        <div class="note" id="note">
+          <div class="note-fold-line"></div>
+          <div class="note-heart">♡</div>
+        </div>
+        <div class="hint" id="hint">a note on your pillow</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop -->
+<div class="backdrop" id="backdrop"></div>
+
+<!-- Opened note -->
+<div class="note-open" id="noteOpen">
+  <div class="greeting" id="greeting"></div>
+  <div class="body" id="noteBody"></div>
+  <div class="sign-off" id="signOff"></div>
+  <div class="tiny-heart" id="tinyHeart"></div>
+</div>
+
+<div class="page-dots" id="pageDots"></div>
+
+<script>
+// Messages — each is a different morning note
+const notes = [
+  {
+    greeting: "Good morning, sleepyhead.",
+    body: "I watched you sleep for a minute before I left. You looked so peaceful that I didn't want to wake you. I just wanted you to know — waking up next to you is still the best part of my day.",
+    sign: "Always yours,",
+    heart: "❤️"
+  },
+  {
+    greeting: "Hey you.",
+    body: "I made coffee. It's on the nightstand. I know mornings are hard for you, but I hope this little note makes it a tiny bit softer. You're my favorite person to be tired with.",
+    sign: "— Me",
+    heart: "☕❤️"
+  },
+  {
+    greeting: "My love,",
+    body: "I had a dream about us last night. We were somewhere warm, laughing about something stupid. I woke up and reached for your hand. Even in my sleep, I look for you.",
+    sign: "Forever,",
+    heart: "💕"
+  },
+  {
+    greeting: "Beautiful,",
+    body: "I know things have been busy lately. I know we're both tired. But I need you to know — there is nowhere in this world I would rather be exhausted than beside you.",
+    sign: "I love you endlessly,",
+    heart: "🤍"
+  },
+  {
+    greeting: "To the love of my life,",
+    body: "Thank you for choosing me again today. Thank you for every morning you roll over and smile at me with those sleepy eyes. I will spend my whole life trying to deserve it.",
+    sign: "Yours, completely,",
+    heart: "💛"
+  },
+];
+
+let currentNote = 0;
+let notePickedUp = false;
+let noteIsOpen = false;
+
+const noteEl = document.getElementById('note');
+const noteWrapper = document.getElementById('noteWrapper');
+const noteOpen = document.getElementById('noteOpen');
+const backdrop = document.getElementById('backdrop');
+const hintEl = document.getElementById('hint');
+const pageDots = document.getElementById('pageDots');
+
+// Create dust particles
+const dustContainer = document.getElementById('dustContainer');
+for (let i = 0; i < 35; i++) {
+  const d = document.createElement('div');
+  d.className = 'dust';
+  d.style.width = d.style.height = (1.5 + Math.random() * 3) + 'px';
+  d.style.left = (30 + Math.random() * 60) + '%';
+  d.style.top = (10 + Math.random() * 50) + '%';
+  d.style.setProperty('--dx', (Math.random() * 100 - 50) + 'px');
+  d.style.setProperty('--dy', (Math.random() * -80 - 20) + 'px');
+  d.style.animationDuration = (6 + Math.random() * 10) + 's';
+  d.style.animationDelay = Math.random() * 10 + 's';
+  dustContainer.appendChild(d);
+}
+
+// Create page dots
+notes.forEach((_, i) => {
+  const dot = document.createElement('div');
+  dot.className = 'page-dot' + (i === 0 ? ' active' : '');
+  dot.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showNote(i);
+  });
+  pageDots.appendChild(dot);
+});
+
+function showNote(idx) {
+  currentNote = idx;
+  const n = notes[idx];
+
+  // Reset animations by cloning
+  const body = document.getElementById('noteBody');
+  const sign = document.getElementById('signOff');
+  const heart = document.getElementById('tinyHeart');
+
+  document.getElementById('greeting').textContent = n.greeting;
+  body.textContent = n.body;
+  body.style.animation = 'none';
+  body.offsetHeight; // trigger reflow
+  body.style.animation = 'writeIn 3s ease-out forwards';
+  body.style.animationDelay = '.3s';
+  body.style.opacity = '0';
+
+  sign.textContent = n.sign;
+  sign.style.animation = 'none';
+  sign.offsetHeight;
+  sign.style.animation = 'writeIn 1s ease-out forwards';
+  sign.style.animationDelay = '2.5s';
+  sign.style.opacity = '0';
+
+  heart.textContent = n.heart;
+  heart.style.animation = 'none';
+  heart.offsetHeight;
+  heart.style.animation = 'heartPop .5s ease-out forwards';
+  heart.style.animationDelay = '3.2s';
+  heart.style.opacity = '0';
+
+  // Update dots
+  document.querySelectorAll('.page-dot').forEach((d, i) => {
+    d.className = 'page-dot' + (i === idx ? ' active' : '');
+  });
+}
+
+// Tap note to pick up
+noteWrapper.addEventListener('click', (e) => {
+  if (noteIsOpen) return;
+  if (!notePickedUp) {
+    notePickedUp = true;
+    noteEl.classList.add('picked-up');
+    noteEl.querySelector('.note-heart').style.opacity = '0';
+    hintEl.style.display = 'none';
+
+    // Create tap ripple
+    const r = document.createElement('div');
+    r.className = 'ripple';
+    r.style.left = '50%';
+    r.style.top = '50%';
+    noteWrapper.appendChild(r);
+    setTimeout(() => r.remove(), 800);
+
+    // Open after lift
+    setTimeout(() => {
+      noteIsOpen = true;
+      backdrop.classList.add('show');
+      showNote(0);
+      noteOpen.classList.add('show');
+      pageDots.classList.add('show');
+    }, 800);
+  }
+});
+
+// Tap backdrop to close
+backdrop.addEventListener('click', () => {
+  noteIsOpen = false;
+  noteOpen.classList.remove('show');
+  backdrop.classList.remove('show');
+  pageDots.classList.remove('show');
+
+  setTimeout(() => {
+    notePickedUp = false;
+    noteEl.classList.remove('picked-up');
+    noteEl.querySelector('.note-heart').style.opacity = '.4';
+    hintEl.style.display = 'block';
+  }, 600);
+});
+
+// Swipe on open note for next
+let touchStartX = 0;
+noteOpen.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+noteOpen.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) {
+    if (dx < 0 && currentNote < notes.length - 1) showNote(currentNote + 1);
+    else if (dx > 0 && currentNote > 0) showNote(currentNote - 1);
+  }
+});
+</script>
+</body>
+</html>
