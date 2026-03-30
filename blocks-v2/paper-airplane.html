@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Paper Airplane — Closr</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Inter:wght@300;400&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  background:linear-gradient(180deg,#0b1628 0%,#162544 40%,#1e3a5f 70%,#2a4a7f 100%);
+  font-family:'Inter',sans-serif;color:#e0ddd6;
+  display:flex;align-items:center;justify-content:center;
+  min-height:100dvh;user-select:none;-webkit-user-select:none;
+  touch-action:none;
+}
+
+canvas#sky{position:fixed;inset:0;z-index:0}
+
+.scene{position:relative;z-index:1;width:100%;height:100dvh;display:flex;align-items:center;justify-content:center;flex-direction:column}
+
+.prompt{
+  position:fixed;bottom:15%;left:0;right:0;text-align:center;
+  font-size:0.85rem;color:rgba(255,255,255,0.4);
+  letter-spacing:0.1em;
+  animation:fade-pulse 3s ease infinite;
+  z-index:10;
+  transition:opacity 0.5s;
+}
+@keyframes fade-pulse{0%,100%{opacity:0.4}50%{opacity:0.8}}
+
+.airplane{
+  position:fixed;
+  width:60px;height:40px;
+  z-index:5;
+  transition:none;
+  filter:drop-shadow(0 0 12px rgba(255,255,255,0.15));
+}
+
+.message-container{
+  position:fixed;inset:0;z-index:20;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.8s;
+}
+.message-container.visible{opacity:1;pointer-events:auto}
+
+.message-card{
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:20px;
+  padding:40px 32px;
+  max-width:320px;
+  text-align:center;
+  transform:translateY(20px);
+  transition:transform 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.message-container.visible .message-card{transform:translateY(0)}
+
+.message-card .note{
+  font-family:'Caveat',cursive;
+  font-size:1.5rem;
+  line-height:1.5;
+  color:#f0ece4;
+  margin-bottom:20px;
+}
+.message-card .tap-hint{
+  font-size:0.7rem;
+  color:rgba(255,255,255,0.25);
+  letter-spacing:0.1em;
+}
+
+.counter{
+  position:fixed;top:20px;right:20px;
+  font-size:0.7rem;color:rgba(255,255,255,0.2);
+  z-index:30;letter-spacing:0.05em;
+}
+
+.trail-particle{
+  position:fixed;pointer-events:none;z-index:4;
+  width:4px;height:4px;border-radius:50%;
+  background:rgba(255,255,255,0.6);
+  animation:trail-fade 1s ease-out forwards;
+}
+@keyframes trail-fade{
+  0%{opacity:0.6;transform:scale(1)}
+  100%{opacity:0;transform:scale(0)}
+}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+
+<div class="scene">
+  <div class="prompt" id="prompt">swipe to throw</div>
+</div>
+
+<div class="counter" id="counter"></div>
+
+<!-- Paper airplane SVG -->
+<svg class="airplane" id="airplane" viewBox="0 0 60 40" style="left:-80px;top:50%">
+  <path d="M5 20 L55 20 L30 5 Z" fill="rgba(255,255,255,0.85)" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+  <path d="M5 20 L55 20 L30 35 Z" fill="rgba(220,220,240,0.7)" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
+  <line x1="15" y1="20" x2="45" y2="20" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
+</svg>
+
+<div class="message-container" id="msgContainer">
+  <div class="message-card">
+    <div class="note" id="noteText"></div>
+    <div class="tap-hint" id="tapHint">tap for next</div>
+  </div>
+</div>
+
+<script>
+// Stars
+const c=document.getElementById('sky'),ctx=c.getContext('2d');
+function resize(){c.width=innerWidth;c.height=innerHeight}
+resize();addEventListener('resize',resize);
+
+const stars=Array.from({length:150},()=>({
+  x:Math.random()*innerWidth,y:Math.random()*innerHeight*0.7,
+  r:Math.random()*1.5+0.3,a:Math.random(),s:Math.random()*0.003+0.001
+}));
+
+function drawSky(){
+  ctx.clearRect(0,0,c.width,c.height);
+  stars.forEach(s=>{
+    s.a+=s.s;
+    const alpha=0.2+Math.sin(s.a)*0.3;
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(220,230,255,${alpha})`;ctx.fill();
+  });
+  requestAnimationFrame(drawSky);
+}
+drawSky();
+
+// Messages (AI slots)
+const messages=[
+  "AI_SLOT_1",
+  "AI_SLOT_2",
+  "AI_SLOT_3",
+  "AI_SLOT_4",
+  "AI_SLOT_5"
+];
+
+let current=0;
+let state='ready'; // ready, flying, showing
+const airplane=document.getElementById('airplane');
+const prompt=document.getElementById('prompt');
+const msgContainer=document.getElementById('msgContainer');
+const noteText=document.getElementById('noteText');
+const tapHint=document.getElementById('tapHint');
+const counter=document.getElementById('counter');
+
+counter.textContent=`${current+1} / ${messages.length}`;
+
+// Swipe detection
+let startX=0,startY=0,startTime=0;
+
+document.addEventListener('touchstart',e=>{
+  if(state==='showing'){
+    if(current>=messages.length){return;}
+    msgContainer.classList.remove('visible');
+    state='ready';
+    prompt.style.opacity='1';
+    prompt.textContent='swipe to throw';
+    resetAirplane();
+    return;
+  }
+  if(state!=='ready')return;
+  startX=e.touches[0].clientX;
+  startY=e.touches[0].clientY;
+  startTime=Date.now();
+},{passive:true});
+
+document.addEventListener('touchend',e=>{
+  if(state!=='ready')return;
+  const dx=e.changedTouches[0].clientX-startX;
+  const dy=e.changedTouches[0].clientY-startY;
+  const dt=Date.now()-startTime;
+  if(Math.abs(dx)>50&&dt<500){
+    throwAirplane(dx>0?1:-1);
+  }
+},{passive:true});
+
+// Mouse fallback
+let mouseDown=false;
+document.addEventListener('mousedown',e=>{
+  if(state==='showing'){
+    if(current>=messages.length)return;
+    msgContainer.classList.remove('visible');
+    state='ready';
+    prompt.style.opacity='1';
+    prompt.textContent='swipe to throw';
+    resetAirplane();
+    return;
+  }
+  if(state!=='ready')return;
+  mouseDown=true;startX=e.clientX;startY=e.clientY;startTime=Date.now();
+});
+document.addEventListener('mouseup',e=>{
+  if(!mouseDown||state!=='ready')return;
+  mouseDown=false;
+  const dx=e.clientX-startX;
+  if(Math.abs(dx)>50&&Date.now()-startTime<500){
+    throwAirplane(dx>0?1:-1);
+  }
+});
+
+function resetAirplane(){
+  airplane.style.transition='none';
+  airplane.style.left='-80px';
+  airplane.style.top='50%';
+  airplane.style.transform='rotate(0deg)';
+  airplane.style.opacity='1';
+}
+
+function throwAirplane(dir){
+  state='flying';
+  prompt.style.opacity='0';
+  
+  const startLeft=dir>0?-80:innerWidth+80;
+  const endLeft=dir>0?innerWidth+80:-80;
+  const midY=innerHeight*0.3+Math.random()*innerHeight*0.2;
+  
+  airplane.style.transition='none';
+  airplane.style.left=startLeft+'px';
+  airplane.style.top='55%';
+  airplane.style.transform=`scaleX(${dir}) rotate(${dir>0?-15:15}deg)`;
+  airplane.style.opacity='1';
+  
+  // Animate across screen
+  let progress=0;
+  const duration=1200;
+  const startT=performance.now();
+  
+  function animateFlight(now){
+    progress=Math.min((now-startT)/duration,1);
+    const ease=1-Math.pow(1-progress,3);
+    
+    const x=startLeft+(endLeft-startLeft)*ease;
+    const wobble=Math.sin(progress*Math.PI*3)*15;
+    const arc=-Math.sin(progress*Math.PI)*innerHeight*0.15;
+    const y=innerHeight*0.5+arc+wobble;
+    
+    airplane.style.left=x+'px';
+    airplane.style.top=y+'px';
+    
+    const angle=dir>0?-15+wobble*0.5:15-wobble*0.5;
+    airplane.style.transform=`scaleX(${dir}) rotate(${angle}deg)`;
+    
+    // Trail particles
+    if(Math.random()<0.4){
+      const p=document.createElement('div');
+      p.className='trail-particle';
+      p.style.left=(x+30)+'px';
+      p.style.top=(y+20)+'px';
+      p.style.background=`rgba(255,255,255,${0.3+Math.random()*0.3})`;
+      document.body.appendChild(p);
+      setTimeout(()=>p.remove(),1000);
+    }
+    
+    if(progress<1){
+      requestAnimationFrame(animateFlight);
+    }else{
+      // Show message
+      setTimeout(()=>showMessage(),300);
+    }
+  }
+  requestAnimationFrame(animateFlight);
+  
+  if(navigator.vibrate)navigator.vibrate(30);
+}
+
+function showMessage(){
+  if(current>=messages.length){
+    noteText.textContent="That was the last one ✈️";
+    tapHint.textContent="";
+    msgContainer.classList.add('visible');
+    state='showing';
+    return;
+  }
+  
+  noteText.textContent=messages[current];
+  current++;
+  counter.textContent=current<messages.length?`${current+1} / ${messages.length}`:`${current} / ${messages.length}`;
+  tapHint.textContent=current<messages.length?'tap for next':'';
+  
+  msgContainer.classList.add('visible');
+  state='showing';
+  
+  if(navigator.vibrate)navigator.vibrate(15);
+}
+</script>
+</body>
+</html>
