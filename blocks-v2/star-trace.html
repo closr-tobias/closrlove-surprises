@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Star Trace — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;500;700&family=Inter:wght@300;400;500;600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:#06060e;
+    font-family:'Inter',sans-serif;
+    min-height:100dvh;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    user-select:none;-webkit-user-select:none;
+    touch-action:none;overflow:hidden;
+  }
+
+  /* Ambient floating particles */
+  .particle{
+    position:fixed;width:2px;height:2px;
+    background:rgba(180,200,255,0.04);border-radius:50%;
+    pointer-events:none;animation:drift linear infinite;
+  }
+  @keyframes drift{
+    0%{transform:translateY(0) translateX(0);opacity:0}
+    10%{opacity:1}90%{opacity:1}
+    100%{transform:translateY(-100vh) translateX(30px);opacity:0}
+  }
+
+  canvas#skyCanvas{position:fixed;inset:0;z-index:0}
+
+  .title-area{
+    position:fixed;top:0;left:0;right:0;
+    text-align:center;padding:28px 20px 16px;
+    z-index:20;
+    background:linear-gradient(180deg,rgba(6,6,14,0.9) 0%,transparent 100%);
+    opacity:0;animation:fadeIn 1.2s 0.5s forwards;
+  }
+  .title-area h1{
+    font-family:'Playfair Display',serif;
+    font-size:clamp(1.1rem,4vw,1.4rem);
+    font-weight:700;color:#e8e4dc;
+    letter-spacing:0.5px;margin-bottom:4px;
+  }
+  .title-area p{
+    font-size:0.65rem;color:rgba(180,200,255,0.25);
+    letter-spacing:3px;text-transform:uppercase;
+  }
+  @keyframes fadeIn{to{opacity:1}}
+
+  /* Star nodes */
+  .star-node{
+    position:absolute;z-index:10;
+    width:44px;height:44px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  .star-core{
+    width:8px;height:8px;border-radius:50%;
+    background:radial-gradient(circle,#fff 0%,#b8c8ff 40%,transparent 70%);
+    box-shadow:0 0 12px rgba(180,200,255,0.3),0 0 30px rgba(180,200,255,0.1);
+    transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    position:relative;
+  }
+  .star-core::after{
+    content:'';position:absolute;inset:-6px;
+    border-radius:50%;
+    border:1px solid rgba(180,200,255,0);
+    transition:all 0.4s;
+  }
+  .star-node.active .star-core{
+    width:12px;height:12px;
+    background:radial-gradient(circle,#fff 0%,#ffcc44 30%,#ff8844 70%,transparent 100%);
+    box-shadow:0 0 20px rgba(255,200,100,0.5),0 0 50px rgba(255,180,80,0.2),0 0 80px rgba(255,150,50,0.1);
+  }
+  .star-node.active .star-core::after{
+    border-color:rgba(255,200,100,0.15);
+    inset:-14px;
+  }
+  .star-node.pulse .star-core{
+    animation:starPulse 2s ease-in-out infinite;
+  }
+  @keyframes starPulse{
+    0%,100%{box-shadow:0 0 12px rgba(180,200,255,0.3),0 0 30px rgba(180,200,255,0.1)}
+    50%{box-shadow:0 0 18px rgba(180,200,255,0.5),0 0 40px rgba(180,200,255,0.2)}
+  }
+
+  /* Connection lines between stars */
+  svg#connections{
+    position:fixed;inset:0;z-index:5;
+    pointer-events:none;width:100%;height:100%;
+  }
+  svg#connections line{
+    stroke:rgba(255,200,100,0);stroke-width:1.5;
+    stroke-linecap:round;
+    filter:drop-shadow(0 0 4px rgba(255,200,100,0.3));
+    transition:stroke 0.6s;
+  }
+  svg#connections line.drawn{
+    stroke:rgba(255,200,100,0.4);
+  }
+
+  /* Message reveal */
+  .message-layer{
+    position:fixed;inset:0;z-index:30;
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;
+    transition:opacity 1s;
+    background:radial-gradient(ellipse at center,rgba(6,6,14,0.85) 0%,rgba(6,6,14,0.95) 100%);
+  }
+  .message-layer.visible{opacity:1;pointer-events:auto}
+
+  .message-card{
+    text-align:center;padding:40px 32px;max-width:320px;
+    transform:translateY(20px);
+    transition:transform 1s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .message-layer.visible .message-card{transform:translateY(0)}
+
+  .message-card .constellation-name{
+    font-family:'Caveat',cursive;
+    font-size:0.75rem;color:rgba(255,200,100,0.4);
+    letter-spacing:3px;text-transform:uppercase;
+    margin-bottom:16px;
+  }
+  .message-card .msg-text{
+    font-family:'Playfair Display',serif;
+    font-size:1.4rem;line-height:1.6;
+    color:#f0ece4;margin-bottom:20px;
+    font-style:italic;
+  }
+  .message-card .msg-sub{
+    font-size:0.7rem;color:rgba(180,200,255,0.2);
+    letter-spacing:0.1em;
+  }
+
+  /* Progress stars at bottom */
+  .progress{
+    position:fixed;bottom:20px;left:0;right:0;
+    display:flex;justify-content:center;gap:10px;
+    z-index:25;opacity:0;animation:fadeIn 1s 1s forwards;
+  }
+  .progress-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:rgba(180,200,255,0.1);
+    transition:all 0.4s;
+  }
+  .progress-dot.lit{
+    background:rgba(255,200,100,0.5);
+    box-shadow:0 0 8px rgba(255,200,100,0.3);
+  }
+
+  /* Hint text */
+  .hint{
+    position:fixed;bottom:50px;left:0;right:0;
+    text-align:center;font-size:0.6rem;
+    color:rgba(180,200,255,0.15);letter-spacing:3px;
+    text-transform:uppercase;z-index:25;
+    opacity:0;animation:fadeIn 1s 1.5s forwards;
+    transition:opacity 0.5s;
+  }
+
+  /* Sparkle burst on star activation */
+  .spark{
+    position:fixed;pointer-events:none;z-index:15;
+    width:3px;height:3px;border-radius:50%;
+  }
+  @keyframes sparkFly{
+    0%{opacity:1;transform:translate(0,0) scale(1)}
+    100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(0)}
+  }
+
+  /* Shooting star */
+  .shooting-star{
+    position:fixed;pointer-events:none;z-index:2;
+    width:80px;height:1px;
+    background:linear-gradient(90deg,rgba(255,255,255,0.6),transparent);
+    border-radius:1px;
+    animation:shoot 1s ease-out forwards;
+  }
+  @keyframes shoot{
+    0%{opacity:1;transform:translate(0,0) rotate(-20deg)}
+    100%{opacity:0;transform:translate(200px,80px) rotate(-20deg)}
+  }
+
+  .back-link{position:fixed;top:14px;left:14px;font-size:0.65rem;color:#ffffff12;text-decoration:none;z-index:40}
+  .block-label{position:fixed;top:14px;right:14px;font-size:0.5rem;color:#ffffff0a;letter-spacing:1px;z-index:40}
+</style>
+</head>
+<body>
+
+<a href="../building-blocks-v2.html" class="back-link">← blocks</a>
+<div class="block-label">closr · star trace</div>
+
+<div class="title-area">
+  <!-- SLOT: title --><h1>Our Constellation</h1><!-- /SLOT -->
+  <p>connect the stars</p>
+</div>
+
+<canvas id="skyCanvas"></canvas>
+<svg id="connections"></svg>
+
+<div class="message-layer" id="msgLayer">
+  <div class="message-card">
+    <div class="constellation-name" id="cName"></div>
+    <div class="msg-text" id="msgText"></div>
+    <div class="msg-sub" id="msgSub">tap to continue</div>
+  </div>
+</div>
+
+<div class="progress" id="progress"></div>
+<div class="hint" id="hint">tap the pulsing star</div>
+
+<script>
+(function(){
+  // Background stars
+  const sky=document.getElementById('skyCanvas'),sCtx=sky.getContext('2d');
+  function resizeSky(){sky.width=innerWidth;sky.height=innerHeight}
+  resizeSky();addEventListener('resize',resizeSky);
+
+  const bgStars=Array.from({length:200},()=>({
+    x:Math.random()*innerWidth,y:Math.random()*innerHeight,
+    r:Math.random()*1.2+0.2,a:Math.random()*Math.PI*2,s:Math.random()*0.004+0.001
+  }));
+
+  // Nebula patches
+  const nebulae=[
+    {x:innerWidth*0.2,y:innerHeight*0.3,r:200,c:'rgba(60,30,100,0.03)'},
+    {x:innerWidth*0.7,y:innerHeight*0.6,r:180,c:'rgba(30,50,100,0.03)'},
+    {x:innerWidth*0.5,y:innerHeight*0.8,r:150,c:'rgba(80,30,60,0.02)'}
+  ];
+
+  function drawSky(){
+    sCtx.clearRect(0,0,sky.width,sky.height);
+    // Nebulae
+    nebulae.forEach(n=>{
+      const g=sCtx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);
+      g.addColorStop(0,n.c);g.addColorStop(1,'transparent');
+      sCtx.fillStyle=g;sCtx.fillRect(0,0,sky.width,sky.height);
+    });
+    // Stars
+    bgStars.forEach(s=>{
+      s.a+=s.s;
+      const alpha=0.15+Math.sin(s.a)*0.25;
+      sCtx.beginPath();sCtx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      sCtx.fillStyle=`rgba(200,210,240,${alpha})`;sCtx.fill();
+    });
+    requestAnimationFrame(drawSky);
+  }
+  drawSky();
+
+  // Ambient floating particles
+  for(let i=0;i<25;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    p.style.left=Math.random()*100+'%';
+    p.style.animationDuration=(15+Math.random()*20)+'s';
+    p.style.animationDelay=(-Math.random()*20)+'s';
+    document.body.appendChild(p);
+  }
+
+  // Shooting stars occasionally
+  setInterval(()=>{
+    if(Math.random()>0.6)return;
+    const s=document.createElement('div');
+    s.className='shooting-star';
+    s.style.left=Math.random()*70+'%';
+    s.style.top=Math.random()*40+'%';
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),1000);
+  },4000);
+
+  // Constellation data — 5 constellations, each with 3-5 stars
+  const constellations=[
+    {
+      name:'AI_SLOT_CONSTELLATION_1',
+      msg:'AI_SLOT_MSG_1',
+      stars:[
+        {x:0.25,y:0.28},{x:0.38,y:0.22},{x:0.52,y:0.30},{x:0.45,y:0.40}
+      ],
+      connections:[[0,1],[1,2],[2,3],[3,0]]
+    },
+    {
+      name:'AI_SLOT_CONSTELLATION_2',
+      msg:'AI_SLOT_MSG_2',
+      stars:[
+        {x:0.60,y:0.25},{x:0.72,y:0.18},{x:0.80,y:0.28},{x:0.75,y:0.38},{x:0.63,y:0.35}
+      ],
+      connections:[[0,1],[1,2],[2,3],[3,4],[4,0]]
+    },
+    {
+      name:'AI_SLOT_CONSTELLATION_3',
+      msg:'AI_SLOT_MSG_3',
+      stars:[
+        {x:0.18,y:0.55},{x:0.30,y:0.48},{x:0.42,y:0.55},{x:0.35,y:0.65}
+      ],
+      connections:[[0,1],[1,2],[2,3]]
+    },
+    {
+      name:'AI_SLOT_CONSTELLATION_4',
+      msg:'AI_SLOT_MSG_4',
+      stars:[
+        {x:0.55,y:0.58},{x:0.68,y:0.52},{x:0.78,y:0.60},{x:0.70,y:0.70},{x:0.58,y:0.68}
+      ],
+      connections:[[0,1],[1,2],[2,3],[3,4],[4,0]]
+    },
+    {
+      name:'AI_SLOT_CONSTELLATION_5',
+      msg:'AI_SLOT_MSG_5',
+      stars:[
+        {x:0.35,y:0.78},{x:0.45,y:0.72},{x:0.55,y:0.78},{x:0.65,y:0.72},{x:0.50,y:0.85}
+      ],
+      connections:[[0,1],[1,2],[2,3],[1,4],[2,4]]
+    }
+  ];
+
+  let currentConstellation=0;
+  let currentStar=0;
+  let starElements=[];
+  let lineElements=[];
+
+  const svgNS='http://www.w3.org/2000/svg';
+  const svg=document.getElementById('connections');
+  const msgLayer=document.getElementById('msgLayer');
+  const msgText=document.getElementById('msgText');
+  const cName=document.getElementById('cName');
+  const msgSub=document.getElementById('msgSub');
+  const hint=document.getElementById('hint');
+  const progressEl=document.getElementById('progress');
+
+  // Build progress dots
+  constellations.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='progress-dot';
+    progressEl.appendChild(d);
+  });
+  const progressDots=progressEl.querySelectorAll('.progress-dot');
+
+  function spawnSparkles(x,y,color){
+    for(let i=0;i<12;i++){
+      const s=document.createElement('div');
+      s.className='spark';
+      s.style.left=x+'px';s.style.top=y+'px';
+      s.style.background=color||'rgba(255,200,100,0.8)';
+      s.style.setProperty('--sx',(Math.random()-0.5)*80+'px');
+      s.style.setProperty('--sy',(Math.random()-0.5)*80+'px');
+      s.style.animation=`sparkFly ${0.4+Math.random()*0.4}s ease-out forwards`;
+      document.body.appendChild(s);
+      setTimeout(()=>s.remove(),800);
+    }
+  }
+
+  function buildConstellation(idx){
+    // Clear old
+    starElements.forEach(s=>s.remove());
+    lineElements.forEach(l=>l.remove());
+    starElements=[];lineElements=[];
+    currentStar=0;
+
+    const c=constellations[idx];
+    const w=innerWidth,h=innerHeight;
+
+    // Create lines (hidden)
+    c.connections.forEach(([a,b])=>{
+      const line=document.createElementNS(svgNS,'line');
+      line.setAttribute('x1',c.stars[a].x*w);
+      line.setAttribute('y1',c.stars[a].y*h);
+      line.setAttribute('x2',c.stars[b].x*w);
+      line.setAttribute('y2',c.stars[b].y*h);
+      svg.appendChild(line);
+      lineElements.push(line);
+    });
+
+    // Create star nodes
+    c.stars.forEach((s,i)=>{
+      const el=document.createElement('div');
+      el.className='star-node'+(i===0?' pulse':'');
+      el.style.left=(s.x*w-22)+'px';
+      el.style.top=(s.y*h-22)+'px';
+      el.style.opacity='0';
+      el.style.animation=`fadeIn 0.6s ${i*0.15}s forwards`;
+      el.innerHTML='<div class="star-core"></div>';
+      el.addEventListener('click',()=>tapStar(i));
+      document.body.appendChild(el);
+      starElements.push(el);
+    });
+  }
+
+  function tapStar(i){
+    if(i!==currentStar)return;
+
+    const el=starElements[i];
+    el.classList.remove('pulse');
+    el.classList.add('active');
+
+    // Sparkles
+    const r=el.getBoundingClientRect();
+    spawnSparkles(r.left+r.width/2,r.top+r.height/2);
+    if(navigator.vibrate)navigator.vibrate(25);
+
+    // Draw connections to this star
+    const c=constellations[currentConstellation];
+    c.connections.forEach(([a,b],li)=>{
+      if(a===i||b===i){
+        const otherIdx=a===i?b:a;
+        if(otherIdx<i||(otherIdx===i+1&&starElements[otherIdx])){
+          lineElements[li].classList.add('drawn');
+        }
+      }
+    });
+
+    // Also draw lines between already-active stars
+    c.connections.forEach(([a,b],li)=>{
+      if(a<=currentStar&&b<=currentStar){
+        lineElements[li].classList.add('drawn');
+      }
+    });
+
+    currentStar++;
+
+    if(currentStar<c.stars.length){
+      // Pulse next star
+      starElements[currentStar].classList.add('pulse');
+      hint.textContent='tap the next star';
+    }else{
+      // All stars connected — draw remaining lines
+      lineElements.forEach(l=>l.classList.add('drawn'));
+      hint.style.opacity='0';
+      
+      // Show message after a moment
+      setTimeout(()=>{
+        cName.textContent=c.name;
+        msgText.textContent=c.msg;
+        msgSub.textContent=currentConstellation<constellations.length-1?'tap to continue':'✧';
+        msgLayer.classList.add('visible');
+        progressDots[currentConstellation].classList.add('lit');
+      },800);
+    }
+  }
+
+  // Tap message to go to next constellation
+  msgLayer.addEventListener('click',()=>{
+    msgLayer.classList.remove('visible');
+    currentConstellation++;
+    if(currentConstellation<constellations.length){
+      setTimeout(()=>{
+        buildConstellation(currentConstellation);
+        hint.textContent='tap the pulsing star';
+        hint.style.opacity='1';
+      },600);
+    }
+  });
+
+  // Start
+  buildConstellation(0);
+})();
+</script>
+</body>
+</html>
