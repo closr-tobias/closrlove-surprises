@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Candle Flame</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{font-family:'Inter',sans-serif;background:#0a0806;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+
+  canvas#smoke{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+
+  .scene{position:fixed;inset:0;display:flex;align-items:flex-end;justify-content:center;z-index:1;padding-bottom:12vh}
+
+  .candle-group{display:flex;gap:36px;align-items:flex-end}
+
+  .candle-wrap{display:flex;flex-direction:column;align-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+  .flame-zone{width:60px;height:80px;position:relative;display:flex;align-items:flex-end;justify-content:center}
+
+  .flame{width:16px;height:40px;position:relative;transform-origin:bottom center;opacity:0;transition:opacity .8s;filter:blur(0.3px)}
+  .flame.lit{opacity:1}
+
+  .flame-inner{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:14px;height:36px;background:radial-gradient(ellipse at 50% 90%,#fff8e0,#ffb830 40%,#ff6a00 70%,transparent 100%);border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;animation:flicker 0.15s infinite alternate}
+  .flame-outer{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:20px;height:44px;background:radial-gradient(ellipse at 50% 85%,rgba(255,160,20,.6),rgba(255,80,0,.3) 60%,transparent 100%);border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;animation:flicker-outer 0.2s infinite alternate;filter:blur(2px)}
+
+  .glow{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);width:120px;height:120px;background:radial-gradient(circle,rgba(255,150,40,.15),transparent 70%);opacity:0;transition:opacity 1.2s;pointer-events:none}
+  .flame.lit~.glow,.candle-wrap.lit .glow{opacity:1}
+
+  @keyframes flicker{
+    0%{transform:translateX(-50%) scaleX(1) scaleY(1) rotate(-1deg)}
+    25%{transform:translateX(-50%) scaleX(0.94) scaleY(1.03) rotate(0.5deg)}
+    50%{transform:translateX(-50%) scaleX(1.02) scaleY(0.97) rotate(-0.5deg)}
+    75%{transform:translateX(-50%) scaleX(0.97) scaleY(1.01) rotate(1deg)}
+    100%{transform:translateX(-50%) scaleX(1.01) scaleY(0.98) rotate(-0.8deg)}
+  }
+  @keyframes flicker-outer{
+    0%{transform:translateX(-50%) scaleX(1) scaleY(1) rotate(0.5deg)}
+    100%{transform:translateX(-50%) scaleX(1.06) scaleY(0.95) rotate(-1deg)}
+  }
+
+  .wick{width:2px;height:12px;background:linear-gradient(to top,#2a2018,#444);border-radius:1px;margin-bottom:-2px;position:relative}
+  .wick-tip{position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#ff8800;border-radius:50%;opacity:0;transition:opacity .3s;box-shadow:0 0 6px #ff6600}
+  .candle-wrap.lit .wick-tip{opacity:1}
+
+  .wax-body{width:44px;border-radius:6px 6px 4px 4px;position:relative;overflow:hidden;transition:height 8s linear}
+  .wax-body .wax-fill{position:absolute;inset:0;border-radius:inherit}
+  .wax-body .wax-sheen{position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,rgba(255,255,255,.08),transparent);border-radius:inherit}
+
+  .drip{position:absolute;width:6px;background:inherit;border-radius:0 0 3px 3px;top:0;animation:drip-down 4s ease-in forwards;opacity:0}
+  @keyframes drip-down{
+    0%{height:0;opacity:0}
+    10%{height:0;opacity:.8}
+    100%{height:30px;opacity:.6}
+  }
+
+  .candle-1 .wax-body{height:120px;background:#e8d5b8}
+  .candle-1 .wax-fill{background:linear-gradient(to bottom,#f0e0c8,#d4bfa0)}
+  .candle-2 .wax-body{height:100px;background:#c9a87c}
+  .candle-2 .wax-fill{background:linear-gradient(to bottom,#d4b88e,#b89468)}
+  .candle-3 .wax-body{height:140px;background:#ddc8a8}
+  .candle-3 .wax-fill{background:linear-gradient(to bottom,#e8d4b8,#ccb494)}
+
+  .holder{width:54px;height:16px;background:linear-gradient(to bottom,#8b7355,#6b5940);border-radius:3px 3px 6px 6px;margin-top:-1px;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+
+  .surface{position:fixed;bottom:0;left:0;right:0;height:12vh;background:linear-gradient(to bottom,#1a1410,#0e0a06);z-index:0;box-shadow:0 -20px 60px rgba(0,0,0,.8)}
+  .surface-sheen{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(255,200,120,.03),transparent)}
+
+  .hold-indicator{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;border-radius:50%;border:2px solid rgba(255,180,60,.3);opacity:0;pointer-events:none;z-index:3}
+  .hold-indicator.active{opacity:1;animation:hold-pulse 1s ease-out}
+  @keyframes hold-pulse{
+    0%{transform:translate(-50%,-50%) scale(.5);opacity:.8;border-color:rgba(255,180,60,.6)}
+    100%{transform:translate(-50%,-50%) scale(1.5);opacity:0;border-color:rgba(255,180,60,0)}
+  }
+
+  .message-layer{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none;opacity:0;transition:opacity 2s cubic-bezier(.4,0,.2,1)}
+  .message-layer.show{opacity:1}
+
+  .msg-card{max-width:300px;padding:32px 28px;text-align:center}
+  .msg-text{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;font-style:italic;color:rgba(255,220,170,.9);line-height:1.7;text-shadow:0 0 30px rgba(255,150,40,.2)}
+  .msg-sub{font-size:.6rem;color:rgba(255,200,120,.15);letter-spacing:3px;margin-top:20px;text-transform:uppercase}
+
+  .hint{position:fixed;bottom:14vh;left:50%;transform:translateX(-50%);z-index:4;font-size:.65rem;color:rgba(255,200,120,.2);letter-spacing:2px;text-transform:uppercase;transition:opacity 1s}
+  .hint.hide{opacity:0}
+
+  .counter{position:fixed;top:16px;right:16px;z-index:4;font-size:.6rem;color:rgba(255,200,120,.12);letter-spacing:1px}
+
+  .room-glow{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity 2s;background:radial-gradient(ellipse at 50% 85%,rgba(255,140,40,.06),transparent 60%)}
+  .room-glow.on{opacity:1}
+
+  .dust{position:fixed;inset:0;pointer-events:none;z-index:2}
+  .dust-p{position:absolute;width:2px;height:2px;background:rgba(255,210,150,.08);border-radius:50%;animation:dust-float linear infinite}
+  @keyframes dust-float{
+    0%{transform:translateY(0) translateX(0);opacity:0}
+    10%{opacity:1}
+    90%{opacity:1}
+    100%{transform:translateY(-100vh) translateX(40px);opacity:0}
+  }
+
+  .wax-pool{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:3px;background:rgba(255,240,210,.15);border-radius:50%;transition:width 6s ease-out;z-index:-1}
+  .candle-wrap.lit .wax-pool{width:70px}
+</style>
+</head>
+<body>
+
+<canvas id="smoke"></canvas>
+
+<div class="room-glow" id="roomGlow"></div>
+
+<div class="dust" id="dust"></div>
+
+<div class="scene">
+  <div class="candle-group">
+    <div class="candle-wrap candle-1" data-idx="0">
+      <div class="flame-zone">
+        <div class="flame" id="flame0">
+          <div class="flame-outer"></div>
+          <div class="flame-inner"></div>
+        </div>
+        <div class="glow"></div>
+        <div class="hold-indicator" id="hi0"></div>
+      </div>
+      <div class="wick"><div class="wick-tip"></div></div>
+      <div class="wax-body"><div class="wax-fill"></div><div class="wax-sheen"></div></div>
+      <div class="holder"></div>
+      <div class="wax-pool"></div>
+    </div>
+    <div class="candle-wrap candle-2" data-idx="1">
+      <div class="flame-zone">
+        <div class="flame" id="flame1">
+          <div class="flame-outer"></div>
+          <div class="flame-inner"></div>
+        </div>
+        <div class="glow"></div>
+        <div class="hold-indicator" id="hi1"></div>
+      </div>
+      <div class="wick"><div class="wick-tip"></div></div>
+      <div class="wax-body"><div class="wax-fill"></div><div class="wax-sheen"></div></div>
+      <div class="holder"></div>
+      <div class="wax-pool"></div>
+    </div>
+    <div class="candle-wrap candle-3" data-idx="2">
+      <div class="flame-zone">
+        <div class="flame" id="flame2">
+          <div class="flame-outer"></div>
+          <div class="flame-inner"></div>
+        </div>
+        <div class="glow"></div>
+        <div class="hold-indicator" id="hi2"></div>
+      </div>
+      <div class="wick"><div class="wick-tip"></div></div>
+      <div class="wax-body"><div class="wax-fill"></div><div class="wax-sheen"></div></div>
+      <div class="holder"></div>
+      <div class="wax-pool"></div>
+    </div>
+  </div>
+</div>
+
+<div class="surface"><div class="surface-sheen"></div></div>
+
+<div class="hint" id="hint">hold the wick to light</div>
+<div class="counter" id="counter">0 / 3</div>
+
+<div class="message-layer" id="msgLayer">
+  <div class="msg-card">
+    <div class="msg-text" id="msgText"></div>
+    <div class="msg-sub">closr</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const messages = [
+    "You are the warmth I reach for\nwhen the world goes cold.",
+    "Every quiet moment with you\nfeels like coming home.",
+    "I didn't know what peace felt like\nuntil I found you.",
+    "Some people search their whole lives\nfor what I see in your eyes.",
+    "You make the ordinary\nfeel sacred.",
+    "In a room full of noise,\nyou are my silence.",
+    "I keep falling for you\nin the smallest moments."
+  ];
+
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  const candles = document.querySelectorAll('.candle-wrap');
+  const hint = document.getElementById('hint');
+  const counter = document.getElementById('counter');
+  const msgLayer = document.getElementById('msgLayer');
+  const msgText = document.getElementById('msgText');
+  const roomGlow = document.getElementById('roomGlow');
+  let lit = [false, false, false];
+  let litCount = 0;
+  let holdTimers = [null, null, null];
+  let revealed = false;
+
+  // Dust particles
+  const dustEl = document.getElementById('dust');
+  for(let i = 0; i < 25; i++){
+    const p = document.createElement('div');
+    p.className = 'dust-p';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.animationDuration = (8 + Math.random() * 12) + 's';
+    p.style.animationDelay = (-Math.random() * 15) + 's';
+    p.style.width = (1 + Math.random() * 2) + 'px';
+    p.style.height = p.style.width;
+    dustEl.appendChild(p);
+  }
+
+  // Smoke canvas
+  const smokeCanvas = document.getElementById('smoke');
+  const ctx = smokeCanvas.getContext('2d');
+  let W, H;
+  function resize(){
+    W = smokeCanvas.width = window.innerWidth;
+    H = smokeCanvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let smokeParticles = [];
+  class SmokeP {
+    constructor(x, y){
+      this.x = x; this.y = y;
+      this.vx = (Math.random() - 0.5) * 0.3;
+      this.vy = -0.4 - Math.random() * 0.6;
+      this.life = 1;
+      this.decay = 0.003 + Math.random() * 0.004;
+      this.radius = 8 + Math.random() * 12;
+      this.growth = 0.15 + Math.random() * 0.1;
+    }
+    update(){
+      this.x += this.vx + Math.sin(this.life * 4) * 0.15;
+      this.y += this.vy;
+      this.life -= this.decay;
+      this.radius += this.growth;
+      this.vx *= 0.995;
+    }
+    draw(ctx){
+      if(this.life <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = this.life * 0.04;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffcc88';
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function getFlameWorldPos(idx){
+    const flame = document.getElementById('flame' + idx);
+    const rect = flame.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top };
+  }
+
+  function animSmoke(){
+    ctx.clearRect(0, 0, W, H);
+    for(let i = 0; i < 3; i++){
+      if(lit[i]){
+        const pos = getFlameWorldPos(i);
+        if(Math.random() < 0.3){
+          smokeParticles.push(new SmokeP(pos.x, pos.y));
+        }
+      }
+    }
+    for(let i = smokeParticles.length - 1; i >= 0; i--){
+      smokeParticles[i].update();
+      smokeParticles[i].draw(ctx);
+      if(smokeParticles[i].life <= 0) smokeParticles.splice(i, 1);
+    }
+    requestAnimationFrame(animSmoke);
+  }
+  animSmoke();
+
+  // Wax drip system
+  function addDrip(candleEl){
+    const wax = candleEl.querySelector('.wax-body');
+    const drip = document.createElement('div');
+    drip.className = 'drip';
+    const side = Math.random() > 0.5 ? 'left' : 'right';
+    drip.style[side] = (-2 + Math.random() * 2) + 'px';
+    drip.style.background = getComputedStyle(wax).background;
+    wax.appendChild(drip);
+    setTimeout(() => drip.remove(), 5000);
+  }
+
+  function startDrips(idx){
+    const el = candles[idx];
+    const dripLoop = () => {
+      if(!lit[idx]) return;
+      addDrip(el);
+      setTimeout(dripLoop, 3000 + Math.random() * 5000);
+    };
+    setTimeout(dripLoop, 2000 + Math.random() * 3000);
+  }
+
+  // Light a candle
+  function lightCandle(idx){
+    if(lit[idx] || revealed) return;
+    lit[idx] = true;
+    litCount++;
+
+    const el = candles[idx];
+    el.classList.add('lit');
+    const flame = document.getElementById('flame' + idx);
+    flame.classList.add('lit');
+
+    // Haptic
+    if(navigator.vibrate) navigator.vibrate(30);
+
+    counter.textContent = litCount + ' / 3';
+
+    // Room glow intensifies
+    roomGlow.classList.add('on');
+    roomGlow.style.opacity = litCount * 0.35;
+
+    startDrips(idx);
+
+    if(litCount >= 3) revealMessage();
+    if(litCount === 1) hint.classList.add('hide');
+  }
+
+  function revealMessage(){
+    revealed = true;
+    msgText.innerHTML = msg.replace(/\n/g, '<br>');
+    setTimeout(() => {
+      msgLayer.classList.add('show');
+    }, 800);
+  }
+
+  // Hold to light interaction
+  candles.forEach((c, idx) => {
+    const startHold = (e) => {
+      e.preventDefault();
+      if(lit[idx] || revealed) return;
+      const hi = document.getElementById('hi' + idx);
+      hi.classList.remove('active');
+      void hi.offsetWidth;
+      hi.classList.add('active');
+
+      holdTimers[idx] = setTimeout(() => {
+        lightCandle(idx);
+      }, 600);
+    };
+
+    const endHold = (e) => {
+      e.preventDefault();
+      if(holdTimers[idx]){
+        clearTimeout(holdTimers[idx]);
+        holdTimers[idx] = null;
+      }
+    };
+
+    c.addEventListener('touchstart', startHold, {passive: false});
+    c.addEventListener('mousedown', startHold);
+    c.addEventListener('touchend', endHold, {passive: false});
+    c.addEventListener('touchcancel', endHold, {passive: false});
+    c.addEventListener('mouseup', endHold);
+    c.addEventListener('mouseleave', endHold);
+  });
+
+  // Ambient flame jitter (extra realism via JS for random scale adjustments)
+  function jitterFlames(){
+    for(let i = 0; i < 3; i++){
+      if(!lit[i]) continue;
+      const inner = document.querySelector('#flame' + i + ' .flame-inner');
+      const sx = 0.9 + Math.random() * 0.2;
+      const sy = 0.92 + Math.random() * 0.16;
+      const rot = (Math.random() - 0.5) * 3;
+      inner.style.transform = `translateX(-50%) scaleX(${sx}) scaleY(${sy}) rotate(${rot}deg)`;
+    }
+    requestAnimationFrame(jitterFlames);
+  }
+  jitterFlames();
+
+})();
+</script>
+</body>
+</html>
