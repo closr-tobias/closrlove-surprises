@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Blanket Fort</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Inter:wght@300;400&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{font-family:'Inter',sans-serif;background:#0e0a08;touch-action:manipulation}
+  canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+  .lights-layer{position:fixed;inset:0;z-index:1;pointer-events:none}
+  .fairy-light{position:absolute;pointer-events:auto;cursor:pointer;transition:transform .2s}
+  .fairy-light:active{transform:scale(1.15)}
+  .bulb{width:18px;height:22px;border-radius:50% 50% 45% 45%;position:relative;transition:all .6s cubic-bezier(.4,0,.2,1)}
+  .bulb.off{background:rgba(60,50,40,.4);box-shadow:none}
+  .bulb.on{box-shadow:0 0 20px var(--glow),0 0 50px var(--glow-soft)}
+  .wire-h{position:absolute;top:0;left:0;right:0;pointer-events:none}
+  .wire-h svg{width:100%;display:block}
+  .msg-bubble{position:absolute;background:rgba(20,16,12,.85);border:1px solid rgba(255,200,100,.1);border-radius:12px;padding:12px 16px;max-width:200px;font-family:'Caveat',cursive;font-size:1.15rem;line-height:1.5;color:rgba(255,220,160,.85);opacity:0;transform:translateY(8px) scale(.95);transition:all .5s cubic-bezier(.4,0,.2,1);pointer-events:none;white-space:normal}
+  .msg-bubble.show{opacity:1;transform:translateY(0) scale(1)}
+  .final-msg{position:fixed;bottom:0;left:0;right:0;text-align:center;padding:30px 24px 50px;z-index:5;opacity:0;transform:translateY(20px);transition:all 1.2s cubic-bezier(.4,0,.2,1)}
+  .final-msg.show{opacity:1;transform:translateY(0)}
+  .final-msg .text{font-family:'Caveat',cursive;font-size:2rem;color:rgba(255,220,160,.9);line-height:1.5}
+  .final-msg .sub{font-size:.6rem;color:rgba(255,200,120,.2);letter-spacing:3px;margin-top:14px}
+  .hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:5;font-size:.7rem;color:rgba(255,200,120,.25);letter-spacing:1px}
+  .counter{position:fixed;top:16px;right:16px;z-index:5;font-size:.65rem;color:rgba(255,200,120,.15);letter-spacing:1px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="lights-layer" id="lightsLayer"></div>
+<div class="hint" id="hint">tap the lights</div>
+<div class="counter" id="counter"></div>
+<div class="final-msg" id="finalMsg">
+  <div class="text">This is our little world. No one else is invited.</div>
+  <div class="sub">BLANKET FORT · POPULATION 2</div>
+</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, dpr;
+
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = canvas.width = window.innerWidth * dpr;
+  H = canvas.height = window.innerHeight * dpr;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Warm ambient background — canvas-drawn, no CSS overhead
+function drawBg(t) {
+  ctx.clearRect(0, 0, W, H);
+
+  // Dark warm gradient
+  const grd = ctx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, '#120e0a');
+  grd.addColorStop(0.5, '#0e0a08');
+  grd.addColorStop(1, '#0a0806');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+
+  // Blanket texture — subtle fabric lines
+  ctx.globalAlpha = 0.015;
+  for (let y = 0; y < H; y += 6 * dpr) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y + Math.sin(y * 0.01) * 2);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Warm glow spots where lights are on
+  activeLights.forEach(l => {
+    const x = l.x * dpr;
+    const y = l.y * dpr;
+    const pulse = 0.7 + Math.sin(t * 0.002 + l.phase) * 0.3;
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, 120 * dpr * pulse);
+    grad.addColorStop(0, l.glowInner);
+    grad.addColorStop(0.3, l.glowMid);
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x - 140*dpr, y - 140*dpr, 280*dpr, 280*dpr);
+  });
+
+  requestAnimationFrame(drawBg);
+}
+
+// Light data
+const messages = [
+  "I love how safe I feel with you.",
+  "Your laugh is my favorite sound.",
+  "I'd build a thousand forts just to hide in one with you.",
+  "You make the small moments feel big.",
+  "Nowhere else I'd rather be than right here.",
+  "You're my favorite kind of quiet.",
+  "Every second with you is a second well spent.",
+  "I still get butterflies. Every time.",
+];
+
+const colors = [
+  { bg:'#ffcc44', glow:'rgba(255,200,60,.15)', glowMid:'rgba(255,180,40,.05)', glowInner:'rgba(255,200,60,.12)' },
+  { bg:'#ff8844', glow:'rgba(255,140,60,.15)', glowMid:'rgba(255,120,40,.05)', glowInner:'rgba(255,140,60,.12)' },
+  { bg:'#ff6688', glow:'rgba(255,100,130,.12)', glowMid:'rgba(255,80,100,.04)', glowInner:'rgba(255,100,130,.1)' },
+  { bg:'#88ccff', glow:'rgba(130,200,255,.12)', glowMid:'rgba(100,180,255,.04)', glowInner:'rgba(130,200,255,.1)' },
+  { bg:'#cc88ff', glow:'rgba(200,130,255,.12)', glowMid:'rgba(180,100,255,.04)', glowInner:'rgba(200,130,255,.1)' },
+  { bg:'#88ff99', glow:'rgba(130,255,150,.1)', glowMid:'rgba(100,255,130,.03)', glowInner:'rgba(130,255,150,.08)' },
+  { bg:'#ffaa88', glow:'rgba(255,170,130,.12)', glowMid:'rgba(255,150,100,.04)', glowInner:'rgba(255,170,130,.1)' },
+  { bg:'#ffdd88', glow:'rgba(255,220,130,.12)', glowMid:'rgba(255,200,100,.04)', glowInner:'rgba(255,220,130,.1)' },
+];
+
+const lightsLayer = document.getElementById('lightsLayer');
+const lightEls = [];
+const activeLights = [];
+let litCount = 0;
+
+// String lights — two rows of drooping wire
+const rows = [
+  { y: 0.22, sag: 30, count: 4 },
+  { y: 0.42, sag: 25, count: 4 },
+];
+
+let lightIdx = 0;
+rows.forEach((row, ri) => {
+  const baseY = window.innerHeight * row.y;
+  const margin = 40;
+  const spacing = (window.innerWidth - margin * 2) / (row.count + 1);
+
+  // Draw wire via SVG
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${window.innerWidth} ${row.sag * 3}`);
+  svg.style.position = 'absolute';
+  svg.style.top = (baseY - row.sag) + 'px';
+  svg.style.left = '0';
+  svg.style.width = '100%';
+  svg.style.height = (row.sag * 3) + 'px';
+  svg.style.pointerEvents = 'none';
+  const path = document.createElementNS(svgNS, 'path');
+
+  let d = `M ${margin} ${row.sag}`;
+  for (let i = 1; i <= row.count; i++) {
+    const x = margin + spacing * i;
+    const cpx = margin + spacing * (i - 0.5);
+    const cpy = row.sag + row.sag * (0.6 + Math.sin(i) * 0.3);
+    d += ` Q ${cpx} ${cpy} ${x} ${row.sag}`;
+  }
+  const endX = window.innerWidth - margin;
+  const cpx2 = margin + spacing * (row.count + 0.5);
+  d += ` Q ${cpx2} ${row.sag + row.sag * 0.5} ${endX} ${row.sag}`;
+
+  path.setAttribute('d', d);
+  path.setAttribute('stroke', 'rgba(255,200,120,0.08)');
+  path.setAttribute('stroke-width', '1.5');
+  path.setAttribute('fill', 'none');
+  svg.appendChild(path);
+  lightsLayer.appendChild(svg);
+
+  // Place lights along wire
+  for (let i = 1; i <= row.count; i++) {
+    const x = margin + spacing * i;
+    const sagAmount = row.sag * (0.5 + Math.sin(i * 1.2 + ri) * 0.2);
+    const y = baseY + sagAmount * 0.3;
+    const color = colors[lightIdx % colors.length];
+    const msg = messages[lightIdx % messages.length];
+
+    const wrap = document.createElement('div');
+    wrap.className = 'fairy-light';
+    wrap.style.left = (x - 9) + 'px';
+    wrap.style.top = (y - 5) + 'px';
+
+    const bulb = document.createElement('div');
+    bulb.className = 'bulb off';
+    bulb.style.setProperty('--glow', color.glow);
+    bulb.style.setProperty('--glow-soft', color.glowMid);
+    wrap.appendChild(bulb);
+
+    // Message bubble
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.textContent = msg;
+    // Position bubble below light
+    bubble.style.top = '32px';
+    bubble.style.left = '50%';
+    bubble.style.transform = 'translateX(-50%) translateY(8px) scale(.95)';
+    wrap.appendChild(bubble);
+
+    lightsLayer.appendChild(wrap);
+
+    const lightData = {
+      el: wrap, bulb, bubble, color, msg,
+      x, y, phase: Math.random() * Math.PI * 2,
+      glowInner: color.glowInner, glowMid: color.glowMid,
+      lit: false
+    };
+    lightEls.push(lightData);
+
+    wrap.addEventListener('click', () => {
+      if (lightData.lit) return;
+      lightData.lit = true;
+      litCount++;
+      bulb.classList.remove('off');
+      bulb.classList.add('on');
+      bulb.style.background = color.bg;
+      activeLights.push(lightData);
+
+      // Show message
+      bubble.classList.add('show');
+      bubble.style.transform = 'translateX(-50%) translateY(0) scale(1)';
+      document.getElementById('counter').textContent = litCount + ' / ' + lightEls.length;
+
+      // Hide after 4s
+      setTimeout(() => {
+        bubble.classList.remove('show');
+        bubble.style.transform = 'translateX(-50%) translateY(8px) scale(.95)';
+      }, 4000);
+
+      // All lit?
+      if (litCount === lightEls.length) {
+        document.getElementById('hint').style.display = 'none';
+        setTimeout(() => {
+          document.getElementById('finalMsg').classList.add('show');
+        }, 1500);
+      }
+    });
+
+    lightIdx++;
+  }
+});
+
+document.getElementById('counter').textContent = '0 / ' + lightEls.length;
+drawBg(0);
+</script>
+</body>
+</html>
