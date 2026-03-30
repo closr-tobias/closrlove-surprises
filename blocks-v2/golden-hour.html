@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Golden Hour — Closr Building Block</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:#08060a;
+    font-family:'Cormorant Garamond',serif;
+    min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;
+    user-select:none;-webkit-user-select:none;
+    touch-action:none;overflow:hidden;
+  }
+
+  canvas#atmosphere{position:fixed;inset:0;z-index:0}
+
+  /* Floating dust motes */
+  .mote{
+    position:fixed;border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle,rgba(255,210,140,0.5),rgba(255,180,100,0.1));
+    animation:moteFloat linear infinite;
+    z-index:2;
+  }
+  @keyframes moteFloat{
+    0%{transform:translateY(0) translateX(0);opacity:0}
+    8%{opacity:1}
+    92%{opacity:1}
+    100%{transform:translateY(-110vh) translateX(var(--mx));opacity:0}
+  }
+
+  /* Light leak overlays */
+  .light-leak{
+    position:fixed;pointer-events:none;z-index:1;
+    border-radius:50%;
+    filter:blur(80px);
+    animation:leakPulse 8s ease-in-out infinite alternate;
+  }
+  @keyframes leakPulse{
+    0%{opacity:0.6;transform:scale(1)}
+    100%{opacity:1;transform:scale(1.15)}
+  }
+
+  /* Film grain overlay */
+  .grain{
+    position:fixed;inset:0;z-index:50;pointer-events:none;
+    opacity:0.035;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:150px;
+    animation:grainShift 0.5s steps(4) infinite;
+  }
+  @keyframes grainShift{
+    0%{transform:translate(0,0)}25%{transform:translate(-2px,2px)}
+    50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,-2px)}
+    100%{transform:translate(0,0)}
+  }
+
+  /* Vignette */
+  .vignette{
+    position:fixed;inset:0;z-index:3;pointer-events:none;
+    background:radial-gradient(ellipse at center,transparent 50%,rgba(8,6,10,0.6) 100%);
+  }
+
+  /* Content container */
+  .content{
+    position:relative;z-index:10;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    width:100%;height:100dvh;
+    padding:40px 28px;
+  }
+
+  /* Sections — each is a full viewport moment */
+  .section{
+    position:fixed;inset:0;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    padding:60px 32px;
+    opacity:0;
+    transition:opacity 1.2s cubic-bezier(0.4,0,0.2,1),transform 1.2s cubic-bezier(0.4,0,0.2,1);
+    transform:translateY(30px);
+    pointer-events:none;
+    z-index:10;
+  }
+  .section.active{
+    opacity:1;transform:translateY(0);pointer-events:auto;
+  }
+  .section.exiting{
+    opacity:0;transform:translateY(-30px);
+  }
+
+  .section .kicker{
+    font-family:'Inter',sans-serif;
+    font-size:0.55rem;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    color:rgba(255,200,120,0.3);
+    margin-bottom:24px;
+  }
+
+  .section .text{
+    font-size:clamp(1.6rem,6vw,2.4rem);
+    font-weight:300;
+    line-height:1.6;
+    color:#f0ece4;
+    text-align:center;
+    max-width:340px;
+    text-shadow:0 0 40px rgba(255,180,100,0.08);
+  }
+  .section .text em{
+    font-style:italic;
+    color:#ffd49e;
+    font-weight:400;
+  }
+
+  .section .text .word{
+    display:inline-block;
+    opacity:0;
+    transform:translateY(12px);
+    transition:opacity 0.6s,transform 0.6s;
+    transition-timing-function:cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .section.active .text .word{
+    opacity:1;transform:translateY(0);
+  }
+
+  .section .attribution{
+    margin-top:32px;
+    font-family:'Inter',sans-serif;
+    font-size:0.6rem;
+    color:rgba(255,200,120,0.15);
+    letter-spacing:2px;
+  }
+
+  /* Decorative line */
+  .divider{
+    width:40px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,200,120,0.2),transparent);
+    margin:20px 0;
+  }
+
+  /* Progress bar */
+  .progress-bar{
+    position:fixed;bottom:0;left:0;right:0;height:2px;
+    z-index:40;background:rgba(255,255,255,0.03);
+  }
+  .progress-fill{
+    height:100%;width:0%;
+    background:linear-gradient(90deg,rgba(255,200,120,0.3),rgba(255,180,100,0.5));
+    transition:width 1.2s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* Tap hint */
+  .tap-hint{
+    position:fixed;bottom:24px;left:0;right:0;
+    text-align:center;font-family:'Inter',sans-serif;
+    font-size:0.5rem;color:rgba(255,255,255,0.08);
+    letter-spacing:3px;text-transform:uppercase;
+    z-index:40;
+    animation:hintPulse 3s ease-in-out infinite;
+  }
+  @keyframes hintPulse{0%,100%{opacity:0.4}50%{opacity:0.8}}
+
+  .back-link{position:fixed;top:14px;left:14px;font-size:0.65rem;color:#ffffff08;text-decoration:none;z-index:60}
+  .block-label{position:fixed;top:14px;right:14px;font-size:0.5rem;color:#ffffff06;letter-spacing:1px;z-index:60}
+</style>
+</head>
+<body>
+
+<canvas id="atmosphere"></canvas>
+<div class="grain"></div>
+<div class="vignette"></div>
+
+<!-- Light leaks -->
+<div class="light-leak" style="width:300px;height:300px;top:-5%;right:-8%;background:radial-gradient(circle,rgba(255,160,60,0.08),transparent)"></div>
+<div class="light-leak" style="width:250px;height:250px;bottom:10%;left:-5%;background:radial-gradient(circle,rgba(255,120,80,0.05),transparent);animation-delay:-3s"></div>
+<div class="light-leak" style="width:200px;height:400px;top:20%;right:10%;background:radial-gradient(ellipse,rgba(255,180,100,0.04),transparent);animation-delay:-5s;animation-duration:12s"></div>
+
+<a href="../building-blocks-v2.html" class="back-link">← blocks</a>
+<div class="block-label">closr · golden hour</div>
+
+<!-- SLOT: section_1 -->
+<div class="section active" data-index="0">
+  <div class="kicker">I</div>
+  <div class="text">AI_SLOT_1</div>
+  <div class="divider"></div>
+</div>
+<!-- /SLOT -->
+
+<!-- SLOT: section_2 -->
+<div class="section" data-index="1">
+  <div class="kicker">II</div>
+  <div class="text">AI_SLOT_2</div>
+  <div class="divider"></div>
+</div>
+<!-- /SLOT -->
+
+<!-- SLOT: section_3 -->
+<div class="section" data-index="2">
+  <div class="kicker">III</div>
+  <div class="text">AI_SLOT_3</div>
+  <div class="divider"></div>
+</div>
+<!-- /SLOT -->
+
+<!-- SLOT: section_4 -->
+<div class="section" data-index="3">
+  <div class="kicker">IV</div>
+  <div class="text">AI_SLOT_4</div>
+  <div class="divider"></div>
+</div>
+<!-- /SLOT -->
+
+<!-- SLOT: section_5 -->
+<div class="section" data-index="4">
+  <div class="kicker">V</div>
+  <div class="text">AI_SLOT_5</div>
+  <div class="divider"></div>
+  <div class="attribution">AI_SLOT_6</div>
+</div>
+<!-- /SLOT -->
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div class="tap-hint" id="tapHint">tap to continue</div>
+
+<script>
+(function(){
+  // Warm atmospheric canvas
+  const c=document.getElementById('atmosphere'),ctx=c.getContext('2d');
+  function resize(){c.width=innerWidth;c.height=innerHeight}
+  resize();addEventListener('resize',resize);
+
+  // Warm gradient background that breathes
+  let t=0;
+  function drawAtmosphere(){
+    t+=0.003;
+    ctx.clearRect(0,0,c.width,c.height);
+
+    // Base warm gradient
+    const g=ctx.createRadialGradient(
+      c.width*0.6,c.height*0.4,0,
+      c.width*0.5,c.height*0.5,c.height*0.8
+    );
+    const pulse=Math.sin(t)*0.015;
+    g.addColorStop(0,`rgba(60,30,15,${0.4+pulse})`);
+    g.addColorStop(0.4,`rgba(30,15,10,${0.3+pulse})`);
+    g.addColorStop(1,'rgba(8,6,10,0)');
+    ctx.fillStyle=g;
+    ctx.fillRect(0,0,c.width,c.height);
+
+    // Secondary warm spot
+    const g2=ctx.createRadialGradient(
+      c.width*(0.3+Math.sin(t*0.7)*0.05),
+      c.height*(0.6+Math.cos(t*0.5)*0.05),
+      0,
+      c.width*0.3,c.height*0.6,c.height*0.5
+    );
+    g2.addColorStop(0,`rgba(80,40,20,${0.15+pulse})`);
+    g2.addColorStop(1,'transparent');
+    ctx.fillStyle=g2;
+    ctx.fillRect(0,0,c.width,c.height);
+
+    requestAnimationFrame(drawAtmosphere);
+  }
+  drawAtmosphere();
+
+  // Dust motes
+  for(let i=0;i<30;i++){
+    const m=document.createElement('div');
+    m.className='mote';
+    const size=2+Math.random()*4;
+    m.style.width=size+'px';m.style.height=size+'px';
+    m.style.left=Math.random()*100+'%';
+    m.style.setProperty('--mx',(Math.random()-0.5)*60+'px');
+    m.style.animationDuration=(18+Math.random()*25)+'s';
+    m.style.animationDelay=(-Math.random()*25)+'s';
+    document.body.appendChild(m);
+  }
+
+  // Word-by-word reveal
+  const sections=document.querySelectorAll('.section');
+  sections.forEach(sec=>{
+    const textEl=sec.querySelector('.text');
+    if(!textEl)return;
+    const html=textEl.innerHTML;
+    // Wrap each word in a span
+    const words=html.split(/(\s+)/);
+    textEl.innerHTML=words.map(w=>{
+      if(/^\s+$/.test(w))return w;
+      // Preserve HTML tags like <em>
+      if(w.startsWith('<'))return w;
+      return `<span class="word">${w}</span>`;
+    }).join('');
+  });
+
+  function staggerWords(sec){
+    const words=sec.querySelectorAll('.word');
+    words.forEach((w,i)=>{
+      w.style.transitionDelay=(i*0.08)+'s';
+    });
+  }
+
+  let current=0;
+  const total=sections.length;
+  const progressFill=document.getElementById('progressFill');
+  const tapHint=document.getElementById('tapHint');
+
+  progressFill.style.width=((current+1)/total*100)+'%';
+  staggerWords(sections[0]);
+
+  function advance(){
+    if(current>=total-1){
+      tapHint.style.opacity='0';
+      return;
+    }
+
+    const cur=sections[current];
+    cur.classList.remove('active');
+    cur.classList.add('exiting');
+
+    current++;
+    const next=sections[current];
+    staggerWords(next);
+
+    setTimeout(()=>{
+      next.classList.add('active');
+      progressFill.style.width=((current+1)/total*100)+'%';
+    },400);
+
+    if(current>=total-1){
+      tapHint.textContent='';
+    }
+
+    if(navigator.vibrate)navigator.vibrate(10);
+  }
+
+  document.addEventListener('click',advance);
+
+  // Swipe support
+  let sy=0;
+  document.addEventListener('touchstart',e=>{sy=e.touches[0].clientY},{passive:true});
+  document.addEventListener('touchend',e=>{
+    const dy=sy-e.changedTouches[0].clientY;
+    if(dy>40)advance();
+  },{passive:true});
+})();
+</script>
+</body>
+</html>
