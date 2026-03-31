@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Strike a Match</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #0a0806;
+    font-family: 'Georgia', serif;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  canvas#atmosphere {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+  }
+
+  .scene {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    z-index: 1;
+  }
+
+  .matchbox-container {
+    position: relative;
+    width: 240px; height: 340px;
+  }
+
+  /* Matchbox outer sleeve */
+  .matchbox-sleeve {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 220px; height: 160px;
+    background: linear-gradient(180deg, #2a1810 0%, #1a0e08 100%);
+    border-radius: 6px;
+    border: 1px solid #3a2518;
+    box-shadow:
+      0 8px 32px rgba(0,0,0,0.8),
+      inset 0 1px 0 rgba(255,200,150,0.05);
+    z-index: 3;
+  }
+
+  .matchbox-sleeve::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      repeating-linear-gradient(90deg,
+        transparent 0px, transparent 8px,
+        rgba(60,30,15,0.3) 8px, rgba(60,30,15,0.3) 9px
+      );
+    border-radius: 6px;
+  }
+
+  /* Strike strip on side */
+  .strike-strip {
+    position: absolute;
+    right: -14px; top: 15px;
+    width: 12px; height: 130px;
+    background: linear-gradient(180deg, #1a1a2a, #0d0d1a);
+    border-radius: 2px;
+    border: 1px solid #2a2a3a;
+    z-index: 4;
+    overflow: hidden;
+  }
+
+  .strike-strip::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(0deg,
+      rgba(80,80,120,0.4) 0px, transparent 2px, transparent 4px
+    );
+  }
+
+  .strike-strip .spark-zone {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  }
+
+  /* Inner tray (slides up) */
+  .matchbox-tray {
+    position: absolute;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    width: 200px; height: 140px;
+    background: linear-gradient(180deg, #f5e6d0 0%, #e8d5b8 100%);
+    border-radius: 4px;
+    z-index: 2;
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .matchbox-tray.revealed {
+    transform: translateX(-50%) translateY(-180px);
+  }
+
+  /* Match inside tray */
+  .match-head-row {
+    display: flex;
+    gap: 4px;
+    padding: 12px 10px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .mini-match {
+    width: 6px; height: 28px;
+    background: linear-gradient(180deg, #c0383850 12px, #dfc8a0 12px);
+    border-radius: 3px 3px 1px 1px;
+  }
+
+  /* The draggable match */
+  .match {
+    position: absolute;
+    bottom: 80px; left: 50%;
+    transform: translateX(-50%);
+    width: 14px; height: 180px;
+    z-index: 10;
+    cursor: grab;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+  }
+
+  .match-stick {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 8px; height: 150px;
+    background: linear-gradient(90deg, #dfc8a0, #c8b090, #dfc8a0);
+    border-radius: 1px 1px 2px 2px;
+  }
+
+  .match-tip {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 12px; height: 30px;
+    background: radial-gradient(ellipse at center, #c03838, #8a1a1a);
+    border-radius: 50% 50% 30% 30%;
+    transition: background 0.3s;
+  }
+
+  .match-tip.lit {
+    background: radial-gradient(ellipse at center, #ff6030, #cc3010);
+    box-shadow: 0 0 20px rgba(255,120,40,0.8);
+  }
+
+  /* Flame on the match */
+  .flame-container {
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 40px; height: 60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 11;
+  }
+
+  .flame-container.active { opacity: 1; }
+
+  .flame-inner {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 12px; height: 30px;
+    background: radial-gradient(ellipse at bottom, #fff8e0, #ffc040 40%, #ff6020 70%, transparent);
+    border-radius: 50% 50% 20% 20%;
+    animation: flameInner 0.15s infinite alternate;
+  }
+
+  .flame-outer {
+    position: absolute;
+    bottom: -4px; left: 50%;
+    transform: translateX(-50%);
+    width: 22px; height: 50px;
+    background: radial-gradient(ellipse at bottom, #ffa030 0%, #ff5010 50%, transparent 100%);
+    border-radius: 50% 50% 20% 20%;
+    animation: flameOuter 0.2s infinite alternate;
+    opacity: 0.8;
+  }
+
+  .flame-glow {
+    position: absolute;
+    bottom: -20px; left: 50%;
+    transform: translateX(-50%);
+    width: 80px; height: 80px;
+    background: radial-gradient(circle, rgba(255,150,50,0.3), transparent 70%);
+    animation: flameGlow 0.3s infinite alternate;
+  }
+
+  @keyframes flameInner {
+    0% { height: 28px; width: 11px; }
+    100% { height: 34px; width: 13px; }
+  }
+  @keyframes flameOuter {
+    0% { height: 46px; width: 20px; transform: translateX(-50%) skewX(-2deg); }
+    100% { height: 52px; width: 24px; transform: translateX(-50%) skewX(2deg); }
+  }
+  @keyframes flameGlow {
+    0% { opacity: 0.6; width: 70px; }
+    100% { opacity: 1; width: 90px; }
+  }
+
+  /* Spark particles during strike */
+  .spark {
+    position: fixed;
+    width: 3px; height: 3px;
+    background: #ffcc44;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 20;
+    box-shadow: 0 0 6px #ffaa22;
+  }
+
+  /* Hint */
+  .hint {
+    position: fixed;
+    bottom: 60px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(200,170,130,0.5);
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    z-index: 5;
+    animation: hintPulse 2.5s ease-in-out infinite;
+    transition: opacity 0.8s;
+  }
+
+  .hint.hidden { opacity: 0; }
+
+  @keyframes hintPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Message reveal (on matchbox lid) */
+  .message-lid {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    padding: 16px;
+    text-align: center;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 1.2s ease 0.3s;
+  }
+
+  .message-lid.visible { opacity: 1; }
+
+  .message-lid .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: rgba(200,170,130,0.6);
+    margin-bottom: 10px;
+  }
+
+  .message-lid .text {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #e8d5b8;
+    font-style: italic;
+    text-shadow: 0 0 20px rgba(255,150,50,0.3);
+  }
+
+  /* Scene warm glow after ignition */
+  .warm-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: radial-gradient(circle at 50% 50%, rgba(255,120,40,0.08), transparent 70%);
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 1.5s;
+    pointer-events: none;
+  }
+
+  .warm-overlay.active { opacity: 1; }
+
+  /* Smoke wisps after reveal */
+  .smoke-wisp {
+    position: fixed;
+    width: 2px; height: 2px;
+    background: rgba(180,170,160,0.3);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 15;
+    filter: blur(2px);
+  }
+
+  /* Matchbox label decoration */
+  .matchbox-label {
+    position: absolute;
+    top: 20px; left: 50%;
+    transform: translateX(-50%);
+    width: 160px; height: 100px;
+    border: 1px solid rgba(200,170,130,0.15);
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    z-index: 4;
+  }
+
+  .matchbox-label .icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+    opacity: 0.6;
+  }
+
+  .matchbox-label .brand {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    color: rgba(200,170,130,0.35);
+  }
+
+  /* Scene light (ambient flicker from match) */
+  .scene-light {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+
+  .scene-light.active { opacity: 1; }
+</style>
+</head>
+<body>
+
+<canvas id="atmosphere"></canvas>
+
+<div class="warm-overlay" id="warmOverlay"></div>
+<div class="scene-light" id="sceneLight"></div>
+
+<div class="scene" id="scene">
+  <div class="matchbox-container" id="matchboxContainer">
+    <!-- Inner tray with mini matches -->
+    <div class="matchbox-tray" id="tray">
+      <div class="match-head-row">
+        <div class="mini-match"></div><div class="mini-match"></div>
+        <div class="mini-match"></div><div class="mini-match"></div>
+        <div class="mini-match"></div><div class="mini-match"></div>
+        <div class="mini-match"></div><div class="mini-match"></div>
+        <div class="mini-match"></div><div class="mini-match"></div>
+        <div class="mini-match"></div><div class="mini-match"></div>
+        <div class="mini-match"></div><div class="mini-match"></div>
+        <div class="mini-match"></div><div class="mini-match"></div>
+        <div class="mini-match"></div><div class="mini-match"></div>
+      </div>
+      <!-- Message on the inside of the tray lid -->
+      <div class="message-lid" id="messageLid">
+        <div class="label">burned into my heart</div>
+        <div class="text" id="messageText"></div>
+      </div>
+    </div>
+
+    <!-- Outer sleeve -->
+    <div class="matchbox-sleeve" id="sleeve">
+      <div class="matchbox-label">
+        <div class="icon">🔥</div>
+        <div class="brand">Strike to ignite</div>
+      </div>
+      <div class="strike-strip" id="strikeStrip">
+        <div class="spark-zone" id="sparkZone"></div>
+      </div>
+    </div>
+
+    <!-- The match to drag -->
+    <div class="match" id="match">
+      <div class="flame-container" id="flameContainer">
+        <div class="flame-glow"></div>
+        <div class="flame-outer"></div>
+        <div class="flame-inner"></div>
+      </div>
+      <div class="match-tip" id="matchTip"></div>
+      <div class="match-stick"></div>
+    </div>
+  </div>
+</div>
+
+<div class="hint" id="hint">drag the match along the strip</div>
+
+<script>
+(function() {
+  // ── Messages ──
+  const messages = [
+    "You are the spark\nthat set my whole world\non fire.",
+    "Every moment with you\nburns brighter than\nthe last.",
+    "You lit something in me\nthat nothing\ncan put out.",
+    "My heart was cold\nuntil you struck\nthe first spark.",
+    "You're the warmth\nI never knew\nI was missing.",
+    "Some fires fade.\nOurs only grows\nstronger.",
+    "You ignited a love\nI didn't think\nwas possible."
+  ];
+
+  const messageText = document.getElementById('messageText');
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  messageText.innerHTML = msg.replace(/\n/g, '<br>');
+
+  // ── Atmosphere Canvas (floating embers/dust) ──
+  const atmosCanvas = document.getElementById('atmosphere');
+  const actx = atmosCanvas.getContext('2d');
+  let W, H;
+
+  function resizeAtmos() {
+    W = atmosCanvas.width = window.innerWidth;
+    H = atmosCanvas.height = window.innerHeight;
+  }
+  resizeAtmos();
+  window.addEventListener('resize', resizeAtmos);
+
+  class Ember {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * W;
+      this.y = H + Math.random() * 40;
+      this.size = Math.random() * 2.5 + 0.5;
+      this.speedY = -(Math.random() * 0.4 + 0.1);
+      this.speedX = (Math.random() - 0.5) * 0.3;
+      this.opacity = Math.random() * 0.3 + 0.05;
+      this.life = 0;
+      this.maxLife = Math.random() * 600 + 300;
+      this.hue = Math.random() * 30 + 15; // warm orange range
+    }
+    update() {
+      this.x += this.speedX + Math.sin(this.life * 0.01) * 0.2;
+      this.y += this.speedY;
+      this.life++;
+      if (this.life > this.maxLife || this.y < -20) this.reset();
+    }
+    draw(ctx) {
+      const a = this.opacity * (1 - this.life / this.maxLife);
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${this.hue}, 80%, 50%, ${a})`;
+      ctx.fill();
+    }
+  }
+
+  const embers = [];
+  for (let i = 0; i < 40; i++) {
+    const e = new Ember();
+    e.y = Math.random() * H;
+    e.life = Math.random() * e.maxLife;
+    embers.push(e);
+  }
+
+  let isLit = false;
+  let glowIntensity = 0;
+
+  function animateAtmos() {
+    actx.clearRect(0, 0, W, H);
+
+    // Dark gradient background
+    const bg = actx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, `rgba(30, 18, 10, ${0.3 + glowIntensity * 0.2})`);
+    bg.addColorStop(1, 'rgba(5, 3, 2, 0.5)');
+    actx.fillStyle = bg;
+    actx.fillRect(0, 0, W, H);
+
+    // Warm center glow when lit
+    if (glowIntensity > 0) {
+      const glow = actx.createRadialGradient(W/2, H * 0.42, 0, W/2, H * 0.42, 200);
+      glow.addColorStop(0, `rgba(255, 130, 40, ${0.06 * glowIntensity})`);
+      glow.addColorStop(1, 'transparent');
+      actx.fillStyle = glow;
+      actx.fillRect(0, 0, W, H);
+    }
+
+    embers.forEach(e => { e.update(); e.draw(actx); });
+
+    if (isLit && glowIntensity < 1) glowIntensity = Math.min(1, glowIntensity + 0.008);
+
+    requestAnimationFrame(animateAtmos);
+  }
+  animateAtmos();
+
+  // ── Match Dragging & Strike Detection ──
+  const match = document.getElementById('match');
+  const matchTip = document.getElementById('matchTip');
+  const flameContainer = document.getElementById('flameContainer');
+  const strikeStrip = document.getElementById('strikeStrip');
+  const tray = document.getElementById('tray');
+  const messageLid = document.getElementById('messageLid');
+  const hint = document.getElementById('hint');
+  const warmOverlay = document.getElementById('warmOverlay');
+
+  let isDragging = false;
+  let dragOffsetX = 0, dragOffsetY = 0;
+  let matchX = 0, matchY = 0;
+  let strikeProgress = 0;
+  let lastStrikeY = null;
+  let revealed = false;
+  let matchOrigRect = null;
+
+  function getMatchOrigin() {
+    matchOrigRect = match.getBoundingClientRect();
+  }
+
+  setTimeout(getMatchOrigin, 100);
+  window.addEventListener('resize', () => setTimeout(getMatchOrigin, 100));
+
+  function startDrag(e) {
+    if (revealed) return;
+    const pt = e.touches ? e.touches[0] : e;
+    const rect = match.getBoundingClientRect();
+    isDragging = true;
+    dragOffsetX = pt.clientX - rect.left;
+    dragOffsetY = pt.clientY - rect.top;
+    match.style.cursor = 'grabbing';
+    match.style.position = 'fixed';
+    match.style.left = rect.left + 'px';
+    match.style.top = rect.top + 'px';
+    match.style.bottom = 'auto';
+    match.style.transform = 'none';
+    match.style.transition = 'none';
+    e.preventDefault();
+  }
+
+  function moveDrag(e) {
+    if (!isDragging || revealed) return;
+    const pt = e.touches ? e.touches[0] : e;
+    const x = pt.clientX - dragOffsetX;
+    const y = pt.clientY - dragOffsetY;
+    match.style.left = x + 'px';
+    match.style.top = y + 'px';
+    matchX = x; matchY = y;
+
+    // Check if match tip overlaps strike strip
+    const tipRect = matchTip.getBoundingClientRect();
+    const stripRect = strikeStrip.getBoundingClientRect();
+
+    const overlap =
+      tipRect.right > stripRect.left &&
+      tipRect.left < stripRect.right &&
+      tipRect.bottom > stripRect.top &&
+      tipRect.top < stripRect.bottom;
+
+    if (overlap) {
+      const currentY = pt.clientY;
+      if (lastStrikeY !== null) {
+        const delta = Math.abs(currentY - lastStrikeY);
+        if (delta > 2) {
+          strikeProgress += delta * 0.012;
+          // Spawn sparks
+          if (Math.random() < 0.6) spawnSpark(tipRect.left + tipRect.width/2, tipRect.top);
+
+          // Vibrate feedback
+          if (navigator.vibrate && Math.random() < 0.3) navigator.vibrate(8);
+        }
+      }
+      lastStrikeY = currentY;
+
+      if (strikeProgress >= 1 && !isLit) {
+        ignite();
+      }
+    } else {
+      lastStrikeY = null;
+      // Slow decay
+      strikeProgress = Math.max(0, strikeProgress - 0.005);
+    }
+
+    e.preventDefault();
+  }
+
+  function endDrag(e) {
+    if (!isDragging) return;
+    isDragging = false;
+    match.style.cursor = 'grab';
+    if (!isLit) {
+      strikeProgress = Math.max(0, strikeProgress - 0.01);
+    }
+  }
+
+  match.addEventListener('mousedown', startDrag);
+  match.addEventListener('touchstart', startDrag, { passive: false });
+  document.addEventListener('mousemove', moveDrag);
+  document.addEventListener('touchmove', moveDrag, { passive: false });
+  document.addEventListener('mouseup', endDrag);
+  document.addEventListener('touchend', endDrag);
+
+  // ── Sparks ──
+  function spawnSpark(x, y) {
+    const spark = document.createElement('div');
+    spark.className = 'spark';
+    spark.style.left = x + 'px';
+    spark.style.top = y + 'px';
+    document.body.appendChild(spark);
+
+    const angle = (Math.random() - 0.5) * Math.PI;
+    const speed = Math.random() * 80 + 40;
+    const vx = Math.cos(angle) * speed;
+    const vy = -Math.abs(Math.sin(angle)) * speed - 20;
+    const gravity = 200;
+    let t = 0;
+    const startX = x, startY = y;
+    const lifetime = Math.random() * 0.4 + 0.2;
+    const startTime = performance.now();
+
+    function animSpark() {
+      const elapsed = (performance.now() - startTime) / 1000;
+      if (elapsed > lifetime) {
+        spark.remove();
+        return;
+      }
+      const px = startX + vx * elapsed;
+      const py = startY + vy * elapsed + 0.5 * gravity * elapsed * elapsed;
+      spark.style.left = px + 'px';
+      spark.style.top = py + 'px';
+      spark.style.opacity = 1 - elapsed / lifetime;
+      spark.style.width = (3 - elapsed / lifetime * 2) + 'px';
+      spark.style.height = spark.style.width;
+      requestAnimationFrame(animSpark);
+    }
+    animSpark();
+  }
+
+  // ── Ignition ──
+  function ignite() {
+    isLit = true;
+    matchTip.classList.add('lit');
+    flameContainer.classList.add('active');
+    hint.classList.add('hidden');
+
+    // Burst of sparks
+    const tipRect = matchTip.getBoundingClientRect();
+    for (let i = 0; i < 15; i++) {
+      setTimeout(() => spawnSpark(
+        tipRect.left + tipRect.width/2 + (Math.random()-0.5)*10,
+        tipRect.top
+      ), i * 30);
+    }
+
+    if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
+
+    // After a beat, reveal message
+    setTimeout(revealMessage, 1200);
+  }
+
+  function revealMessage() {
+    revealed = true;
+    warmOverlay.classList.add('active');
+    tray.classList.add('revealed');
+
+    // Animate match to hover above the opened tray
+    const containerRect = document.getElementById('matchboxContainer').getBoundingClientRect();
+    match.style.transition = 'left 1s cubic-bezier(0.34,1.56,0.64,1), top 1s cubic-bezier(0.34,1.56,0.64,1)';
+    match.style.left = (containerRect.left + containerRect.width/2 - 7) + 'px';
+    match.style.top = (containerRect.top - 40) + 'px';
+
+    setTimeout(() => {
+      messageLid.classList.add('visible');
+      startSmoke();
+    }, 800);
+  }
+
+  // ── Smoke wisps ──
+  function startSmoke() {
+    const tipRect = matchTip.getBoundingClientRect();
+    setInterval(() => {
+      if (!isLit) return;
+      const wisp = document.createElement('div');
+      wisp.className = 'smoke-wisp';
+      const sx = tipRect.left + tipRect.width/2 + (Math.random()-0.5) * 8;
+      const sy = tipRect.top - 60;
+      wisp.style.left = sx + 'px';
+      wisp.style.top = sy + 'px';
+      document.body.appendChild(wisp);
+
+      const startTime = performance.now();
+      const dur = Math.random() * 2000 + 1500;
+      const drift = (Math.random() - 0.5) * 40;
+
+      function animSmoke() {
+        const elapsed = performance.now() - startTime;
+        if (elapsed > dur) { wisp.remove(); return; }
+        const p = elapsed / dur;
+        wisp.style.top = (sy - p * 80) + 'px';
+        wisp.style.left = (sx + drift * p) + 'px';
+        wisp.style.opacity = 0.25 * (1 - p);
+        wisp.style.width = (2 + p * 6) + 'px';
+        wisp.style.height = wisp.style.width;
+        requestAnimationFrame(animSmoke);
+      }
+      animSmoke();
+    }, 200);
+  }
+
+  // ── Ambient flickering light when lit ──
+  const sceneLight = document.getElementById('sceneLight');
+  function flickerLoop() {
+    if (!isLit) { requestAnimationFrame(flickerLoop); return; }
+    sceneLight.classList.add('active');
+    const flicker = 0.03 + Math.random() * 0.05;
+    const matchRect = match.getBoundingClientRect();
+    sceneLight.style.background = `radial-gradient(circle at ${matchRect.left + 7}px ${matchRect.top}px, rgba(255,130,40,${flicker}), transparent 50%)`;
+    requestAnimationFrame(flickerLoop);
+  }
+  flickerLoop();
+
+})();
+</script>
+</body>
+</html>
